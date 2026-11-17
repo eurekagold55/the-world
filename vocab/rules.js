@@ -401,7 +401,7 @@ const FR_PREF_BASE=["prendre","venir","tenir","mettre","faire","partir","sortir"
 const FR_FUT_IRR={"être":"ser","avoir":"aur","aller":"ir","faire":"fer","pouvoir":"pourr","voir":"verr","venir":"viendr","tenir":"tiendr","vouloir":"voudr","savoir":"saur","devoir":"devr","envoyer":"enverr","falloir":"faudr","courir":"courr","mourir":"mourr","recevoir":"recevr","valoir":"vaudr","pleuvoir":"pleuvr","acquérir":"acquerr","cueillir":"cueiller","asseoir":"assiér"};
 const FR_DOUBLE=["appeler","rappeler","épeler","renouveler","jeter","rejeter","projeter","feuilleter","interpeller"];
 const FR_PP_KO={er:"-er → -é",ir:"2군 -ir → -i",re:"-re → -u"};
-function frForm(s){/* "je parle" → parle, "j'ai parlé" → [aux, pp] */s=nfc(s||"").toLowerCase().trim().replace(/[’]/g,"'");
+function frForm(s){/* "je parle" → parle, "j'ai parlé" → [aux, pp] */s=nfc(s||"").toLowerCase().trim().replace(/[’]/g,"'").replace(/^(que |qu'(?=(il|elle|on|ils|elles)\b))/,"");
   return s.replace(/^(je |j'|tu |il |elle |il\/elle |nous |vous |ils |elles |ils\/elles )/,"").replace(/^(me |m'|te |t'|se |s'|nous |vous )/,"")}
 function frVerb(w){const sum=[],cells={};let inf=nfc(w.word||"").toLowerCase().trim().replace(/[’]/g,"'");const refl=/^(se |s')/.test(inf);inf=inf.replace(/^(se |s')/,"");
   const C=w.conj||{};const pres={},fut={},pc={};FR_P.forEach(p=>{pres[p]=frForm(C["pres."+p]);fut[p]=frForm(C["fut."+p]);pc[p]=frForm(C["pc."+p])});
@@ -453,7 +453,47 @@ function frVerb(w){const sum=[],cells={};let inf=nfc(w.word||"").toLowerCase().t
     let c="passé composé "+FR_P_KO[p]+": "+(/être/.test(aux)?"être":"avoir")+" + "+(ppRaw||"과거분사");
     if(/être/.test(aux))c+=" · 주어 성·수 일치 "+({je:"(e)",tu:"(e)",il:"(elle → e)",nous:"(e)s",vous:"(e)(s)",ils:"s (elles → es)"}[p]);
     cells["pc."+p]=c});
+  frMoreTenses(inf,grp,base,aux,ppRaw,C,sum,cells,refl);
   return{summary:sum,cells}}
+/* v15: 반과거·조건법·접속법·명령법·단순과거·복합시제 */
+const FR_IMPF_E={je:"-ais",tu:"-ais",il:"-ait",nous:"-ions",vous:"-iez",ils:"-aient"};
+const FR_SUBJ_E={je:"-e",tu:"-es",il:"-e",nous:"-ions",vous:"-iez",ils:"-ent"};
+const FR_SUBJ_IRR={"être":"sois, sois, soit, soyons, soyez, soient","avoir":"aie, aies, ait, ayons, ayez, aient","aller":"aille… / allions, alliez","faire":"fasse- (que je fasse)","pouvoir":"puisse- (que je puisse)","savoir":"sache- (que je sache)","vouloir":"veuille… / voulions, vouliez","valoir":"vaille…","falloir":"qu'il faille","pleuvoir":"qu'il pleuve"};
+const FR_COMP={pqp:["plus-que-parfait","반과거"],fa:["futur antérieur","미래"],condp:["conditionnel passé","조건법 현재"],subjp:["subjonctif passé","접속법 현재"]};
+function frMoreTenses(inf,grp,base,aux,ppRaw,C,sum,cells,refl){
+  const has=t=>FR_P.some(p=>C[t+"."+p]);const g=(t,p)=>frForm(C[t+"."+p]);
+  const nousP=g("pres","nous"),ilsP=g("pres","ils");const AGR={je:"(e)",tu:"(e)",il:"(elle → e)",nous:"(e)s",vous:"(e)(s)",ils:"s (elles → es)"};
+  /* 반과거 */
+  if(has("impf")){const nst=nousP.replace(/ons$/,"");const irr=inf==="être";const ok=nst&&FR_P.every(p=>!g("impf",p)||g("impf",p).replace(/(ais|ait|ions|iez|aient)$/,"")===nst||(/[çg]e?$/.test(nst)&&["nous","vous"].includes(p)));
+    sum.push("imparfait (반과거) = "+(irr?"être만 예외 줄기 ét- (j'étais)":"nous 현재형 줄기"+(nousP?` (nous ${nousP} → ${nst}-)`:"")+(ok?"":" — 이 동사는 줄기가 달라, 확인해 줘"))+" + -ais, -ais, -ait, -ions, -iez, -aient. 계속되던 일·습관·배경 묘사.");
+    FR_P.forEach(p=>{let t="imparfait "+FR_P_KO[p]+": "+(irr?"ét-":(nst||"nous 줄기")+"-")+" + "+FR_IMPF_E[p];
+      if(/cer$/.test(inf))t+=["nous","vous"].includes(p)?" · i 앞이라 ç 없이 c":" · a 앞이라 c → ç";
+      if(/ger$/.test(inf))t+=["nous","vous"].includes(p)?" · i 앞이라 e 없이":" · a 앞이라 g 뒤에 e";
+      cells["impf."+p]=t})}
+  /* 조건법 현재 */
+  if(has("cond")){const fst=g("fut","je").replace(/ai$/,"");sum.push("conditionnel présent (조건법) = 미래 줄기"+(fst?` (${fst}-)`:"")+" + 반과거 어미 -ais, -ais, -ait, -ions, -iez, -aient. ~할 텐데, 공손한 부탁(je voudrais).");
+    FR_P.forEach(p=>{cells["cond."+p]="conditionnel "+FR_P_KO[p]+": 미래 줄기 "+(fst?fst+"- ":"")+"+ "+FR_IMPF_E[p]+((FR_FUT_IRR[inf]||FR_FUT_IRR[base])?" · 줄기 불규칙 (미래랑 같음)":"")})}
+  /* 접속법 현재 */
+  if(has("subj")){const ist=ilsP.replace(/ent$/,"");const irr=FR_SUBJ_IRR[inf]||FR_SUBJ_IRR[base];
+    const reg=!irr&&ist&&["je","tu","il","ils"].every(p=>!g("subj",p)||g("subj",p).replace(/(es|e|ent)$/,"")===ist);
+    const nv=g("subj","nous")&&g("subj","nous")===g("impf","nous");
+    sum.push("subjonctif présent (접속법) = que + "+(irr?"불규칙 줄기 — 외워야 함 ("+irr+")":"ils 현재형 줄기"+(ilsP?` (ils ${ilsP} → ${ist}-)`:"")+" + -e, -es, -e, -ions, -iez, -ent"+(reg||!ist?"":" — 이 동사는 줄기가 달라, 외워야 함"))+"."+(nv?" nous·vous는 반과거랑 똑같은 꼴.":"")+" il faut que, vouloir que, bien que 뒤에 써.");
+    FR_P.forEach(p=>{let t="subjonctif "+FR_P_KO[p]+": que + "+(irr?"불규칙 — 외워야 함":((["nous","vous"].includes(p)&&nv)?"반과거 nous/vous 꼴 그대로":(ist||"ils 줄기")+"- + "+FR_SUBJ_E[p]));
+      if(p==="il"||p==="ils")t+=" · qu' (il/ils 앞 모음 축약)";cells["subj."+p]=t})}
+  /* 명령법 */
+  if(["tu","nous","vous"].some(p=>C["impr."+p])){const irr=["être","avoir","savoir","vouloir"].includes(inf);const er=grp==="er"||inf==="aller"||/(ouvrir|offrir|couvrir|souffrir|cueillir)$/.test(inf);
+    sum.push("impératif (명령법) = 주어 없이 현재형 tu·nous·vous만."+(irr?" 이 동사는 접속법에서 온 불규칙 꼴 — 외워야 함.":"")+(er&&!irr?" -er 동사"+(inf==="aller"?"(aller 포함)":"")+"는 tu에서 -s가 빠져 ("+(frForm(C["impr.tu"]).replace(/-.*$/,"")||"parle")+").":"")+(refl?" 재귀동사는 대명사를 뒤에 하이픈으로: -toi, -nous, -vous.":""));
+    ["tu","nous","vous"].forEach(p=>{let t="impératif "+p+": "+(irr?"불규칙 — 외워야 함":"현재형 "+p+" 꼴"+(p==="tu"&&er?"에서 -s 빼기":""));if(refl)t+=" · 대명사 뒤로 (-"+({tu:"toi",nous:"nous",vous:"vous"}[p])+")";cells["impr."+p]=t})}
+  /* 단순과거 */
+  if(has("ps")){const j=g("ps","je");const typ=/ai$/.test(j)?"a":/is$/.test(j)?"i":/us$/.test(j)?"u":/ins$/.test(j)?"in":"";
+    const E={a:"-ai, -as, -a, -âmes, -âtes, -èrent",i:"-is, -is, -it, -îmes, -îtes, -irent",u:"-us, -us, -ut, -ûmes, -ûtes, -urent",in:"-ins, -ins, -int, -înmes, -întes, -inrent"}[typ];
+    sum.push("passé simple (단순과거) = 소설·역사책에서만 쓰는 문어 시제. 말할 땐 passé composé."+(E?" 이 동사는 "+E+" 형.":" 불규칙 — 외워야 함.")+(typ==="a"&&grp!=="er"?"":typ==="a"?" (-er 동사 전부 이 형)":""));
+    FR_P.forEach(p=>{cells["ps."+p]="passé simple "+FR_P_KO[p]+(E?": "+E.split(", ")[FR_P.indexOf(p)]+" 계열":": 외워야 함")})}
+  /* 복합 시제 */
+  const ae=/être/.test(aux)?"être":"avoir";const ppS=ppRaw||"과거분사";
+  Object.entries(FR_COMP).forEach(([t,[nm,auxT]])=>{if(!has(t))return;
+    sum.push(nm+" = "+(t==="subjp"?"que + ":"")+ae+" "+auxT+" + "+ppS+(ae==="être"?" (주어 성·수 일치)":"")+".");
+    FR_P.forEach(p=>{let c=nm+" "+FR_P_KO[p]+": "+(t==="subjp"?"que + ":"")+ae+" "+auxT+" + "+ppS;if(ae==="être")c+=" · 일치 "+AGR[p];cells[t+"."+p]=c})})}
 
 /* ---------- 프랑스어 형용사 ---------- */
 const FA_IRR={beau:["belle","beaux","belles","bel"],nouveau:["nouvelle","nouveaux","nouvelles","nouvel"],vieux:["vieille","vieux","vieilles","vieil"],fou:["folle","fous","folles","fol"],mou:["molle","mous","molles","mol"],
@@ -488,11 +528,91 @@ function frAdj(word){let m=nfc(word||"").toLowerCase().trim().split(/\s*[\/,(]\s
   cells.ms="남성 단수: 기본형 (사전형)";cells.fs="여성 단수: "+rf;cells.mp="남성 복수: "+(rp||"+s");cells.fp="여성 복수: 여성 단수 "+fs+" + -s";if(mv)cells.mv="남성 모음 앞: "+mv+" (발음을 이어 주려고)";
   return{forms:{ms:m,fs,mp,fp,mv},summary:sum,cells,irregular:irr,unsure}}
 
+/* ---------- 답 비교 (어디가 틀렸는지) ---------- */
+const APOS=/[\u0027\u2018\u2019\u201B\u2032\u02BB\u02BC\u02C8\u02CA\u00B4\u0060\u02CB\u02B9]/;
+function dUnits(str,opt){const d=nfc(str).normalize("NFD");const out=[];
+  for(const ch of d){if(/\p{M}/u.test(ch)&&out.length){out[out.length-1].raw+=ch;continue}out.push({raw:ch})}
+  const strict=!!(opt&&opt.strict),tr=opt&&opt.lang==="tr";
+  out.forEach(u=>{u.raw=nfc(u.raw);let k=strict?u.raw:u.raw.normalize("NFD").replace(/[\u0301\u0300]/g,"");k=tr?nfc(k).toLocaleLowerCase("tr"):nfc(k).toLowerCase();
+    if(opt&&opt.yo)k=k.replace(/ё/g,"е");if(APOS.test(k))k="";if(/\s/.test(k))k=" ";u.key=k;u.marks=!strict&&/[\u0301\u0300]/.test(u.raw.normalize("NFD"))});
+  /* 앞뒤·연속 공백은 무시 */
+  let prevSp=true;out.forEach(u=>{if(u.key===" "){if(prevSp)u.key="";prevSp=true}else if(u.key)prevSp=false});
+  for(let i=out.length-1;i>=0;i--){if(out[i].key===" ")out[i].key="";else if(out[i].key)break}
+  return out}
+const PRON_RX=/^(que\s+|qu'(?=(il|elle|on|ils|elles)\b))?((je|tu|il|elle|on|nous|vous|ils|elles|ben|sen|o|biz|siz|onlar|я|ты|он|она|мы|вы|они)\s+|j'(?=[aeiouyhéèêàâîôû]))?/i;
+function pronLen(units){/* 앞의 대명사(que + je …)가 몇 글자인지 */const s=units.map(u=>APOS.test(u.raw)?"'":u.raw.toLowerCase()).join("");const m=s.match(PRON_RX);if(!m||!m[0])return 0;
+  let n=0,acc="";for(const u of units){if(acc.length>=m[0].length)break;acc+=APOS.test(u.raw)?"'":u.raw.toLowerCase();n++}return n}
+const EPS=0.001;
+function align(A,B){/* A=입력, B=정답 · 무시할 글자(key "") 빼고 편집거리 */const a=A.filter(u=>u.key),b=B.filter(u=>u.key);const n=a.length,m=b.length;
+  const D=Array.from({length:n+1},(_,i)=>{const r=new Array(m+1).fill(0);r[0]=i;return r});for(let j=0;j<=m;j++)D[0][j]=j;
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++)D[i][j]=Math.min(D[i-1][j]+1,D[i][j-1]+1,D[i-1][j-1]+(a[i-1].key===b[j-1].key?(a[i-1].marks===b[j-1].marks?0:EPS):1));
+  const ops=[];let i=n,j=m;
+  while(i>0||j>0){if(i>0&&j>0&&a[i-1].key===b[j-1].key&&Math.abs(D[i][j]-D[i-1][j-1]-(a[i-1].marks===b[j-1].marks?0:EPS))<1e-9){ops.push({t:"=",a:a[i-1],b:b[j-1]});i--;j--}
+    else if(i>0&&j>0&&Math.abs(D[i][j]-D[i-1][j-1]-1)<1e-9){ops.push({t:"~",a:a[i-1],b:b[j-1]});i--;j--}
+    else if(j>0&&Math.abs(D[i][j]-D[i][j-1]-1)<1e-9){ops.push({t:"-",b:b[j-1]});j--}
+    else{ops.push({t:"+",a:a[i-1]});i--}}
+  return{dist:Math.round(D[n][m]),raw:D[n][m],ops:ops.reverse()}}
+function ansDiff(input,answer,opt){opt=opt||{};const A=dUnits(input,opt),B=dUnits(answer,opt);
+  let best={...align(A,B),pa:0,pb:0};
+  const pa=pronLen(A),pb=pronLen(B);
+  if(pb||pa){const r=align(A.slice(pa),B.slice(pb));if(r.raw<best.raw)best={...r,pa,pb}}
+  const ops=best.ops;const cnt={sub:0,miss:0,extra:0};const soft=[];
+  ops.forEach(o=>{if(o.t==="~")cnt.sub++;else if(o.t==="-")cnt.miss++;else if(o.t==="+")cnt.extra++;else if(o.a.marks!==o.b.marks)soft.push({got:o.a.raw,want:o.b.raw,stress:o.b.marks&&!o.a.marks})});
+  return{dist:best.dist,ops,cnt,soft,preA:A.slice(0,best.pa).map(u=>u.raw).join(""),preB:B.slice(0,best.pb).map(u=>u.raw).join(""),A,B,pa:best.pa,pb:best.pb}}
+function ansDiffBest(input,answers,opt){let best=null;(answers||[]).filter(Boolean).forEach(ans=>{const r=ansDiff(input,ans,opt);r.answer=ans;if(!best||r.dist<best.dist||(r.dist===best.dist&&r.ops.length<best.ops.length))best=r});return best}
+/* 틀린 유형 짚어 주기 (짧은 힌트) */
+const AUX_E=/^(suis|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient|serai|seras|sera|serons|serez|seront|serais|serait|serions|seriez|seraient|sois|soit|soyons|soyez|soient)$/;
+const AUX_A=/^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurai|auras|aura|aurons|aurez|auront|aurais|aurait|aurions|auriez|auraient|aie|aies|ait|ayons|ayez|aient)$/;
+const deacc=s=>nfc(s).normalize("NFD").replace(/\p{M}/gu,"").replace(/ı/g,"i").replace(/œ/g,"oe").toLowerCase();
+function auxOf(form){const t=nfc(form||"").toLowerCase().replace(/[’']/g," ").replace(/^(que|qu)\s+/,"").split(/\s+/).filter(Boolean);
+  for(const w of t.slice(0,4)){if(AUX_E.test(w))return"être";if(AUX_A.test(w))return"avoir"}return""}
+function variants(b){b=String(b==null?"":b);const alts=b.split(/\s*[,\/]\s*/).filter(Boolean);const out=[];
+  (alts.length?alts:[b]).forEach(a=>{const parts=a.split(/(\([^)]*\))/);let o=[""];parts.forEach(pt=>{if(/^\(.*\)$/.test(pt)){const inner=pt.slice(1,-1);o=o.flatMap(x=>[x,x+inner])}else o=o.map(x=>x+pt)});out.push(...o)});
+  return out.slice(0,24)}
+function trLbl(c,lang){if(lang!=="tr")return c;return c==="i"?"점 있는 i":c==="ı"?"점 없는 ı":c==="I"?"점 없는 I":c==="İ"?"점 있는 İ":c}
+  function optFor(lang){return{yo:lang==="ru",strict:lang==="fr"||lang==="tr",lang}}
+function ansHints(input,answer,ctx){ctx=ctx||{};const out=[];const O=optFor(ctx.lang);const r=ansDiffBest(input,variants(answer),O)||ansDiff(input,answer,O);
+  const fold=s=>dUnits(s,O).map(u=>u.key).join("");
+  /* 다른 칸 꼴을 적었나 */
+  if(ctx.others){for(const [k,o] of Object.entries(ctx.others)){if(k===ctx.key||!o||!o.val)continue;
+    const alts=String(o.val).split(/\s*[,\/]\s*/).flatMap(v=>v.includes("(")?[v.replace(/\([^)]*\)/g,""),v.replace(/[()]/g,"")]:[v]);
+    if(alts.some(v=>{const x=ansDiff(input,v,O);return x.dist===0})){out.push({t:"other",msg:`그건 「${o.label}」 꼴이야. 여기는 「${ctx.label||"이 칸"}」.`});break}}}
+  /* 프랑스어 조동사 avoir/être */
+  if(ctx.lang==="fr"){const ai=auxOf(input),aa=auxOf(answer);if(ai&&aa&&ai!==aa)out.push({t:"aux",msg:`조동사가 틀렸어: 이 동사는 ${aa}${aa==="être"?" (이동·상태 변화/재귀 동사)":""}로 만들어.`});
+    /* 성·수 일치 */
+    if(!out.some(h=>h.t==="aux")&&auxOf(answer)==="être"&&r.dist>0&&["e","s","es"].some(x=>variants(answer).some(v=>ansDiff(input.trim()+x,v,O).dist===0)))
+      out.push({t:"agr",msg:"과거분사 성·수 일치: être 복합시제라 주어(여성 -e, 복수 -s)에 맞춰 붙여."})}
+  /* -ger: a/o 앞 e 빠짐 */
+  if(ctx.lang==="fr"){const i=r.ops.findIndex((o,k)=>o.t==="-"&&o.b.key==="e"&&k>0&&r.ops[k-1].b&&r.ops[k-1].b.key==="g"&&r.ops[k+1]&&r.ops[k+1].b&&/[ao]/.test(r.ops[k+1].b.key));
+    if(i>0)out.push({t:"spell",msg:"g 뒤에 e가 빠졌어: a/o 앞에서 [ʒ] 소리를 지키려고 ge로 써 (mangeais, mangeons)."})}
+  /* 악상·세디유 (채점에서 봐 주지 않는 것) */
+  const acc=r.ops.filter(o=>o.t==="~"&&deacc(o.a.raw)===deacc(o.b.raw));
+  /* 악상이 아예 빠진 글자(e ↔ é)도 */
+  if(acc.length)out.push({t:"accent",msg:(ctx.lang==="tr"?"특수 문자: ":"악상: ")+[...new Set(acc.map(o=>`${trLbl(o.a.raw,ctx.lang)} 아니고 ${trLbl(o.b.raw,ctx.lang)}`))].join(", ")+(acc.some(o=>/ç/.test(o.b.raw))?" (ç = a/o/u 앞에서 [s] 소리)":"")+(acc.some(o=>/[êâîôû]/.test(o.b.raw))?" (^ 는 빠지면 다른 철자로 쳐)":"")});
+  /* 어미만 틀림 */
+  if(!out.length&&r.dist>0){const body=r.ops;let first=body.findIndex(o=>o.t!=="=");let lastEq=-1;body.forEach((o,i)=>{if(o.t==="=")lastEq=i});
+    const tailB=body.slice(first).filter(o=>o.b).map(o=>o.b.raw).join(""),tailA=body.slice(first).filter(o=>o.a).map(o=>o.a.raw).join("");
+    const headOk=body.slice(0,first).filter(o=>o.b&&o.b.key&&o.b.key!==" ").length;
+    const restEq=body.slice(first).every(o=>o.t!=="=")||first>=body.length-4;
+    if(first>0&&headOk>=2&&tailB.length<=5&&restEq&&!/\s/.test(tailB))out.push({t:"ending",msg:`줄기는 맞아. 어미만 달라: -${tailA||"(없음)"} → -${tailB}`})}
+  /* 강세/악상 (정답 처리되는 것) */
+  if(r.soft.length&&ctx.lang==="ru")out.push({t:"soft",msg:"강세 위치: "+String(answer)});
+  return out}
+/* 프랑스어 명사 성 힌트 (어미 경향) */
+const FR_G_END=[["tion","f"],["sion","f"],["té","f"],["ure","f"],["ette","f"],["ence","f"],["ance","f"],["ie","f"],["ise","f"],["ade","f"],["ment","m"],["age","m"],["isme","m"],["eau","m"],["oir","m"],["et","m"],["ier","m"],["ail","m"],["eil","m"],["in","m"],["on","m"]];
+const FR_G_EXC={page:"f",plage:"f",image:"f",cage:"f",rage:"f",nage:"f",page2:"",eau:"f",peau:"f",maison:"f",raison:"f",chanson:"f",leçon:"f",façon:"f",boisson:"f",fin:"f",main:"f",faim:"f",silence:"m",lycée:"m",musée:"m",incendie:"m",génie:"m",parapluie:"m"};
+function frGenderHint(word,gender){const w=deacc(String(word||"").replace(/^(le|la|les|un|une)\s+|^l['’]/i,"").trim().split(/\s+/)[0]);if(!w)return"";
+  const raw=nfc(String(word||"").replace(/^(le|la|les|un|une)\s+|^l['’]/i,"").trim().split(/\s+/)[0]).toLowerCase();
+  if(FR_G_EXC[raw]){return `${raw}는 어미 규칙의 예외야 — ${FR_G_EXC[raw]==="f"?"여성(la)":"남성(le)"}로 외워.`}
+  const e=FR_G_END.find(([x])=>w.endsWith(deacc(x)));if(!e)return"";
+  return e[1]===gender?`-${e[0]}로 끝나는 명사는 대부분 ${e[1]==="f"?"여성(la)":"남성(le)"}이야.`:`-${e[0]}는 보통 ${e[1]==="f"?"여성":"남성"}인데, 이 단어는 예외라 ${gender==="f"?"여성(la)":"남성(le)"}.`}
+const ANSDIFF={optFor,units:dUnits,diff:ansDiff,best:ansDiffBest,variants,pronLen,hints:ansHints,auxOf,frGenderHint};
+
 /* 진입점 */
 function explain(w,lang){if(!w)return null;if(lang==="ru"){if(w.pos==="v")return ruVerb(w);if(w.pos==="n")return ruNoun(w);if(w.pos==="adj")return ruAdj(w)}
   if(lang==="fr"){if(w.pos==="v")return frVerb(w);if(w.pos==="adj")return frAdj(w.word)}return null}
 function ruVowels(s){return(strip(s).toLowerCase().match(/[аеёиоуыэюя]/g)||[]).length}
 
-G.RU_PHON={phon,stressPos,letters,strip,low};G.RULES={explain,ruVerb,ruNoun,ruAdj,frVerb,frAdj};
-if(typeof module!=="undefined")module.exports=Object.assign(module.exports||{},{phon,stressPos,strip,low,explain,ruVerb,ruNoun,ruAdj,frVerb,frAdj});
+G.RU_PHON={phon,stressPos,letters,strip,low};G.RULES={explain,ruVerb,ruNoun,ruAdj,frVerb,frAdj};G.ANSDIFF=ANSDIFF;
+if(typeof module!=="undefined")module.exports=Object.assign(module.exports||{},{phon,stressPos,strip,low,explain,ruVerb,ruNoun,ruAdj,frVerb,frAdj,ANSDIFF});
 })(typeof window!=="undefined"?window:globalThis);
