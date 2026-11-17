@@ -1,4 +1,4 @@
-const CACHE = "vocab-cloud-v6";
+const CACHE = "vocab-cloud-v7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -7,7 +7,9 @@ const ASSETS = [
   "./icon-512.png",
   "./apple-touch-icon.png",
   "./icon-maskable-512.png",
-  "./Galmuri11.woff2"
+  "./Galmuri11.woff2",
+  "./hand-top.png",
+  "./hands-reach.png"
 ];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
