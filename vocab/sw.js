@@ -1,4 +1,4 @@
-const CACHE = "vocab-cloud-v4";
+const CACHE = "vocab-cloud-v5";
 const ASSETS = [
   "./",
   "./index.html",
@@ -20,6 +20,21 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
+  const isHTML = e.request.mode === "navigate" || e.request.destination === "document" || url.pathname.endsWith(".html") || /\/$/.test(url.pathname);
+  if (isHTML) {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(e.request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(e.request).then((hit) => hit || caches.match("./index.html")))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then((hit) => {
       const going = fetch(e.request)
@@ -30,7 +45,7 @@ self.addEventListener("fetch", (e) => {
           }
           return res;
         })
-        .catch(() => hit || caches.match("./index.html"));
+        .catch(() => hit);
       return hit || going;
     })
   );

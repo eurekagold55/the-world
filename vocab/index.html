@@ -145,6 +145,10 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
   .sheet .grab{display:none}
 }
 @media (prefers-reduced-motion:reduce){.flash,.toast{transition:none}}
+.bulk-preview{margin:8px 0 0;font-size:.85rem;color:var(--muted);max-height:168px;overflow:auto;line-height:1.45}
+.bulk-preview b{color:var(--accent);font-weight:600}
+.bulk-preview ul{margin:6px 0 0;padding-left:1.15em}
+.bulk-preview li{word-break:break-word}
 </style>
 </head>
 <body>
@@ -563,16 +567,16 @@ document.addEventListener("click",e=>{
   const spPos=e.target.closest("[data-setpos]");if(spPos){const px=spPos.dataset.px;if(px==="add"||px==="bulk"){S.lastPos=spPos.dataset.setpos;if(px==="add")S.lastSub="";else S.bulkSub="";save();
     if(px==="add"){const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
       if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
-    else if(px==="bulk"){const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta)ta.value=tx}
+    else if(px==="bulk"){const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta){ta.value=tx;paintBulkPreview()}}
     else render()} else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=spPos.dataset.setpos;w.sub="";if(w.pos==="v"&&!w.vgroup)w.vgroup=guessGroup(w.word,L());if(w.pos==="n"&&!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender}save();openEdit(w.id)} }return}
   const spSub=e.target.closest("[data-setsub]");if(spSub){const px=spSub.dataset.px;if(px==="add"){S.lastSub=spSub.dataset.setsub;save();
     const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
     if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
-    else if(px==="bulk"){S.bulkSub=spSub.dataset.setsub;const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta)ta.value=tx}
+    else if(px==="bulk"){S.bulkSub=spSub.dataset.setsub;const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta){ta.value=tx;paintBulkPreview()}}
     else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.sub=spSub.dataset.setsub;save();openEdit(w.id)}}return}
   const sgx=e.target.closest("[data-setgen]");if(sgx){const px=sgx.dataset.px,g=sgx.dataset.setgen||"";
     if(px==="add"){S.addGender=g;const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
-    else if(px==="bulk"){S.bulkGender=g;const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta)ta.value=tx}
+    else if(px==="bulk"){S.bulkGender=g;const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta){ta.value=tx;paintBulkPreview()}}
     else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.gender=g;save();openEdit(w.id)}}return}
   const sg=e.target.closest("[data-setgroup]");if(sg){S.lastGroup=sg.dataset.setgroup;const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}return}
   const fp=e.target.closest("[data-fpos]");if(fp){setFilter("pos",fp.dataset.fpos);return}
@@ -632,6 +636,7 @@ document.addEventListener("submit",e=>{
   if(e.target.id==="schemaForm"){e.preventDefault();saveSchema();return}
 });
 document.addEventListener("input",e=>{
+  if(e.target.closest&&e.target.closest("#bulkForm textarea")){paintBulkPreview()}
   if(e.target.id==="search"){const pos=e.target.selectionStart;S.q=e.target.value;render();const s=document.getElementById("search");if(s){s.focus();s.setSelectionRange(pos,pos)}}
   if(e.target.id==="qIn"&&S.quiz)S.quiz.typed=e.target.value;
   if(e.target.id==="pIn"&&S.prac)S.prac.typed=e.target.value;
@@ -686,24 +691,50 @@ function saveSub(){const name=document.querySelector("#subForm [name=name]").val
 
 function openBulk(){const pos=S.lastPos||"",sub=S.bulkSub!=null?S.bulkSub:S.lastSub||"";
   openSheet(`<div class="grab"></div><h3>여러 개 넣기 <button class="x" data-close aria-label="닫기">✕</button></h3>
-  <p class="hint">한 줄에 하나씩. 단어와 뜻 사이에 빈칸을 두고 - 나 = 로 나눠 줘. 프랑스어 명사는 le/la, 또는 (m.)/(f.)로 성수를 자동 인식해.</p>
+  <p class="hint">한 줄에 여러 개여도 돼. 단어와 뜻 사이는 - 나 = 로 나눠 줘. 프랑스어 명사는 le/la, 또는 (m.)/(f.)로 성수를 자동 인식해.</p>
   ${pickers("bulk",pos,sub,{allowNone:true,gender:(pos==="n"&&genderEnabled())?(S.bulkGender||""):null})}
   <form id="bulkForm"><textarea name="bulk" data-autofocus placeholder="le chat - 고양이&#10;l'aigle (m.) - 독수리"></textarea>
+  <div id="bulkPreview" class="bulk-preview" hidden></div>
   <button class="btn primary block" type="submit" style="margin-top:8px">한꺼번에 넣기</button></form>`)}
-function parseLine(line){let s=String(line||"").replace(/^\uFEFF/,"").trim();if(!s||s.startsWith("#"))return null;
-  const seps="-\u2010\u2011\u2012\u2013\u2014\u2015\u2212=:\uFF1A";
+function normBulk(s){return String(s??"").replace(/^\uFEFF/,"").replace(/[\u00A0\u202F\u2000-\u200A\u200B\u2060\u3000]/g," ").replace(/[\u2018\u2019\u201B\u2032\u02BC\u02BB\u02B9\u00B4]/g,"'").replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFF0D]/g,"-")}
+function parseLine(line){let s=normBulk(line).trim();if(!s||s.startsWith("#"))return null;
+  const seps="-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2015\\u2212=:\\uFF1A";
   let m=s.match(new RegExp("^(.+?)\\s+["+seps+"]+\\s+(.+)$"))
     ||s.match(/^(.+?)\t+(.+)$/)
     ||s.match(new RegExp("^(.+?)\\s+["+seps+"]+(.+)$"))
     ||s.match(new RegExp("^(.+?)["+seps+"]\\s+(.+)$"))
     ||s.match(/^(.+?)\s*[=:\uFF1A]\s*(.+)$/)
     ||s.match(/^(.+?[\p{L}\p{M}'’ʼ])\s*[-–—−‐‑]\s*([\p{Script=Hangul}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}].*)$/u);
-  if(!m)return null;return{word:nfc(m[1].trim()),meaning:nfc(m[2].trim())}}
-function doBulk(){const raw=document.querySelector("#bulkForm textarea").value.split(/\n+/);let n=0,skip=0;
+  if(!m)return null;const word=nfc(m[1].trim()),meaning=nfc(m[2].trim());if(!word||!meaning)return null;return{word,meaning}}
+function extractPairs(line){const s=normBulk(line).trim();if(!s||s.startsWith("#"))return{pairs:[],skip:0,leftover:""};
+  const seps="-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2015\\u2212=:\\uFF1A";
+  const H="\\p{Script=Hangul}\\p{Script=Hiragana}\\p{Script=Katakana}\\p{Script=Han}";
+  const re=new RegExp("(.+?)\\s*["+seps+"]+\\s*((?:["+H+"]+(?:\\s+["+H+"]+)*))","gu");
+  const pairs=[];let last=0,m;
+  while((m=re.exec(s))){const gap=s.slice(last,m.index).trim();if(gap){const p=parseLine(gap);if(p)pairs.push(p)}
+    const word=nfc(m[1].trim()),meaning=nfc(m[2].trim());if(word&&meaning)pairs.push({word,meaning});last=m.index+m[0].length}
+  const rest=s.slice(last).trim();
+  if(!pairs.length){const p=parseLine(s);return p?{pairs:[p],skip:0,leftover:""}:{pairs:[],skip:1,leftover:s}}
+  if(rest){const p=parseLine(rest);if(p)pairs.push(p);return{pairs,skip:p?0:1,leftover:p?"":rest}}
+  return{pairs,skip:0,leftover:""}}
+function parseBulkText(raw){const lines=normBulk(raw).split(/\r\n|\r|\n|\u2028|\u2029/).map(l=>l.trim()).filter(l=>l&&!l.startsWith("#"));
+  const pairs=[],skipped=[];
+  lines.forEach(line=>{const r=extractPairs(line);pairs.push(...r.pairs);if(r.skip)skipped.push(r.leftover||line)});
+  return{pairs,skipped}}
+function paintBulkPreview(){const box=document.getElementById("bulkPreview"),ta=document.querySelector("#bulkForm textarea");if(!box||!ta)return;
+  const {pairs,skipped}=parseBulkText(ta.value);
+  if(!ta.value.trim()){box.hidden=true;box.innerHTML="";return}
+  box.hidden=false;
+  if(!pairs.length){box.innerHTML="아직 단어-뜻 짝을 못 찾았어. 사이에 - 나 = 를 넣어 줘.";return}
+  const extra=skipped.length?` · ${skipped.length}개는 건너뜀`:"";
+  box.innerHTML=`<b>${pairs.length}개</b> 인식됨${extra}<ul>${pairs.map(p=>{const d=detectGender(p.word);const g=d.gender?` <span class="gb ${d.gender}">${genderLabel(d.gender)}</span>`:"";return `<li>${esc(d.word)}${g} — ${esc(p.meaning)}</li>`}).join("")}</ul>`}
+function doBulk(){const raw=document.querySelector("#bulkForm textarea").value;const {pairs,skipped}=parseBulkText(raw);
+  if(!pairs.length){paintBulkPreview();toast(raw.trim()?"단어와 뜻 짝을 찾지 못했어. 단어 - 뜻 형식으로 넣어 줘":"먼저 단어를 붙여넣어 줘");return}
   const pos=S.lastPos||"",sub=pos?(S.bulkSub!=null?S.bulkSub:S.lastSub)||"":"";
   const g=(pos==="n"&&genderEnabled())?(S.bulkGender||""):"";
-  raw.forEach(line=>{const p=parseLine(line);if(!p||!p.word||!p.meaning){if(line.trim())skip++;return}addOne(p.word,p.meaning,"",pos,sub,g);n++});
-  closeSheet();render();toast(n?n+"개 넣었어"+(skip?" · "+skip+"줄은 건너뛰었어":""):"형식을 확인해 줘")}
+  let n=0;pairs.forEach(p=>{if(addOne(p.word,p.meaning,"",pos,sub,g))n++});
+  const skip=skipped.length+Math.max(0,pairs.length-n);
+  closeSheet();render();toast(n+"개 넣었어"+(skip?" · "+skip+"개는 건너뛰었어":""))}
 
 function openEdit(id){const w=words().find(x=>x.id===id);if(!w)return;S._edit=id;
   openSheet(`<div class="grab"></div><h3>단어 고치기 <button class="x" data-close aria-label="닫기">✕</button></h3>
@@ -773,6 +804,10 @@ function handleInstall(){if(deferredPrompt){deferredPrompt.prompt();deferredProm
 
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  if(navigator.serviceWorker.controller){
+    let refreshing=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(refreshing)return;refreshing=true;location.reload()});
+  }
 }
 S.view="home";
 render();
