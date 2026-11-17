@@ -289,6 +289,8 @@ input.sug{border:2px dashed #fff!important;background:linear-gradient(#000,#000)
 .pk-t .m{color:var(--muted);font-size:.82rem;word-break:break-word}
 .pk-tag{flex:0 0 auto;font-size:.64rem;border:2px dashed #fff;padding:1px 4px;color:#fff;background:#000}
 .pk-go{position:sticky;bottom:0}
+.pack-again{display:block;width:100%;margin:0 0 10px;padding:8px 6px;min-height:36px;font-size:.78rem;font-weight:500;color:var(--muted);text-align:center;border:2px dashed #444;background:transparent}
+.pack-again:active{color:#fff;border-color:#fff}
 .bulk-af{margin:8px 0 0;padding:10px;border:2px dashed #666;font-size:.85rem;color:var(--muted)}
 .bulk-af b{color:#fff}
 </style>
@@ -339,12 +341,13 @@ function insertStress(el){if(!el||el.disabled)return;const V=/[аеёиоуыэ�
   const caret=nfc(v.slice(0,j+1)).length;el.setSelectionRange(caret,caret);
   el.dispatchEvent(new Event("input",{bubbles:true}));el.focus()}
 
-const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),1800)};
+const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),2400)};
 function posName(id){return POS.find(p=>p.id===id)?.name||(id?"기타":"미분류")}
 function allSubs(pos){if(!pos)return[];const d=SUBS[pos]||["기타"],c=(S.customSub[pos]||[]);const extra=[];
   words().forEach(w=>{if(w.pos===pos&&w.sub&&!d.includes(w.sub)&&!c.includes(w.sub)&&!extra.includes(w.sub))extra.push(w.sub)});
   return [...d,...c.filter(x=>!d.includes(x)),...extra]}
 function migrate(s){s.customSub=s.customSub||{n:[],adj:[],v:[],adv:[],other:[]};
+  s.seeded=s.seeded||{};
   s.words=s.words||{};Object.values(s.words).forEach(arr=>(arr||[]).forEach(w=>{
     if(w.pos==null)w.pos="";if(w.sub==null)w.sub="";w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};w.conjSRS=w.conjSRS||{};
     w.word=nfc(w.word||"");w.meaning=nfc(w.meaning||"");w.ex=nfc(w.ex||"");
@@ -355,7 +358,7 @@ function migrate(s){s.customSub=s.customSub||{n:[],adj:[],v:[],adv:[],other:[]};
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&Array.isArray(s.langs)&&s.words)return migrate(s)}catch(e){}
   return migrate({cur:"fr",langs:PRESETS.map(l=>({...l})),words:{}})}
 let S=load();
-const save=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,lastPos:S.lastPos||"",lastSub:S.lastSub||""}));
+const save=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||""}));
 save();
 const L=()=>S.langs.find(l=>l.id===S.cur)||S.langs[0];
 const words=()=>S.words[S.cur]||(S.words[S.cur]=[]);
@@ -383,9 +386,9 @@ function speak(text){if(!text||!window.speechSynthesis){toast("이 기기는 소
 if(window.speechSynthesis)speechSynthesis.addEventListener("voiceschanged",()=>{});
 function guessGroup(word,lang){const w=(word||"").toLowerCase().trim();if(!isFr(lang))return"";
   if(w==="aller")return"irr";if(w.endsWith("er"))return"er";if(w.endsWith("ir"))return"ir";if(w.endsWith("re"))return"re";return"irr"}
-function mkWord(word,meaning,ex,pos,sub,gender){const d=detectGender(word);
+function mkWord(word,meaning,ex,pos,sub,gender,opts){const d=detectGender(word);
   const w={id:uid(),word:d.word,meaning:nfc(meaning).trim(),ex:nfc(ex||"").trim(),created:new Date().toISOString(),ease:2.5,interval:0,reps:0,lapses:0,due:today(),last:null,pos:pos||"",sub:sub||"",gender:d.gender||gender||"",conj:{},conjAuto:{},conjSRS:{},vgroup:"",aspectImp:"",aspectPf:""};
-  if(w.pos==="v"){w.vgroup=guessGroup(w.word,L());autoFill(w,false);wikiQueue(w)}
+  if(w.pos==="v"){w.vgroup=guessGroup(w.word,L());autoFill(w,false);if(!(opts&&opts.lazyWiki))wikiQueue(w)}
   return w}
 function addOne(word,meaning,ex,pos,sub,gender){const d=detectGender(word);if(!d.word||!nfc(meaning).trim())return false;words().push(mkWord(d.word,meaning,ex,pos,sub,d.gender||gender||""));save();return true}
 const shuffle=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x};
@@ -523,23 +526,48 @@ async function wikiFetch1(word,langId){const title=wikiTitle(word,langId);const 
   wikiCachePut(langId,ckey,res);return res}
 function wikiLangId(l){l=l||L();return isFr(l)?"fr":isRu(l)?"ru":isTr(l)?"tr":""}
 function applyWiki(w,res,overwrite){w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};let n=0;
-  Object.entries(res.forms||{}).forEach(([k,v])=>{if(!overwrite&&w.conj[k]&&w.conjAuto[k]===false)return;
+  Object.entries(res.forms||{}).forEach(([k,v])=>{
+    if(!overwrite&&w.conj[k]&&(w.conjAuto[k]===false||!w.conjAuto[k]))return;
     w.conj[k]=v;w.conjAuto[k]="wiki";n++});
   if(res.aux)w.aux=res.aux;
   if(res.aspect){if(res.aspect==="impf"){if(!w.aspectImp)w.aspectImp=w.word;if(!w.aspectPf&&res.pair&&res.pair.length)w.aspectPf=res.pair.join(" / ")}
     else{if(!w.aspectPf)w.aspectPf=w.word;if(!w.aspectImp&&res.pair&&res.pair.length)w.aspectImp=res.pair.join(" / ")}w.ruTense=res.tense||""}
   w.wikiAt=Date.now();return n}
-const wikiBusy=new Set();let wikiQ=Promise.resolve();
-function wikiQueue(w){const lid=wikiLangId();if(!lid||!w)return;const id=w.id;setTimeout(()=>{wikiQ=wikiQ.then(()=>wikiFill(id,lid,{})).catch(()=>{})},30)}
-async function wikiFill(wid,langId,opts){opts=opts||{};if(!langId||wikiBusy.has(wid))return;wikiBusy.add(wid);
+const wikiBusy=new Set();const wikiInflight=new Map();const wikiCool=new Map();
+let wikiQ=Promise.resolve();
+const WIKI_GAP=400,WIKI_IDLE_GAP=1200,WIKI_COOL=60000;
+function needsWiki(w){if(!w||w.pos!=="v"||w.wikiAt)return false;if(!wikiLangId())return false;
+  const t=wikiCool.get(w.id)||0;return Date.now()-t>WIKI_COOL}
+function wikiQueue(w,opts){const lid=wikiLangId();if(!lid||!w)return;const id=w.id;
+  wikiQ=wikiQ.then(()=>new Promise(r=>setTimeout(r,WIKI_GAP)).then(()=>wikiFill(id,lid,opts||{})).catch(()=>{}))}
+function wikiNow(w,opts){opts=opts||{};const lid=wikiLangId();if(!lid||!w)return Promise.resolve();
+  if(w.wikiAt&&!opts.refresh&&!opts.ui)return Promise.resolve();
+  if(wikiInflight.has(w.id))return wikiInflight.get(w.id);
+  const p=wikiFill(w.id,lid,opts).catch(()=>{});
+  wikiInflight.set(w.id,p);
+  return p.finally(()=>{if(wikiInflight.get(w.id)===p)wikiInflight.delete(w.id)})}
+async function wikiFill(wid,langId,opts){opts=opts||{};if(!langId||wikiBusy.has(wid))return wikiInflight.get(wid);wikiBusy.add(wid);
   const find=()=>(S.words[langId]||[]).find(x=>x.id===wid);
-  if(opts.ui&&S.view==="conj")render();
+  if((opts.ui||opts.refresh)&&S.view==="conj")render();
   try{const w0=find();if(!w0)return;const res=await wikiFetch(w0.word,langId);const w=find();if(!w)return;
-    if(res.notFound){const n=(langId===S.cur)?autoFill(w,false):0;save();if(opts.ui)toast(n?"위키에 표가 없어서 규칙으로 "+n+"칸 채웠어. 확인해 줘":"위키에서 이 동사를 못 찾았어 ㅠ 직접 적어 줘");}
+    wikiCool.delete(wid);
+    if(res.notFound){const n=(langId===S.cur)?autoFill(w,false):0;if(!w.wikiAt)w.wikiAt=Date.now();save();if(opts.ui)toast(n?"위키에 표가 없어서 규칙으로 "+n+"칸 채웠어. 확인해 줘":"위키에서 이 동사를 못 찾았어 ㅠ 직접 적어 줘");}
     else{const n=applyWiki(w,res,!!opts.overwrite);save();if(opts.ui)toast(n?"위키에서 "+n+"칸 가져왔어!":"이미 직접 고친 칸이라 그대로 뒀어")}}
-  catch(e){const w=find();const n=w&&langId===S.cur?autoFill(w,false):0;if(w)save();
+  catch(e){const w=find();const n=w&&langId===S.cur?autoFill(w,false):0;
+    const offline=navigator.onLine===false||(e&&(e.name==="AbortError"||/offline|network|Failed to fetch|http /i.test(String(e&&e.message||e))));
+    if(w){wikiCool.set(wid,Date.now());if(n)save();else if(!offline)save()}
     if(opts.ui)toast(n?"인터넷 연결이 안 돼서 규칙으로 "+n+"칸만 채웠어":"인터넷 연결이 안 되는 것 같아. 나중에 다시 눌러 줘")}
-  finally{wikiBusy.delete(wid);if(S.view==="conj"&&S.conjId===wid)render()}}
+  finally{wikiBusy.delete(wid);if((S.view==="conj"||S.view==="conjrev")&&S.conjId===wid)render();scheduleWikiIdle(WIKI_IDLE_GAP)}}
+function scheduleWikiIdle(delay){clearTimeout(scheduleWikiIdle._t);scheduleWikiIdle._t=setTimeout(wikiIdleTick,delay==null?WIKI_IDLE_GAP:delay)}
+function wikiIdleTick(){
+  if(navigator.onLine===false){window.addEventListener("online",()=>scheduleWikiIdle(400),{once:true});return}
+  const lid=wikiLangId();if(!lid)return;
+  if(wikiBusy.size){scheduleWikiIdle(WIKI_IDLE_GAP);return}
+  const next=(S.words[lid]||[]).find(w=>needsWiki(w)&&!wikiBusy.has(w.id));
+  if(!next)return;
+  wikiNow(next).finally(()=>scheduleWikiIdle(WIKI_IDLE_GAP))}
+window.addEventListener("online",()=>scheduleWikiIdle(400));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleWikiIdle(600)});
 
 /* ===== starter word packs (packs.js) ===== */
 const PACKS=window.VOCAB_PACKS||{};
@@ -550,6 +578,60 @@ function packLines(lid,pos,sub){const raw=(PACKS[lid]||{})[pos+":"+sub];if(!raw)
     return{raw:nfc(w),word:nfc(d.word),gender:(pos==="n"&&lid==="fr")?(d.gender||""):"",meaning:nfc(m||"").trim(),ex:nfc(x||"").trim(),pos,sub}})}
 function packSubs(pos){const lid=wikiLangId();if(!lid)return[];return Object.keys(PACKS[lid]||{}).filter(k=>k.startsWith(pos+":")).map(k=>k.slice(pos.length+1))}
 function hasPack(pos,sub){return packSubs(pos).includes(sub)}
+function normSubName(s){return String(s||"").trim().replace(/\s+/g,"").replace(/[·・･/／]/g,"").replace(/들$/,"").toLowerCase()}
+const PACK_ALIAS={
+  n:{"짐승":"동물","포유류":"동물","조류":"동물","곤충":"동물","어류":"동물","새":"동물","물고기":"동물",
+     "탈것":"교통수단","교통":"교통수단","운송수단":"교통수단","차량":"교통수단",
+     "꽃":"식물","나무":"식물","풀":"식물","기상":"날씨",
+     "먹을거":"음식","먹을것":"음식","먹거리":"음식","요리":"음식","과일":"음식","채소":"음식","음료":"음식",
+     "가족":"가족·사람","사람":"가족·사람","친족":"가족·사람",
+     "인체":"신체","몸":"신체","신체부위":"신체","몸부위":"신체",
+     "집":"집·물건","물건":"집·물건","가구":"집·물건",
+     "건물":"장소","곳":"장소",
+     "요일":"시간·날짜","달":"시간·날짜","월":"시간·날짜","계절":"시간·날짜","시간":"시간·날짜","날짜":"시간·날짜","때":"시간·날짜",
+     "기분":"감정","느낌":"감정","의복":"옷","의류":"옷","지형":"자연","천체":"자연"},
+  adj:{"색":"색깔","색상":"색깔","크기":"크기·모양","모양":"크기·모양","크기모양":"크기·모양","성격":"감정·성격","감정":"감정·성격","감정성격":"감정·성격"},
+  v:{"일상생활":"일상","매일":"일상","움직임":"이동","생각":"감정·생각","감정":"감정·생각","감정생각":"감정·생각","말":"말하기","대화":"말하기"},
+  adv:{"자주":"빈도","어떻게":"방법"}
+};
+function packSubMatch(pos,name){if(!pos||!name)return"";if(!wikiLangId())return"";
+  const subs=packSubs(pos);if(subs.includes(name))return name;
+  const n=normSubName(name);if(!n)return"";
+  const exact=subs.find(s=>normSubName(s)===n);if(exact)return exact;
+  const map=PACK_ALIAS[pos]||{};let official=map[name]||map[n];
+  if(!official){for(const [a,o] of Object.entries(map)){if(normSubName(a)===n){official=o;break}}}
+  return official&&subs.includes(official)?official:""}
+function packSeeded(lid,pos,sub){return !!(S.seeded&&S.seeded[lid]&&S.seeded[lid][pos+":"+sub])}
+function markPackSeeded(lid,pos,sub){S.seeded=S.seeded||{};S.seeded[lid]=S.seeded[lid]||{};S.seeded[lid][pos+":"+sub]=1}
+function addPackItems(pos,destSub,packSub){const lid=wikiLangId();if(!lid)return 0;
+  const items=packLines(lid,pos,packSub);if(!items.length)return 0;
+  const have=new Set(words().map(w=>dupKey(w.word,lid)));let n=0;
+  items.forEach(it=>{const k=dupKey(it.word,lid);if(have.has(k))return;have.add(k);
+    const w=mkWord(it.raw,it.meaning,it.ex,pos,destSub,it.gender,{lazyWiki:true});w.src="pack";words().push(w);n++});
+  return n}
+function fillNewGroup(pos,name){
+  const packSub=packSubMatch(pos,name);
+  if(!packSub)return"이 그룹은 기본 단어가 없어서 비워뒀어";
+  const lid=wikiLangId();
+  if(lid&&packSeeded(lid,pos,name))return"「"+name+"」 칸을 만들었어";
+  const n=addPackItems(pos,name,packSub);
+  if(lid)markPackSeeded(lid,pos,name);
+  save();
+  if(n&&pos==="v")scheduleWikiIdle(WIKI_IDLE_GAP);
+  return n?"기본 단어 "+n+"개 넣어놨어":"「"+name+"」 칸을 만들었어"}
+function maybeSeedOpen(){
+  const lid=wikiLangId();if(!lid)return;
+  const v=S.view||"home";let pos="",sub="";
+  if(v==="list"){pos=S.listPos||"";sub=S.listSub||""}
+  else if(["home","cards","quiz","quizrun"].includes(v)){const f=S.filter||{};pos=f.pos||"";sub=f.sub||""}
+  if(!pos||!sub||sub==="__none__"||pos==="__none__")return;
+  if(!(SUBS[pos]||[]).includes(sub))return;
+  if(packSeeded(lid,pos,sub))return;
+  const packSub=packSubMatch(pos,sub);if(!packSub)return;
+  const n=addPackItems(pos,sub,packSub);
+  markPackSeeded(lid,pos,sub);save();
+  if(n){toast("기본 단어 "+n+"개 넣어놨어");scheduleWikiIdle(WIKI_IDLE_GAP)}
+}
 let _packIdx={};
 function packFind(raw,lid){if(!_packIdx[lid]){const m=new Map();Object.keys(PACKS[lid]||{}).forEach(k=>{const [pos,sub]=[k.slice(0,k.indexOf(":")),k.slice(k.indexOf(":")+1)];
     packLines(lid,pos,sub).forEach(it=>{const key=dupKey(it.word,lid);if(!m.has(key))m.set(key,it)})});_packIdx[lid]=m}
@@ -559,10 +641,10 @@ function openPackMenu(pos){const subs=packSubs(pos);if(!subs.length){toast("이 
   openSheet(`<div class="grab"></div><h3>📦 기본 단어 넣기 <button class="x" data-close aria-label="닫기">✕</button></h3>
     <p class="hint" style="margin-top:0">${L().flag} ${esc(L().name)} · ${posName(pos)}. 분류를 고르면 단어 미리보기가 떠. 숫자는 아직 없는 단어 수야.</p>
     <div class="picks">${subs.map(s=>`<button type="button" class="chip" data-pack="${esc(s)}" data-ppos="${pos}">${esc(s)}<span class="c">${packFreshCount(pos,s)}</span></button>`).join("")}</div>`)}
-function openPack(pos,sub){const lid=wikiLangId();const items=packLines(lid,pos,sub);if(!items.length){toast("이 분류는 기본 단어가 아직 없어");return}
+function openPack(pos,sub){const packSub=packSubMatch(pos,sub)||sub;const lid=wikiLangId();const items=packLines(lid,pos,packSub);if(!items.length){toast("이 분류는 기본 단어가 아직 없어");return}
   const have=new Set(words().map(w=>dupKey(w.word,lid)));const seen=new Set();
   items.forEach(it=>{const k=dupKey(it.word,lid);it.dup=have.has(k)||seen.has(k);seen.add(k)});
-  const dup=items.filter(i=>i.dup).length,fresh=items.length-dup;S._pack={pos,sub,items};
+  const dup=items.filter(i=>i.dup).length,fresh=items.length-dup;S._pack={pos,sub,packSub,items};
   openSheet(`<div class="grab"></div><h3>📦 ${esc(sub)} · 기본 단어 <button class="x" data-close aria-label="닫기">✕</button></h3>
     <p class="hint" style="margin-top:0">${L().flag} ${esc(L().name)} · ${posName(pos)} · 초보용 ${items.length}개. 빼고 싶은 건 체크 풀어 줘.${dup?` 이미 있는 ${dup}개는 건너뛸게.`:""}</p>
     <div class="row" style="margin:8px 0"><button type="button" class="btn ghost" id="pkAll">전체 선택</button><button type="button" class="btn ghost" id="pkNone">전체 해제</button></div>
@@ -576,9 +658,10 @@ function addPack(){const P=S._pack;if(!P)return;const lid=wikiLangId();
   if(!pick.length){toast("하나는 골라 줘");return}
   const have=new Set(words().map(w=>dupKey(w.word,lid)));let n=0;
   pick.forEach(it=>{const k=dupKey(it.word,lid);if(have.has(k))return;have.add(k);
-    const w=mkWord(it.raw,it.meaning,it.ex,P.pos,P.sub,it.gender);w.src="pack";words().push(w);n++});
+    const w=mkWord(it.raw,it.meaning,it.ex,P.pos,P.sub,it.gender,{lazyWiki:true});w.src="pack";words().push(w);n++});
   save();closeSheet();S._pack=null;S.view="list";S.listPos=P.pos;S.listSub=P.sub;S.q="";S.listGender="";render();
-  toast(n+"개 넣었어!"+(P.pos==="v"&&n?" 변화표는 위키에서 가져오는 중이야":""))}
+  if(P.pos==="v"&&n)scheduleWikiIdle(WIKI_IDLE_GAP);
+  toast(n+"개 넣었어!"+(P.pos==="v"&&n?" 변화표는 동사 칸을 열면 바로 가져오고, 나머지는 천천히 채울게":""))}
 
 /* ===== word auto-fill (ko.wiktionary → en.wiktionary → MyMemory) ===== */
 const DICT_KEY="vocab-cloud-dict-v1",DICT_VER=1;
@@ -759,7 +842,7 @@ function installChip(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);c
   if(stand)return"";if(!(ios||window._canInstall))return"";
   return `<button class="install show" id="installBtn">📲 홈 화면에 두면 앱처럼 열려요</button>`}
 
-function render(){navHTML();const a=document.getElementById("app");const v=S.view||"home";
+function render(){maybeSeedOpen();navHTML();const a=document.getElementById("app");const v=S.view||"home";
   if(v==="home")a.innerHTML=viewHome();
   else if(v==="cards")a.innerHTML=viewCards();
   else if(v==="quiz")a.innerHTML=viewQuizStart();
@@ -936,7 +1019,7 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
       ${none?`<button type="button" class="chip ${lp==="__none__"?"on":""}" data-lpos="__none__">미분류<span class="c">${none}</span></button>`:""}
     </div>
     ${subBar}
-    ${!q&&lp&&lp!=="__none__"&&packSubs(lp).length?(ls&&ls!=="__none__"?(hasPack(lp,ls)?`<button class="btn ghost block" data-pack="${esc(ls)}" data-ppos="${lp}" style="margin:0 0 10px">📦 기본 단어 넣기 · ${esc(ls)}</button>`:""):`<button class="btn ghost block" id="packMenu" style="margin:0 0 10px">📦 기본 단어 넣기</button>`):""}
+    ${!q&&lp&&lp!=="__none__"&&packSubs(lp).length?(ls&&ls!=="__none__"?(packSubMatch(lp,ls)?`<button class="pack-again" data-pack="${esc(ls)}" data-ppos="${lp}">기본 단어 다시 넣기</button>`:""):`<button class="pack-again" id="packMenu">기본 단어 다시 넣기</button>`):""}
     ${!q&&lp==="n"&&genderEnabled()?`<div class="picks hscroll">
       <button type="button" class="chip ${!S.listGender?"on":""}" data-lgen="">성수 전체</button>
       <button type="button" class="chip ${S.listGender==="m"?"on":""}" data-lgen="m">남성 m.</button>
@@ -952,7 +1035,9 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
       ${w.pos==="v"?`<button class="go" data-conj="${w.id}">변화</button>`:""}
     </div>`}).join(""):`<div class="empty">${q?"찾는 단어가 없어.":"이 칸은 아직 비어 있어."}</div>`}`}
 
-function openConj(id,mode){S.conjId=id;S.view=mode==="rev"?"conjrev":"conj";S.revealed={};render()}
+function openConj(id,mode){S.conjId=id;S.view=mode==="rev"?"conjrev":"conj";S.revealed={};
+  const w=words().find(x=>x.id===id);if(w&&w.pos==="v")wikiNow(w);
+  render()}
 function conjWord(){return words().find(w=>w.id===S.conjId)}
 function viewConj(){const w=conjWord();if(!w)return go("list"),"";
   const sc=schema();if(!w.vgroup&&isFr())w.vgroup=guessGroup(w.word,L());
@@ -964,9 +1049,9 @@ function viewConj(){const w=conjWord();if(!w)return go("list"),"";
         <div class="field" style="margin:0"><label>сов. (완료)</label><input data-aspect="pf" value="${esc(w.aspectPf||"")}" placeholder="написать"></div></div>`:""}
       ${sc.groups.length?`<div class="lbl" style="margin-top:8px">그룹</div><div class="picks">${sc.groups.map(g=>`<button type="button" class="chip ${w.vgroup===g.id?"on":""}" data-vgroup="${g.id}">${g.name}</button>`).join("")}</div>`:""}
     </div>
-    ${wikiLangId()?`<button class="btn primary block" id="wikiBtn" style="margin-bottom:8px" ${wikiBusy.has(w.id)?"disabled":""}>${wikiBusy.has(w.id)?"가져오는 중…":"🌐 인터넷에서 가져오기"}</button>`:""}
+    ${wikiLangId()?`<button class="pack-again" id="wikiBtn" ${wikiBusy.has(w.id)?"disabled":""}>${wikiBusy.has(w.id)?"가져오는 중…":"🔄 다시 가져오기"}</button>`:""}
     ${autoable?`<button class="btn ghost block" id="autoFillBtn" style="margin-bottom:8px">규칙으로 채우기</button>`:""}
-    ${wikiLangId()?`<p class="hint" style="margin:0 0 12px">위키낱말사전(Wiktionary)에서 변화표를 가져와. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, <span class="ab">자동</span> 칸은 규칙으로 채운 거야. 다 고칠 수 있어.${isFr()&&w.aux?` 조동사: <b>${esc(w.aux)}</b>${w.aux==="être"?" (주어 성·수에 맞춰 -e/-s 붙여)":""}`:""}${isRu()&&w.ruTense==="fut"?" 완료상이라 첫 칸은 <b>미래</b>야.":""}</p>`:
+    ${wikiLangId()?`<p class="hint" style="margin:0 0 12px">표를 열면 위키낱말사전에서 빈 칸을 알아서 채워 줘. 니가 직접 적은 칸은 안 덮어써. 다른 동사는 온라인일 때 천천히 가져와. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, <span class="ab">자동</span> 칸은 규칙으로 채운 거야.${isFr()&&w.aux?` 조동사: <b>${esc(w.aux)}</b>${w.aux==="être"?" (주어 성·수에 맞춰 -e/-s 붙여)":""}`:""}${isRu()&&w.ruTense==="fut"?" 완료상이라 첫 칸은 <b>미래</b>야.":""}</p>`:
       (autoable?`<p class="hint" style="margin-top:-2px;margin-bottom:10px">점선 칸은 자동으로 채운 거야. 한 번만 확인해 줘.</p>`:`<p class="hint">이 언어는 칸 이름을 내가 정해 줘.</p>`)}
     ${sc.custom?`<button class="btn ghost block" id="editSchema" style="margin-bottom:10px">인칭 / 시제 이름 바꾸기</button>`:""}
     ${sc.tenses.map(t=>`<div class="tense"><h4>${esc(t.name)}</h4>
@@ -996,7 +1081,10 @@ function conjItems(filterWordId){const sc=schema();const items=[];const f=S.filt
   src.forEach(w=>{sc.tenses.forEach(t=>t.persons.forEach(p=>{const k=ck(t.id,p.id),val=(w.conj||{})[k];if(!val||!val.trim())return;
     const srs=(w.conjSRS||{})[k];items.push({wid:w.id,key:k,tense:t,person:p,val,due:!srs||!srs.due||srs.due<=today()})}))});
   return items}
-function startConjPrac(onlyId){let items=conjItems(onlyId);if(!items.length){toast("채워 둔 변화형이 없어. 표부터 적어 줘");return}
+async function startConjPrac(onlyId){const lid=wikiLangId();
+  if(lid&&onlyId){const w=words().find(x=>x.id===onlyId);if(w&&(needsWiki(w)||wikiBusy.has(w.id)||wikiInflight.has(w.id))){toast("변화표 가져오는 중이야");await wikiNow(w)}}
+  else if(lid){words().filter(w=>w.pos==="v"&&needsWiki(w)).slice(0,3).forEach(w=>wikiQueue(w))}
+  let items=conjItems(onlyId);if(!items.length){toast("채워 둔 변화형이 없어. 표부터 적어 줘");return}
   const due=items.filter(i=>i.due);S.prac={queue:shuffle((due.length?due:items).slice()),done:[],wait:false,typed:"",onlyId:onlyId||null};S.view="conjprac";render();
   setTimeout(()=>document.getElementById("pIn")?.focus(),40)}
 function viewConjPrac(){const P=S.prac;if(!P||!P.queue.length){
@@ -1051,7 +1139,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#pracAgain")){startConjPrac(S.prac?.onlyId||null);return}
   if(e.target.closest("#conjReveal")){openConj(S.conjId,"rev");return}
   if(e.target.closest("#backConj")){openConj(S.conjId);return}
-  if(e.target.closest("#wikiBtn")){const w=conjWord();if(w)wikiFill(w.id,wikiLangId(),{ui:true,overwrite:false});return}
+  if(e.target.closest("#wikiBtn")){const w=conjWord();if(w)wikiNow(w,{ui:true,overwrite:false,refresh:true});return}
   if(e.target.closest("#autoFillBtn")){const w=conjWord();const n=autoFill(w,false);save();render();toast(n?n+"칸을 채웠어. 점선 칸만 확인해 줘":"이미 다 채워져 있거나, 규칙으로 못 채워")}
   if(e.target.closest("#editSchema")){openSchema();return}
   const vg=e.target.closest("[data-vgroup]");if(vg){const w=conjWord();if(w){w.vgroup=vg.dataset.vgroup;if(w.vgroup==="er")autoFill(w,false);save();render()}return}
@@ -1151,9 +1239,10 @@ function openAddSub(pos){S._subPos=pos;openSheet(`<div class="grab"></div><h3>�
   <button class="btn primary block" type="submit" style="margin-top:8px">추가</button></form>`)}
 function saveSub(){const name=document.querySelector("#subForm [name=name]").value.trim();const pos=S._subPos;if(!name||!pos)return;
   S.customSub[pos]=S.customSub[pos]||[];if(!allSubs(pos).includes(name))S.customSub[pos].push(name);
-  S.lastSub=name;if(S.listPos===pos)S.listSub=name;save();closeSheet();
-  if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=pos;w.sub=name;save();openEdit(w.id);return}}
-  render();toast("「"+name+"」 칸을 만들었어")}
+  S.lastSub=name;S.view="list";S.listPos=pos;S.listSub=name;S.q="";
+  const msg=fillNewGroup(pos,name);save();closeSheet();
+  if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=pos;w.sub=name;save();openEdit(w.id);toast(msg);return}}
+  render();toast(msg)}
 
 function openBulk(){const pos=S.lastPos||"",sub=S.bulkSub!=null?S.bulkSub:S.lastSub||"";
   openSheet(`<div class="grab"></div><h3>여러 개 넣기 <button class="x" data-close aria-label="닫기">✕</button></h3>
@@ -1250,12 +1339,13 @@ function openBackup(){openSheet(`<div class="grab"></div><h3>백업 · 가져오
   <button class="btn primary block" id="exportBtn" type="button">내보내기</button>
   <button class="btn block" id="importBtn" type="button" style="margin-top:8px">가져오기</button>
   <input id="importFile" type="file" accept="application/json,.json" hidden>`)}
-function doExport(){const blob=new Blob([JSON.stringify({v:2,exported:new Date().toISOString(),cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub},null,2)],{type:"application/json"});
+function doExport(){const blob=new Blob([JSON.stringify({v:2,exported:new Date().toISOString(),cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{}},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="단어구름-백업-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("파일을 저장했어")}
 function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{
     const o=JSON.parse(r.result);if(!o||typeof o!=="object"||!o.words)throw new Error("형식");
     const langs=Array.isArray(o.langs)?o.langs:[];langs.forEach(l=>{if(l&&l.id&&l.name&&!S.langs.some(x=>x.id===l.id))S.langs.push({id:l.id,name:l.name,flag:l.flag||"🌍",tts:l.tts||"",persons:l.persons,tenses:l.tenses})});
     if(o.customSub)Object.keys(o.customSub).forEach(k=>{S.customSub[k]=S.customSub[k]||[];(o.customSub[k]||[]).forEach(s=>{if(!S.customSub[k].includes(s))S.customSub[k].push(s)})});
+    if(o.seeded&&typeof o.seeded==="object"){S.seeded=S.seeded||{};Object.keys(o.seeded).forEach(lid=>{S.seeded[lid]=S.seeded[lid]||{};if(o.seeded[lid]&&typeof o.seeded[lid]==="object")Object.assign(S.seeded[lid],o.seeded[lid])})}
     let add=0;const src=o.words||{};Object.keys(src).forEach(k=>{S.words[k]=S.words[k]||[];const ids=new Set(S.words[k].map(w=>w.id));
       (src[k]||[]).forEach(w=>{if(!w||!w.word||!w.meaning)return;if(w.id&&ids.has(w.id))return;if(!w.id)w.id=uid();
         if(w.pos==null)w.pos="";if(w.sub==null)w.sub="";w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};
@@ -1284,6 +1374,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 }
 S.view="home";
 render();
+scheduleWikiIdle(2500);
 </script>
 </body>
 </html>
