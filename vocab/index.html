@@ -791,7 +791,7 @@ function viewDecl(){const w=declWord();if(!w)return go("list"),"";const busy=dec
     ${declSlots(w).map(g=>`<div class="tense dcase"><h4>${esc(g.c.ko)}${g.c.ru?` <span class="cru">${esc(g.c.ru)}</span>`:""}</h4><p class="chint">${esc(g.c.hint)}</p>
       <div class="dgrid">${g.cells.map(c=>{const val=d[c.k]||"",auto=a[c.k]==="wiki"&&!!val;
         return `<div class="dc"><span class="pn">${esc(c.l)}${rq(c.k)}${auto?`<span class="ab wk">자동(위키)</span>`:""}</span>
-          <input class="${auto?"auto wk":""}" data-dk="${c.k}" value="${esc(val)}" placeholder="${busy?"…":""}" aria-label="${esc(declLabel(w,c.k))}" autocomplete="off" autocapitalize="off" spellcheck="false">${cellPhon(val)}</div>`}).join("")}</div>
+          <input class="${auto?"auto wk":""}" data-dk="${c.k}" value="${esc(val)}" placeholder="${busy?"…":""}" aria-label="${esc(declLabel(w,c.k))}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">${cellPhon(val)}</div>`}).join("")}</div>
     </div>`).join("")}
     <div class="row"><button class="btn ghost" id="declReveal">가리고 보기</button>
     <button class="btn primary" id="declPracThis">이 단어 연습</button></div>`}
@@ -834,7 +834,7 @@ function viewDeclPrac(){const P=S.dprac;if(!P||!P.queue.length){
       <div class="q">${esc(w.word)}</div><p class="hint">${esc(w.meaning)}</p><p class="hint chint" style="margin-top:6px">${esc(it.hint)}</p></div>
     ${P.wait?`<div class="feedback ${P.ok?"ok":"bad"}">${P.ok?"맞아! 「"+esc(it.val)+"」":"정답은 「"+esc(it.val)+"」"}</div>
       <div class="rate"><button class="btn no" data-drate="1">모름</button><button class="btn kinda" data-drate="3">애매</button><button class="btn know" data-drate="5">앎</button></div>`
-      :`<form id="declForm"><input id="dIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="강세는 안 찍어도 돼" value="${esc(P.typed||"")}">
+      :`<form id="declForm"><input id="dIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="강세는 안 찍어도 돼" value="${esc(P.typed||"")}">
         <button class="btn primary block" type="submit" style="margin-top:8px">확인</button></form>`}`}
 function checkDecl(){const P=S.dprac;if(!P||P.wait)return;const it=P.queue[0];const val=document.getElementById("dIn").value;if(!nfc(val).trim()){toast("답을 적어 줘");return}
   P.ok=declSame(val,it.val);P.wait=true;render()}
@@ -1161,7 +1161,7 @@ function viewHome(){const n=dueWords().length,tot=words().length,l=L();
     <form id="addForm" autocomplete="off">
       ${pickers("add",pos,sub,{gender:(pos==="n"&&genderEnabled())?(S.addGender||""):null})}
       ${pos==="v"&&isFr()?`<div class="lbl">동사 그룹</div><div class="picks">${[{id:"er",name:"-er"},{id:"ir",name:"-ir"},{id:"re",name:"-re"},{id:"irr",name:"불규칙"}].map(g=>`<button type="button" class="chip ${(S.lastGroup||"er")===g.id?"on":""}" data-setgroup="${g.id}">${g.name}</button>`).join("")}</div>`:""}
-      <div class="field"><div class="field-top"><label for="addWord">단어</label>${afButton("add")}</div><div class="with-btn"><input id="addWord" name="word" placeholder="예) toujours" required autocomplete="off" spellcheck="false" autocapitalize="off">${stressBtn("addWord")}</div></div>
+      <div class="field"><div class="field-top"><label for="addWord">단어</label>${afButton("add")}</div><div class="with-btn"><input id="addWord" name="word" placeholder="예) toujours" required autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">${stressBtn("addWord")}</div></div>
       <div class="af-note" id="afNote-add" role="status">${S._af&&S._af.ctx==="add"?S._af.html:""}</div>
       <div class="field"><label for="addMean">뜻 (한국어)</label><input id="addMean" name="mean" placeholder="예) 항상, 늘" required autocomplete="off"></div>
       <div class="field"><label for="addEx">예문 / 메모 (선택)</label><input id="addEx" name="ex" placeholder="Je bois toujours du café." autocomplete="off"></div>
@@ -1254,7 +1254,7 @@ function viewQuizRun(){const Q=S.quiz;if(!Q||!Q.queue.length)return viewQuizDone
     body=`<div class="choices">${Q.opts.map(o=>`<button data-pick="${esc(o.id)}" ${Q.wait?"disabled":""}>${esc(o.word)}</button>`).join("")}</div>`}
   else if(Q.mode==="gender"){prompt="이 명사에 맞는 관사는?";qtext=stripFrArticle(w.word);
     body=`<div class="choices"><button data-pick="m" ${Q.wait?"disabled":""}>le</button><button data-pick="f" ${Q.wait?"disabled":""}>la</button></div>`}
-  else body=`<form id="typeForm"><input id="qIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="단어를 적어줘" value="${esc(Q.typed||"")}">
+  else body=`<form id="typeForm"><input id="qIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="단어를 적어줘" value="${esc(Q.typed||"")}">
       <button class="btn primary block" type="submit" style="margin-top:8px" ${Q.wait?"disabled":""}>확인</button></form>`;
   return `<div class="head"><button class="back" data-go="quiz" aria-label="뒤로">←</button><h2>퀴즈</h2><span class="duepill">${n} / ${total}</span></div>
     <div class="qcard"><div class="prompt">${prompt}</div><div class="q">${esc(qtext)}</div>
@@ -1380,7 +1380,7 @@ function viewConjPrac(){const P=S.prac;if(!P||!P.queue.length){
       <div class="q">${esc(w.word)}</div><p class="hint">${esc(w.meaning)}</p></div>
     ${P.wait?`<div class="feedback ${P.ok?"ok":"bad"}">${P.ok?"맞아!":"정답은 「"+it.val+"」"}</div>
       <div class="rate"><button class="btn no" data-prate="1">모름</button><button class="btn kinda" data-prate="3">애매</button><button class="btn know" data-prate="5">앎</button></div>`
-      :`<form id="pracForm"><input id="pIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="이 인칭의 변화형을 적어 줘" value="${esc(P.typed||"")}">
+      :`<form id="pracForm"><input id="pIn" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="이 인칭의 변화형을 적어 줘" value="${esc(P.typed||"")}">
         <button class="btn primary block" type="submit" style="margin-top:8px">확인</button></form>`}`}
 
 document.addEventListener("click",e=>{
@@ -1599,7 +1599,7 @@ function openEdit(id,keep){const w=words().find(x=>x.id===id);if(!w)return;S._ed
   openSheet(`<div class="grab"></div><h3>단어 고치기 <button class="x" data-close aria-label="닫기">✕</button></h3>
     <form id="editForm">
       ${pickers("edit",w.pos||"",w.sub||"",{allowNone:true,gender:(w.pos==="n"&&genderEnabled())?(w.gender||""):null})}
-      <div class="field"><div class="field-top"><label for="editWord">단어</label>${afButton("edit")}</div><div class="with-btn"><input id="editWord" name="word" value="${esc(w.word)}" required data-autofocus autocomplete="off" spellcheck="false" autocapitalize="off">${stressBtn("editWord")}</div></div>
+      <div class="field"><div class="field-top"><label for="editWord">단어</label>${afButton("edit")}</div><div class="with-btn"><input id="editWord" name="word" value="${esc(w.word)}" required data-autofocus autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">${stressBtn("editWord")}</div></div>
       ${editPhonHTML(w.word)}
       <div class="af-note" id="afNote-edit" role="status">${S._af&&S._af.ctx==="edit"?S._af.html:""}</div>
       <div class="field"><label for="editMean">뜻</label><input id="editMean" name="mean" value="${esc(w.meaning)}" required autocomplete="off"></div>
