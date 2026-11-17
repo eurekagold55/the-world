@@ -131,6 +131,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
 .picks .chip .c{font-size:.75rem;color:var(--muted);margin-left:4px;font-weight:500}
 .lbl{font-size:.8rem;color:var(--muted);margin:4px 0 0}
 .crow{display:grid;grid-template-columns:92px 1fr;gap:8px;align-items:center;margin:0 0 8px}
+.cin{min-width:0}
+.crow .pn,.dc .pn{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
 .crow .pn{font-size:.85rem;color:var(--muted)}
 .crow input.auto{background:var(--accent-soft);border-color:#ddd8ee}
 .ab{font-size:.65rem;color:var(--accent);font-weight:600;margin-left:4px}
@@ -152,6 +154,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
 .bulk-preview li{word-break:break-word}
 /* ===== 1-bit void theme (black / white dither) ===== */
 @font-face{font-family:"Galmuri11";src:url("Galmuri11.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+/* Galmuri11엔 결합 강세 부호(U+0301 등)가 없어서, 같은 패밀리로 도트 강세만 따로 얹어 줌 */
+@font-face{font-family:"Galmuri11";src:url("stress-marks.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:block;unicode-range:U+0300-0301,U+0308}
 :root{
   --ink:#f2f2f2; --muted:#a8a8a8; --soft:#707070;
   --bg:#000; --card:#000; --card2:#0b0b0b; --line:#5c5c5c; --edge:#000;
@@ -303,6 +307,33 @@ input.sug{border:2px dashed #fff!important;background:linear-gradient(#000,#000)
 .dc input{width:100%;min-width:0;font-size:16px}
 .dc input.auto.wk{border:3px solid transparent;background:linear-gradient(#000,#000) padding-box,var(--chk) 0 0/2px 2px border-box;color:#fff}
 .dc .cell{min-height:44px}
+/* ---- v11: 발음 표기 · 규칙 ---- */
+.ph{display:block;font-size:.8rem;color:#bbb;letter-spacing:.02em;margin-top:1px;word-break:break-word}
+.ph u.sv,.cph u.sv,.ph-edit u.sv{text-decoration:none;color:#000;background:#fff;padding:0 1px}
+.face .ph{font-size:1rem;margin-top:6px;text-align:center}
+.feedback .ph{display:inline;font-size:.85em;margin-left:4px}
+.cph{display:block;font-size:.68rem;color:#aaa;margin-top:2px;min-height:1em;word-break:break-word}
+.ph-edit{font-size:.82rem;color:#bbb;margin:-4px 0 10px}
+.ph-edit.none{color:#777}
+.rules{margin:0 0 12px;border:2px solid #fff;background:#000;padding:0}
+.rules summary{list-style:none;cursor:pointer;padding:10px 12px;font-weight:600;color:#fff;min-height:44px;display:flex;align-items:center;gap:6px}
+.rules summary::-webkit-details-marker{display:none}
+.rules summary::after{content:"▼";margin-left:auto;font-size:.7rem;color:#888}
+.rules:not([open]) summary::after{content:"▶"}
+.rules ul{margin:0;padding:0 12px 10px 26px;font-size:.8rem;line-height:1.5;color:#ddd}
+.rules li{margin:0 0 4px}
+.rules .rnote{font-size:.7rem;color:#888;padding:0 12px 10px;margin:0}
+.rq{flex:0 0 auto;min-width:22px;min-height:22px;padding:0 4px;border:1px solid #888;background:#000;color:#ddd;font-size:.68rem;line-height:1;cursor:pointer}
+.rq:active,.rq.on{background:#fff;color:#000}
+.rpop{position:absolute;z-index:60;max-width:300px;background:#000;color:#fff;border:3px solid transparent;background:linear-gradient(#000,#000) padding-box,var(--chk) 0 0/2px 2px border-box;padding:10px 12px;font-size:.8rem;line-height:1.5;box-shadow:4px 4px 0 #000}
+.rpop b{display:block;font-size:.72rem;color:#aaa;font-weight:400;margin-bottom:2px}
+.fadj{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 12px 10px}
+.fadj .fc{border:1px solid #555;padding:6px 8px;font-size:.85rem}
+.fadj .fc .pn{display:flex;align-items:center;justify-content:space-between;font-size:.68rem;color:#999;gap:4px}
+.setrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #333}
+.setrow input{width:24px;height:24px;min-height:0;flex:0 0 auto}
+.setrow label{flex:1;font-size:.9rem}
+.setrow .hint{display:block;margin-top:2px}
 </style>
 </head>
 <body>
@@ -310,6 +341,7 @@ input.sug{border:2px dashed #fff!important;background:linear-gradient(#000,#000)
 <nav class="nav" id="nav"></nav>
 <div class="toast" id="toast" role="status"></div>
 <script src="packs.js"></script>
+<script src="rules.js"></script>
 <script>
 const KEY="vocab-cloud-v1";
 const PRESETS=[{id:"fr",name:"프랑스어",flag:"🇫🇷",tts:"fr-FR"},{id:"ru",name:"러시아어",flag:"🇷🇺",tts:"ru-RU"},{id:"tr",name:"터키어",flag:"🇹🇷",tts:"tr-TR"}];
@@ -368,7 +400,7 @@ function migrate(s){s.customSub=s.customSub||{n:[],adj:[],v:[],adv:[],other:[]};
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&Array.isArray(s.langs)&&s.words)return migrate(s)}catch(e){}
   return migrate({cur:"fr",langs:PRESETS.map(l=>({...l})),words:{}})}
 let S=load();
-const save=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||""}));
+const save=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||"",prefs:S.prefs||{}}));
 save();
 const L=()=>S.langs.find(l=>l.id===S.cur)||S.langs[0];
 const words=()=>S.words[S.cur]||(S.words[S.cur]=[]);
@@ -411,6 +443,31 @@ function openSheet(html){closeSheet();const d=document.createElement("div");d.cl
 function isFr(l){l=l||L();return l.id==="fr"||l.tts==="fr-FR"}
 function isRu(l){l=l||L();return l.id==="ru"||l.tts==="ru-RU"}
 function isTr(l){l=l||L();return l.id==="tr"||l.tts==="tr-TR"}
+/* ---- v11: 발음 표기 + 규칙 ---- */
+function prefOn(k){return !(S.prefs&&S.prefs[k]===false)}
+function phonOf(word){if(!isRu()||!prefOn("phon")||!window.RU_PHON)return null;try{return RU_PHON.phon(word)}catch(_){return null}}
+function phonHTML(word,tag){const r=phonOf(word);if(!r)return"";tag=tag||"span";return `<${tag} class="ph" lang="ru">${r.html}</${tag}>`}
+function phonText(word){const r=phonOf(word);return r?r.text:""}
+function cellPhon(val){if(!isRu()||!prefOn("phon"))return"";const r=phonOf(val);return `<span class="cph" lang="ru">${r?r.html:""}</span>`}
+function editPhonHTML(word){if(!isRu()||!prefOn("phon"))return"";const r=phonOf(word);
+  return r?`<div class="ph-edit" id="phEdit" lang="ru">발음 ${r.html}</div>`:`<div class="ph-edit none" id="phEdit">[강세 정보 없음] · 강세 찍으면 발음이 보여</div>`}
+function rulesFor(w){if(!w||!prefOn("rules")||!window.RULES)return null;const lid=wikiLangId();if(lid!=="ru"&&lid!=="fr")return null;try{return RULES.explain(w,lid)}catch(e){console.warn(e);return null}}
+function rq(key){const rx=S._rx;if(!rx||!rx.cells||!rx.cells[key])return"";return `<button type="button" class="rq" data-rule="${esc(key)}" aria-label="규칙 보기">?</button>`}
+function rulesPanel(rx,extra){if(!rx||!rx.summary||!rx.summary.length)return"";
+  return `<details class="rules" open><summary>📖 규칙</summary><ul>${rx.summary.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>${extra||""}<p class="rnote">칸 옆 <b>?</b>를 누르면 그 꼴이 왜 그렇게 되는지 나와. 확실하지 않으면 일반 규칙만 보여 줘.</p></details>`}
+function closeRulePop(){document.getElementById("rpop")?.remove();document.querySelectorAll(".rq.on").forEach(b=>b.classList.remove("on"))}
+function showRulePop(btn){const k=btn.dataset.rule;const rx=S._rx;const t=rx&&rx.cells&&rx.cells[k];closeRulePop();if(!t)return;
+  btn.classList.add("on");const d=document.createElement("div");d.className="rpop";d.id="rpop";d.setAttribute("role","tooltip");
+  const i=t.indexOf(": ");d.innerHTML=i>0&&i<30?`<b>${esc(t.slice(0,i))}</b>${esc(t.slice(i+2))}`:esc(t);document.body.appendChild(d);
+  const r=btn.getBoundingClientRect(),vw=document.documentElement.clientWidth;const w=Math.min(300,vw-24);d.style.maxWidth=w+"px";
+  let left=r.left+window.scrollX-8;if(left+d.offsetWidth>vw-12+window.scrollX)left=vw-12-d.offsetWidth+window.scrollX;if(left<12)left=12;
+  d.style.left=left+"px";d.style.top=(r.bottom+window.scrollY+6)+"px"}
+function frAdjPanel(w){if(!isFr()||w.pos!=="adj"||!prefOn("rules")||!window.RULES)return"";const rx=RULES.frAdj(w.word);if(!rx)return"";S._rx=rx;const f=rx.forms;
+  const cell=(k,lab,v)=>`<div class="fc"><div class="pn">${lab}${rq(k)}</div>${esc(v)}</div>`;
+  return rulesPanel(rx,`<div class="fadj">${cell("ms","남성 단수",f.ms)}${cell("fs","여성 단수",f.fs)}${cell("mp","남성 복수",f.mp)}${cell("fp","여성 복수",f.fp)}${f.mv?cell("mv","남성 · 모음 앞",f.mv):""}</div>`)}
+function openSettings(){openSheet(`<div class="grab"></div><h3>설정 <button class="x" data-close aria-label="닫기">✕</button></h3>
+  <div class="setrow"><input type="checkbox" id="setPhon" ${prefOn("phon")?"checked":""}><label for="setPhon">러시아어 발음 표기 <span class="hint">단어 옆에 [малако́]처럼 실제 소리 (강세 없는 о→а, е/я→и 등)</span></label></div>
+  <div class="setrow"><input type="checkbox" id="setRules" ${prefOn("rules")?"checked":""}><label for="setRules">📖 규칙 설명 <span class="hint">변화표 위 규칙 요약 + 칸마다 ? 설명</span></label></div>`)}
 function schema(l){l=l||L();
   if(isFr(l))return{tenses:[{id:"pres",name:"présent",persons:FR_P},{id:"pc",name:"passé composé",persons:FR_P},{id:"fut",name:"futur simple",persons:FR_P}],groups:[{id:"er",name:"-er"},{id:"ir",name:"-ir"},{id:"re",name:"-re"},{id:"irr",name:"불규칙"}]};
   if(isRu(l))return{tenses:[{id:"pres",name:"현재 / 미래",persons:RU_P},{id:"past",name:"과거",persons:RU_PAST}],groups:[],aspect:true};
@@ -536,11 +593,15 @@ async function wikiFetch1(word,langId){const title=wikiTitle(word,langId);const 
   const res=langId==="fr"?frParse(sec,/^(se\s+|s['’]\s*)/i.test(nfc(word).trim())):langId==="ru"?ruParse(sec):trParse(sec);if(!res)return{notFound:true};
   wikiCachePut(langId,ckey,res);return res}
 function wikiLangId(l){l=l||L();return isFr(l)?"fr":isRu(l)?"ru":isTr(l)?"tr":""}
+const FR_ETRE_ONLY=["aller","venir","arriver","partir","entrer","naître","mourir","rester","tomber","devenir","revenir","parvenir","intervenir","survenir","décéder","redevenir","repartir","advenir"];
 function applyWiki(w,res,overwrite){w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};let n=0;
   Object.entries(res.forms||{}).forEach(([k,v])=>{
     if(!overwrite&&w.conj[k]&&(w.conjAuto[k]===false||!w.conjAuto[k]))return;
     w.conj[k]=v;w.conjAuto[k]="wiki";n++});
   if(res.aux)w.aux=res.aux;
+  /* 위키가 avoir/être 둘 다라고 해도, 목적어를 못 받는 이동 동사는 être로 (partir → je suis parti) */
+  if(res.aux==="avoir/être"&&res.pp&&FR_ETRE_ONLY.includes(stripFrArticle(nfc(w.word).toLowerCase().trim()))){const E={je:"je suis",tu:"tu es",il:"il est",nous:"nous sommes",vous:"vous êtes",ils:"ils sont"},ag={je:"(e)",tu:"(e)",il:"(e)",nous:"(e)s",vous:"(e)(s)",ils:"(e)s"};
+    Object.keys(E).forEach(p=>{const k="pc."+p;if(!overwrite&&w.conj[k]&&w.conjAuto[k]!=="wiki")return;w.conj[k]=E[p]+" "+res.pp+ag[p];w.conjAuto[k]="wiki"});w.aux="être"}
   if(res.aspect){if(res.aspect==="impf"){if(!w.aspectImp)w.aspectImp=w.word;if(!w.aspectPf&&res.pair&&res.pair.length)w.aspectPf=res.pair.join(" / ")}
     else{if(!w.aspectPf)w.aspectPf=w.word;if(!w.aspectImp&&res.pair&&res.pair.length)w.aspectImp=res.pair.join(" / ")}w.ruTense=res.tense||""}
   w.wikiAt=Date.now();return n}
@@ -703,7 +764,7 @@ function declNote(w){const i=w.declInfo||{};
   if(w.pos==="n"&&i.anim==="anim")return"활동체라 대격이 생격이랑 같아져 (남성 단수 · 모든 복수).";
   if(w.pos==="adj")return"대격 남성·복수는 꾸미는 명사가 활동체면 생격 꼴, 아니면 주격 꼴이야.";
   return""}
-function viewDecl(){const w=declWord();if(!w)return go("list"),"";const busy=declBusy.has(w.id);const d=w.decl||{},a=w.declAuto||{};
+function viewDecl(){const w=declWord();if(!w)return go("list"),"";const busy=declBusy.has(w.id);const d=w.decl||{},a=w.declAuto||{};S._rx=rulesFor(w);
   const note=declNote(w);
   return `<div class="head"><button class="back" data-go="list" aria-label="목록">←</button><h2>격변화</h2></div>
     <div class="hero" style="padding:16px">
@@ -712,10 +773,11 @@ function viewDecl(){const w=declWord();if(!w)return go("list"),"";const busy=dec
     </div>
     <button class="pack-again" id="declBtn" ${busy?"disabled":""}>${busy?"가져오는 중…":(w.declAt?"🔄 다시 가져오기":"🔄 위키에서 가져오기")}</button>
     <p class="hint" style="margin:0 0 12px">표를 열면 위키낱말사전에서 빈 칸을 알아서 채워 줘. 니가 직접 적은 칸은 안 덮어써. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, 연습할 땐 강세 안 찍어도 정답이야.${note?" "+esc(note):""}</p>
+    ${rulesPanel(S._rx)}
     ${declSlots(w).map(g=>`<div class="tense dcase"><h4>${esc(g.c.ko)}${g.c.ru?` <span class="cru">${esc(g.c.ru)}</span>`:""}</h4><p class="chint">${esc(g.c.hint)}</p>
       <div class="dgrid">${g.cells.map(c=>{const val=d[c.k]||"",auto=a[c.k]==="wiki"&&!!val;
-        return `<label class="dc"><span class="pn">${esc(c.l)}${auto?`<span class="ab wk">자동(위키)</span>`:""}</span>
-          <input class="${auto?"auto wk":""}" data-dk="${c.k}" value="${esc(val)}" placeholder="${busy?"…":""}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>`}).join("")}</div>
+        return `<div class="dc"><span class="pn">${esc(c.l)}${rq(c.k)}${auto?`<span class="ab wk">자동(위키)</span>`:""}</span>
+          <input class="${auto?"auto wk":""}" data-dk="${c.k}" value="${esc(val)}" placeholder="${busy?"…":""}" aria-label="${esc(declLabel(w,c.k))}" autocomplete="off" autocapitalize="off" spellcheck="false">${cellPhon(val)}</div>`}).join("")}</div>
     </div>`).join("")}
     <div class="row"><button class="btn ghost" id="declReveal">가리고 보기</button>
     <button class="btn primary" id="declPracThis">이 단어 연습</button></div>`}
@@ -1096,6 +1158,7 @@ function viewHome(){const n=dueWords().length,tot=words().length,l=L();
   </section>
   <div class="more">
     <button type="button" id="backupBtn">💾 백업 · 가져오기</button>
+    <button type="button" id="settingsBtn">⚙️ 설정</button>
     <button type="button" id="howInstall" class="hint">이 앱을 폰에 설치하려면</button>
   </div>`}
 
@@ -1135,14 +1198,14 @@ function viewCards(){
     <div class="deck"><div class="flash ${sess.flipped?"flip":""}" id="flash">
       <div class="face">
         <button class="spk" data-speak="${esc(w.word)}" aria-label="발음 듣기">🔊</button>
-        <div class="w">${esc(w.word)}${genderBadge(w)}</div>
+        <div class="w">${esc(w.word)}${genderBadge(w)}</div>${phonHTML(w.word,"div")}
         <div class="tap">탭해서 뒤집기</div>
       </div>
       <div class="face back">
         <button class="spk" data-speak="${esc(w.word)}" aria-label="발음 듣기">🔊</button>
         <div class="m">${esc(w.meaning)}</div>
         ${w.ex?`<div class="ex">${esc(w.ex)}</div>`:""}
-        <div class="tap" style="opacity:.5">${esc(w.word)}</div>
+        <div class="tap" style="opacity:.5">${esc(w.word)} ${phonText(w.word)?`<span lang="ru">${esc(phonText(w.word).replace(/\u0301/g,""))}</span>`:""}</div>
       </div>
     </div></div>
     <div class="rate">
@@ -1231,7 +1294,7 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
     ${!q&&lp==="v"?`<button class="btn ghost block" id="conjPracStart" style="margin:0 0 10px" ${ws.some(w=>w.pos==="v")?"":"disabled"}>이 범위 동사 변화 연습</button>`:""}
     ${arr.length?arr.map(w=>{const m=mastery(w);return `<div class="item">
       <button class="meta" data-edit="${w.id}" style="background:none;box-shadow:none;padding:0;min-height:44px;display:block;width:100%;text-align:left">
-        <div class="w">${esc(w.word)}${genderBadge(w)}</div><div class="m">${esc(w.meaning)}</div>
+        <div class="w">${esc(w.word)}${genderBadge(w)}</div>${phonHTML(w.word)}<div class="m">${esc(w.meaning)}</div>
         <div class="tag">${posName(w.pos)}${w.sub?" · "+esc(w.sub):(!w.pos?"":"")} </div>
         <div class="dots" aria-label="숙련도 ${m}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=m?(m>=5?"ok":"on"):""}"></i>`).join("")}</div>
       </button>
@@ -1243,7 +1306,7 @@ function openConj(id,mode){S.conjId=id;S.view=mode==="rev"?"conjrev":"conj";S.re
   render()}
 function conjWord(){return words().find(w=>w.id===S.conjId)}
 function viewConj(){const w=conjWord();if(!w)return go("list"),"";
-  const sc=schema();if(!w.vgroup&&isFr())w.vgroup=guessGroup(w.word,L());
+  const sc=schema();S._rx=rulesFor(w);if(!w.vgroup&&isFr())w.vgroup=guessGroup(w.word,L());
   const autoable=canAuto(w);
   return `<div class="head"><button class="back" data-go="list" aria-label="목록">←</button><h2>동사 변화</h2></div>
     <div class="hero" style="padding:16px">
@@ -1256,11 +1319,12 @@ function viewConj(){const w=conjWord();if(!w)return go("list"),"";
     ${autoable?`<button class="btn ghost block" id="autoFillBtn" style="margin-bottom:8px">규칙으로 채우기</button>`:""}
     ${wikiLangId()?`<p class="hint" style="margin:0 0 12px">표를 열면 위키낱말사전에서 빈 칸을 알아서 채워 줘. 니가 직접 적은 칸은 안 덮어써. 다른 동사는 온라인일 때 천천히 가져와. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, <span class="ab">자동</span> 칸은 규칙으로 채운 거야.${isFr()&&w.aux?` 조동사: <b>${esc(w.aux)}</b>${w.aux==="être"?" (주어 성·수에 맞춰 -e/-s 붙여)":""}`:""}${isRu()&&w.ruTense==="fut"?" 완료상이라 첫 칸은 <b>미래</b>야.":""}</p>`:
       (autoable?`<p class="hint" style="margin-top:-2px;margin-bottom:10px">점선 칸은 자동으로 채운 거야. 한 번만 확인해 줘.</p>`:`<p class="hint">이 언어는 칸 이름을 내가 정해 줘.</p>`)}
+    ${rulesPanel(S._rx)}
     ${sc.custom?`<button class="btn ghost block" id="editSchema" style="margin-bottom:10px">인칭 / 시제 이름 바꾸기</button>`:""}
     ${sc.tenses.map(t=>`<div class="tense"><h4>${esc(t.name)}</h4>
       ${t.persons.map(p=>{const k=ck(t.id,p.id),val=w.conj[k]||"",auto=!!w.conjAuto[k]&&!!val;
-        return `<div class="crow"><div class="pn">${esc(p.name)}${auto?(w.conjAuto[k]==="wiki"?`<span class="ab wk">자동(위키)</span>`:`<span class="ab">자동</span>`):""}</div>
-          <input class="${auto?(w.conjAuto[k]==="wiki"?"auto wk":"auto"):""}" data-ck="${k}" value="${esc(val)}" placeholder="${esc(p.name)}"></div>`}).join("")}
+        return `<div class="crow"><div class="pn">${esc(p.name)}${rq(k)}${auto?(w.conjAuto[k]==="wiki"?`<span class="ab wk">자동(위키)</span>`:`<span class="ab">자동</span>`):""}</div>
+          <div class="cin"><input class="${auto?(w.conjAuto[k]==="wiki"?"auto wk":"auto"):""}" data-ck="${k}" value="${esc(val)}" placeholder="${esc(p.name)}">${cellPhon(val)}</div></div>`}).join("")}
     </div>`).join("")}
     <div class="row"><button class="btn ghost" id="conjReveal">가리고 보기</button>
     <button class="btn primary" id="pracThis">이 동사 연습</button></div>`}
@@ -1332,6 +1396,9 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#addLang")){openAddLang();return}
   if(e.target.closest("#bulkBtn")){openBulk();return}
   if(e.target.closest("#backupBtn")){openBackup();return}
+  if(e.target.closest("#settingsBtn")){openSettings();return}
+  const rqb=e.target.closest("[data-rule]");if(rqb){e.preventDefault();e.stopPropagation();if(rqb.classList.contains("on"))closeRulePop();else showRulePop(rqb);return}
+  if(!e.target.closest("#rpop"))closeRulePop();
   if(e.target.closest("#howInstall")||e.target.closest("#installBtn")){handleInstall();return}
   if(e.target.closest("#studyAll")){S.sess={queue:shuffle(byFilter(words(),S.filter||{}).slice()),done:[],extra:{},flipped:false};render();return}
   if(e.target.closest("#quizMc")){startQuiz("mc");return}
@@ -1407,10 +1474,13 @@ document.addEventListener("input",e=>{
   if(e.target.id==="dIn"&&S.dprac)S.dprac.typed=e.target.value;
   if(e.target.dataset&&e.target.dataset.dk){const w=declWord();if(!w)return;const k=e.target.dataset.dk;w.decl=w.decl||{};w.declAuto=w.declAuto||{};w.decl[k]=nfc(e.target.value);w.declAuto[k]=false;e.target.classList.remove("auto","wk");e.target.closest(".dc")?.querySelector(".ab")?.remove();save()}
   if(e.target.dataset.ck){const w=conjWord();if(!w)return;const k=e.target.dataset.ck;w.conj[k]=nfc(e.target.value);w.conjAuto[k]=false;e.target.classList.remove("auto","wk");save()}
+  if(e.target.dataset&&(e.target.dataset.ck||e.target.dataset.dk)){const c=e.target.parentElement&&e.target.parentElement.querySelector(".cph");if(c){const r=phonOf(e.target.value);c.innerHTML=r?r.html:""}}
+  if(e.target.id==="editWord"){const pe=document.getElementById("phEdit");if(pe){const r=phonOf(e.target.value);pe.className="ph-edit"+(r?"":" none");pe.innerHTML=r?"발음 "+r.html:"[강세 정보 없음] · 강세 찍으면 발음이 보여"}}
   if(e.target.dataset.aspect){const w=conjWord();if(!w)return;if(e.target.dataset.aspect==="imp")w.aspectImp=nfc(e.target.value);else w.aspectPf=nfc(e.target.value);save()}
 });
 document.addEventListener("focusin",e=>{if(e.target&&(e.target.dataset.ck||e.target.id==="addWord"||e.target.id==="editWord"||e.target.id==="qIn"||e.target.id==="pIn"||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"))S._stressEl=e.target});
-document.addEventListener("change",e=>{if(e.target.id==="importFile")doImport(e.target.files[0]);if(e.target.dataset&&e.target.dataset.pk!=null)paintPackCount()});
+document.addEventListener("change",e=>{if(e.target.id==="setPhon"||e.target.id==="setRules"){S.prefs=S.prefs||{};S.prefs[e.target.id==="setPhon"?"phon":"rules"]=e.target.checked;save();render();return}
+  if(e.target.id==="importFile")doImport(e.target.files[0]);if(e.target.dataset&&e.target.dataset.pk!=null)paintPackCount()});
 document.addEventListener("focusout",e=>{const id=e.target&&e.target.id;if(id!=="addWord"&&id!=="editWord")return;
   const rel=e.relatedTarget;if(rel&&rel.closest&&(rel.closest("[data-af]")||rel.closest("[data-stress]")))return;
   const ctx=id==="addWord"?"add":"edit";setTimeout(()=>runAutoFill(ctx,"blur"),150)});
@@ -1428,7 +1498,7 @@ function finishQ(ok,w,picked){const Q=S.quiz;Q.wait=true;
   else{if(ok){Q.correct++;grade(w,5)}else{Q.wrong++;grade(w,1);Q.retry.push(w)}
     const arr=words();const i=arr.findIndex(x=>x.id===w.id);if(i>=0)arr[i]=w;save()}
   render();const el=document.getElementById("fb");if(el){
-    el.textContent=ok?"맞아!":(Q.mode==="gender"?`정답은 ${w.gender==="m"?"le":"la"} · ${w.word}`:"정답은 「"+w.word+"」");
+    el.innerHTML=(ok?"맞아! "+(Q.mode==="gender"?"":"「"+esc(w.word)+"」"):esc(Q.mode==="gender"?`정답은 ${w.gender==="m"?"le":"la"} · ${w.word}`:"정답은 「"+w.word+"」"))+phonHTML(w.word);
     el.classList.add(ok?"ok":"bad")}
   if(Q.mode==="mc"||Q.mode==="gender"){const right=Q.mode==="gender"?w.gender:w.id;
     document.querySelectorAll("[data-pick]").forEach(b=>{b.disabled=true;if(b.dataset.pick===right)b.classList.add("ok");if(picked&&b.dataset.pick===picked&&!ok)b.classList.add("bad")})}}
@@ -1516,9 +1586,11 @@ function openEdit(id,keep){const w=words().find(x=>x.id===id);if(!w)return;S._ed
     <form id="editForm">
       ${pickers("edit",w.pos||"",w.sub||"",{allowNone:true,gender:(w.pos==="n"&&genderEnabled())?(w.gender||""):null})}
       <div class="field"><div class="field-top"><label for="editWord">단어</label>${afButton("edit")}</div><div class="with-btn"><input id="editWord" name="word" value="${esc(w.word)}" required data-autofocus autocomplete="off" spellcheck="false" autocapitalize="off">${stressBtn("editWord")}</div></div>
+      ${editPhonHTML(w.word)}
       <div class="af-note" id="afNote-edit" role="status">${S._af&&S._af.ctx==="edit"?S._af.html:""}</div>
       <div class="field"><label for="editMean">뜻</label><input id="editMean" name="mean" value="${esc(w.meaning)}" required autocomplete="off"></div>
       <div class="field"><label>예문 / 메모</label><input name="ex" value="${esc(w.ex||"")}" autocomplete="off"></div>
+      ${frAdjPanel(w)}
       ${w.pos==="v"?`<button class="btn ghost block" type="button" data-conj="${w.id}" style="margin-bottom:8px">동사 변화 표</button>`:""}
       ${declOn(w)?`<button class="btn ghost block" type="button" data-decl="${w.id}" style="margin-bottom:8px">격변화 표</button>`:""}
       <button class="btn primary block" type="submit">저장</button>
