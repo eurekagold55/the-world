@@ -293,6 +293,16 @@ input.sug{border:2px dashed #fff!important;background:linear-gradient(#000,#000)
 .pack-again:active{color:#fff;border-color:#fff}
 .bulk-af{margin:8px 0 0;padding:10px;border:2px dashed #666;font-size:.85rem;color:var(--muted)}
 .bulk-af b{color:#fff}
+/* declension */
+.dcase h4 .cru{color:var(--muted);font-size:.8rem;margin-left:4px}
+.chint{font-size:.74rem;color:var(--muted);margin:-6px 0 8px;line-height:1.4}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dc{display:flex;flex-direction:column;gap:3px;min-width:0;margin:0}
+.dc .pn{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:18px}
+.dc .pn .ab{margin-left:0;font-size:.58rem;line-height:1.3}
+.dc input{width:100%;min-width:0;font-size:16px}
+.dc input.auto.wk{border:3px solid transparent;background:linear-gradient(#000,#000) padding-box,var(--chk) 0 0/2px 2px border-box;color:#fff}
+.dc .cell{min-height:44px}
 </style>
 </head>
 <body>
@@ -389,6 +399,7 @@ function guessGroup(word,lang){const w=(word||"").toLowerCase().trim();if(!isFr(
 function mkWord(word,meaning,ex,pos,sub,gender,opts){const d=detectGender(word);
   const w={id:uid(),word:d.word,meaning:nfc(meaning).trim(),ex:nfc(ex||"").trim(),created:new Date().toISOString(),ease:2.5,interval:0,reps:0,lapses:0,due:today(),last:null,pos:pos||"",sub:sub||"",gender:d.gender||gender||"",conj:{},conjAuto:{},conjSRS:{},vgroup:"",aspectImp:"",aspectPf:""};
   if(w.pos==="v"){w.vgroup=guessGroup(w.word,L());autoFill(w,false);if(!(opts&&opts.lazyWiki))wikiQueue(w)}
+  if(declOn(w))scheduleWikiIdle(WIKI_IDLE_GAP);
   return w}
 function addOne(word,meaning,ex,pos,sub,gender){const d=detectGender(word);if(!d.word||!nfc(meaning).trim())return false;words().push(mkWord(d.word,meaning,ex,pos,sub,d.gender||gender||""));save();return true}
 const shuffle=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x};
@@ -562,12 +573,199 @@ function scheduleWikiIdle(delay){clearTimeout(scheduleWikiIdle._t);scheduleWikiI
 function wikiIdleTick(){
   if(navigator.onLine===false){window.addEventListener("online",()=>scheduleWikiIdle(400),{once:true});return}
   const lid=wikiLangId();if(!lid)return;
-  if(wikiBusy.size){scheduleWikiIdle(WIKI_IDLE_GAP);return}
+  if(wikiBusy.size||(typeof declBusy!=="undefined"&&declBusy.size)){scheduleWikiIdle(WIKI_IDLE_GAP);return}
   const next=(S.words[lid]||[]).find(w=>needsWiki(w)&&!wikiBusy.has(w.id));
-  if(!next)return;
-  wikiNow(next).finally(()=>scheduleWikiIdle(WIKI_IDLE_GAP))}
+  if(next){wikiNow(next).finally(()=>scheduleWikiIdle(WIKI_IDLE_GAP));return}
+  if(lid!=="ru")return;
+  const dn=(S.words[lid]||[]).find(w=>needsDecl(w)&&!declBusy.has(w.id));
+  if(dn)declNow(dn).finally(()=>scheduleWikiIdle(WIKI_IDLE_GAP))}
 window.addEventListener("online",()=>scheduleWikiIdle(400));
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleWikiIdle(600)});
+
+/* ===== Russian declension (격변화) · en.wiktionary ru-noun-table / ru-decl-adj ===== */
+const DECL_KEY="vocab-cloud-decl-v1",DECL_VER=1;
+const CASES=[
+  {id:"nom",ko:"주격",ru:"Им.",hint:"~이/가 · 사전에 나오는 기본형"},
+  {id:"gen",ko:"생격",ru:"Род.",hint:"~의 · 없다(нет)·수량(много) · из/у/без/для 뒤"},
+  {id:"dat",ko:"여격",ru:"Дат.",hint:"~에게 · к/по 뒤 · мне нравится 구문"},
+  {id:"acc",ko:"대격",ru:"Вин.",hint:"~을/를 · 어디로(в/на + 방향)"},
+  {id:"ins",ko:"조격",ru:"Твор.",hint:"~로(도구) · ~와 함께(с) · 직업·신분"},
+  {id:"pre",ko:"전치격",ru:"Пред.",hint:"о/в/на 뒤 · ~에 대해, ~에서"}];
+const DGEN={m:"남성",n:"중성",f:"여성",p:"복수"};
+function isDeclPos(w){return !!w&&(w.pos==="n"||w.pos==="adj")}
+function declOn(w){return isDeclPos(w)&&wikiLangId()==="ru"}
+function declCacheGet(k){try{const c=JSON.parse(localStorage.getItem(DECL_KEY)||"{}");const e=c[k];
+  if(e&&e.v===DECL_VER&&(Date.now()-e.t)<1000*60*60*24*90)return e}catch(_){}return null}
+function declCachePut(k,data){try{const c=JSON.parse(localStorage.getItem(DECL_KEY)||"{}");c[k]={...data,v:DECL_VER,t:Date.now()};
+  const ks=Object.keys(c);if(ks.length>250)ks.sort((a,b)=>c[a].t-c[b].t).slice(0,ks.length-250).forEach(x=>delete c[x]);
+  localStorage.setItem(DECL_KEY,JSON.stringify(c))}catch(_){}}
+/* slots shown in the table, in order */
+function declSlots(w){const info=w.declInfo||{};const out=[];
+  if(w.pos==="adj"){
+    CASES.forEach(c=>{const cells=c.id==="acc"
+      ?[{k:"acc.m.an",l:"남성 · 활동체"},{k:"acc.m.in",l:"남성 · 불활동"},{k:"acc.n",l:"중성"},{k:"acc.f",l:"여성"},{k:"acc.p.an",l:"복수 · 활동체"},{k:"acc.p.in",l:"복수 · 불활동"}]
+      :["m","n","f","p"].map(g=>({k:c.id+"."+g,l:DGEN[g]}));out.push({c,cells})});
+    if(!info.indecl)out.push({c:{id:"short",ko:"짧은 꼴",ru:"кратк.",hint:"술어로만 써 (он красив = 그는 잘생겼어)"},cells:["m","n","f","p"].map(g=>({k:"short."+g,l:DGEN[g]})),opt:true});
+  }else{
+    const nums=info.plOnly?["p"]:info.sgOnly?["s"]:["s","p"];
+    CASES.forEach(c=>out.push({c,cells:nums.map(n=>({k:c.id+"."+n,l:n==="s"?"단수":"복수"}))}));
+    const ex=[];if((w.decl||{})["loc.s"])ex.push({k:"loc.s",l:"처소격 (в/на 뒤)"});if((w.decl||{})["par.s"])ex.push({k:"par.s",l:"부분생격 (조금)"});
+    if(ex.length)out.push({c:{id:"extra",ko:"특수형",ru:"",hint:"몇몇 명사만 따로 있는 꼴 (в саду́, ча́ю)"},cells:ex,opt:true});
+  }
+  return out}
+function declLabel(w,k){for(const g of declSlots(w))for(const c of g.cells)if(c.k===k)return(g.c.id==="extra"?"":g.c.ko+" ")+c.l;return k}
+/* ---- parse ---- */
+function declTags(el){const m=Array.from(el.classList).find(c=>/-form-of$/.test(c)&&c!=="form-of");return m?m.slice(0,-8):""}
+function declClean(v){v=nfc(String(v||"").replace(/[*△⁰¹²³⁴⁵⁶⁷⁸⁹]+/g,"").trim());
+  if(ruVowels(stripStress(v))<=1)v=stripStress(v);return v}
+function declKeys(tags,type){const p=tags.split("|");const anim=p.includes("an")?"an":p.includes("in")?"in":"";
+  const cs=["nom","gen","dat","acc","ins","pre","loc","par","short"].find(c=>p.includes(c));if(!cs)return[];
+  if(type==="n"){const num=p.includes("s")?"s":p.includes("p")?"p":"";if(!num||cs==="short")return[];return[cs+"."+num+(anim?"."+anim:"")]}
+  let gs=[];p.forEach(x=>{if(x==="m//n")gs.push("m","n");else if(x==="m"||x==="n"||x==="f")gs.push(x)});
+  if(!gs.length&&p.includes("p"))gs=["p"];if(!gs.length)return[];
+  return gs.map(g=>cs+"."+g+(cs==="acc"&&anim?"."+anim:""))}
+function ruDeclParse(sec,want){
+  const frames=Array.from(sec.querySelectorAll(".NavFrame")).filter(f=>{const h=f.querySelector(".NavHead");return h&&/^\s*Declension of/i.test(h.textContent)});
+  for(const fr of frames){const spans=Array.from(fr.querySelectorAll("table .form-of.lang-ru"));if(!spans.length)continue;
+    const tagsAll=spans.map(declTags);const isAdj=tagsAll.some(t=>/(^|\|)(m|f|m\/\/n)(\||$)/.test(t)&&/\|s$/.test(t));
+    const type=isAdj?"adj":"n";if(type!==want)continue;
+    const raw={};spans.forEach((s,i)=>{const t=tagsAll[i];const v=declClean(cellText(s));if(!v||v==="—"||v==="-")return;
+      declKeys(t,type).forEach(k=>{raw[k]=raw[k]||[];if(!raw[k].includes(v))raw[k].push(v)})});
+    const f={};Object.entries(raw).forEach(([k,a])=>f[k]=a.join(", "));
+    if(type==="adj"){["m","p"].forEach(g=>{const a="acc."+g;if(f[a]){if(!f[a+".an"])f[a+".an"]=f[a];if(!f[a+".in"])f[a+".in"]=f[a];delete f[a]}})}
+    else{["s","p"].forEach(n=>{const a=f["acc."+n+".an"],b=f["acc."+n+".in"];if((a||b)&&!f["acc."+n])f["acc."+n]=a&&b&&a!==b?a+" / "+b:(a||b);delete f["acc."+n+".an"];delete f["acc."+n+".in"]})}
+    if(!Object.keys(f).length)continue;
+    const head=fr.querySelector(".NavHead").textContent;const info={type};
+    if(type==="n"){info.anim=/\bbian\b/.test(head)?"both":/\banim\b/.test(head)?"anim":/\binan\b/.test(head)?"inan":"";
+      const hasS=Object.keys(f).some(k=>/\.s$/.test(k)&&!/^(loc|par)/.test(k)),hasP=Object.keys(f).some(k=>/\.p$/.test(k));
+      if(!hasS&&hasP)info.plOnly=1;else if(hasS&&!hasP)info.sgOnly=1;
+      const hls=Array.from(sec.querySelectorAll(".headword-line")).filter(h=>h.compareDocumentPosition(fr)&Node.DOCUMENT_POSITION_FOLLOWING);const hl=hls[hls.length-1];
+      if(hl){const gt=Array.from(hl.querySelectorAll(".gender abbr")).map(a=>a.getAttribute("title")||"").join(" ");info.g=/feminine/.test(gt)?"f":/masculine/.test(gt)?"m":/neuter/.test(gt)?"n":""}}
+    return{forms:f,info}}
+  /* indeclinable: no table, headword says so */
+  const hls=Array.from(sec.querySelectorAll(".headword-line"));
+  for(const hl of hls){if(!/indeclinable/i.test(hl.textContent))continue;
+    const h=hl.querySelector(".headword");const v=declClean(h?h.textContent:"");if(!v)continue;
+    const gt=Array.from(hl.querySelectorAll(".gender abbr")).map(a=>a.getAttribute("title")||"").join(" ");
+    const looksAdj=!gt;if((want==="adj")!==looksAdj)continue;
+    const f={};if(want==="adj")CASES.forEach(c=>["m","n","f","p"].forEach(g=>{if(c.id==="acc"&&(g==="m"||g==="p")){f["acc."+g+".an"]=v;f["acc."+g+".in"]=v}else f[c.id+"."+g]=v}));
+    else CASES.forEach(c=>["s","p"].forEach(n=>f[c.id+"."+n]=v));
+    return{forms:f,info:{type:want,indecl:1,g:/feminine/.test(gt)?"f":/masculine/.test(gt)?"m":/neuter/.test(gt)?"n":""}}}
+  return null}
+async function declFetch(word,pos,refresh){const title=wikiTitle(word,"ru");const key=pos+":"+title;
+  if(!refresh){const c=declCacheGet(key);if(c)return c}
+  if(navigator.onLine===false)throw new Error("offline");
+  const url="https://en.wiktionary.org/w/api.php?action=parse&format=json&formatversion=2&prop=text&redirects=1&origin=*&page="+encodeURIComponent(title);
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),12000);
+  let j;try{const r=await fetch(url,{signal:ctl.signal,cache:"no-store"});if(!r.ok)throw new Error("http "+r.status);j=await r.json()}finally{clearTimeout(to)}
+  if(j.error||!j.parse)return{notFound:true};
+  const sec=wikiSection(j.parse.text,"Russian");if(!sec)return{notFound:true};
+  const res=ruDeclParse(sec,pos==="adj"?"adj":"n");if(!res)return{notFound:true};
+  declCachePut(key,res);return res}
+function declApply(w,res,overwrite){w.decl=w.decl||{};w.declAuto=w.declAuto||{};let n=0;
+  Object.entries(res.forms||{}).forEach(([k,v])=>{if(!overwrite&&w.decl[k]&&w.declAuto[k]!=="wiki")return;
+    w.decl[k]=v;w.declAuto[k]="wiki";n++});
+  w.declInfo=res.info||{};w.declAt=Date.now();return n}
+const declBusy=new Set(),declInflight=new Map(),declCool=new Map();
+function needsDecl(w){if(!declOn(w)||w.declAt)return false;if(!nfc(w.word||"").trim())return false;
+  return Date.now()-(declCool.get(w.id)||0)>WIKI_COOL}
+function declNow(w,opts){opts=opts||{};if(!declOn(w))return Promise.resolve();
+  if(w.declAt&&!opts.refresh)return Promise.resolve();
+  if(declInflight.has(w.id))return declInflight.get(w.id);
+  const p=declFill(w.id,opts).catch(()=>{});declInflight.set(w.id,p);
+  return p.finally(()=>{if(declInflight.get(w.id)===p)declInflight.delete(w.id)})}
+async function declFill(wid,opts){opts=opts||{};const lid="ru";if(declBusy.has(wid))return;declBusy.add(wid);
+  const find=()=>(S.words[lid]||[]).find(x=>x.id===wid);const loud=opts.ui||opts.open;
+  if(S.view==="decl"&&S.declId===wid)render();
+  try{const w0=find();if(!w0)return;const pos=w0.pos;const res=await declFetch(w0.word,pos,!!opts.refresh);const w=find();if(!w||w.pos!==pos)return;
+    declCool.delete(wid);
+    if(res.notFound){if(!w.declAt)w.declAt=Date.now();save();if(loud)toast("위키에서 이 단어 격변화표를 못 찾았어 ㅠ 직접 적어 줘")}
+    else{const n=declApply(w,res,!!opts.overwrite);save();
+      if(opts.ui)toast(n?"위키에서 "+n+"칸 가져왔어!":"이미 직접 고친 칸이라 그대로 뒀어");
+      else if(opts.open&&res.info&&res.info.indecl)toast("격변화 안 하는 단어래. 모든 격이 똑같아")}}
+  catch(e){declCool.set(wid,Date.now());
+    if(loud)toast(navigator.onLine===false?"오프라인이라 격변화표를 못 가져왔어. 인터넷 되면 다시 열어 줘":"위키 연결이 잘 안 돼 ㅠ 조금 있다 🔄 눌러 줘")}
+  finally{declBusy.delete(wid);if((S.view==="decl"||S.view==="declrev")&&S.declId===wid)render();scheduleWikiIdle(WIKI_IDLE_GAP)}}
+/* ---- views ---- */
+function openDecl(id,mode){S.declId=id;S.view=mode==="rev"?"declrev":"decl";S.revealed={};
+  const w=words().find(x=>x.id===id);if(w&&needsDecl(w))declNow(w,{open:true});
+  render();window.scrollTo(0,0)}
+function declWord(){return words().find(w=>w.id===S.declId)}
+function declInfoLine(w){const i=w.declInfo||{};const bits=[];
+  if(w.pos==="n"){if(i.g)bits.push({m:"남성",f:"여성",n:"중성"}[i.g]);
+    if(i.anim==="anim")bits.push("활동체 (사람·동물)");else if(i.anim==="inan")bits.push("불활동체");else if(i.anim==="both")bits.push("활동/불활동 둘 다")}
+  else bits.push("형용사");
+  if(i.indecl)bits.push("불변 (격변화 안 함)");if(i.plOnly)bits.push("복수형만 있음");if(i.sgOnly)bits.push("단수형만 있음");
+  return bits.join(" · ")}
+function declNote(w){const i=w.declInfo||{};
+  if(i.indecl)return"이 단어는 격변화를 안 해. 모든 칸이 같은 모양이야.";
+  if(i.plOnly)return"복수형으로만 쓰는 명사라 복수 칸만 있어.";
+  if(w.pos==="n"&&i.anim==="anim")return"활동체라 대격이 생격이랑 같아져 (남성 단수 · 모든 복수).";
+  if(w.pos==="adj")return"대격 남성·복수는 꾸미는 명사가 활동체면 생격 꼴, 아니면 주격 꼴이야.";
+  return""}
+function viewDecl(){const w=declWord();if(!w)return go("list"),"";const busy=declBusy.has(w.id);const d=w.decl||{},a=w.declAuto||{};
+  const note=declNote(w);
+  return `<div class="head"><button class="back" data-go="list" aria-label="목록">←</button><h2>격변화</h2></div>
+    <div class="hero" style="padding:16px">
+      <div class="k" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${L().flag} ${esc(w.word)} · ${esc(w.meaning)}${stressBtn("")}</div>
+      <p class="hint" style="margin:6px 0 0">${esc(declInfoLine(w))}</p>
+    </div>
+    <button class="pack-again" id="declBtn" ${busy?"disabled":""}>${busy?"가져오는 중…":(w.declAt?"🔄 다시 가져오기":"🔄 위키에서 가져오기")}</button>
+    <p class="hint" style="margin:0 0 12px">표를 열면 위키낱말사전에서 빈 칸을 알아서 채워 줘. 니가 직접 적은 칸은 안 덮어써. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, 연습할 땐 강세 안 찍어도 정답이야.${note?" "+esc(note):""}</p>
+    ${declSlots(w).map(g=>`<div class="tense dcase"><h4>${esc(g.c.ko)}${g.c.ru?` <span class="cru">${esc(g.c.ru)}</span>`:""}</h4><p class="chint">${esc(g.c.hint)}</p>
+      <div class="dgrid">${g.cells.map(c=>{const val=d[c.k]||"",auto=a[c.k]==="wiki"&&!!val;
+        return `<label class="dc"><span class="pn">${esc(c.l)}${auto?`<span class="ab wk">자동(위키)</span>`:""}</span>
+          <input class="${auto?"auto wk":""}" data-dk="${c.k}" value="${esc(val)}" placeholder="${busy?"…":""}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>`}).join("")}</div>
+    </div>`).join("")}
+    <div class="row"><button class="btn ghost" id="declReveal">가리고 보기</button>
+    <button class="btn primary" id="declPracThis">이 단어 연습</button></div>`}
+function viewDeclReveal(){const w=declWord();if(!w)return go("list"),"";S.revealed=S.revealed||{};const d=w.decl||{};
+  return `<div class="head"><button class="back" id="backDecl" aria-label="뒤로">←</button><h2>가리고 보기</h2></div>
+    <p class="prog">${esc(w.word)} · ${esc(w.meaning)} · 칸을 눌러 답을 봐</p>
+    ${declSlots(w).map(g=>`<div class="tense dcase"><h4>${esc(g.c.ko)}${g.c.ru?` <span class="cru">${esc(g.c.ru)}</span>`:""}</h4><p class="chint">${esc(g.c.hint)}</p>
+      <div class="dgrid">${g.cells.map(c=>{const val=d[c.k]||"",on=S.revealed[c.k];
+        return `<div class="dc"><span class="pn">${esc(c.l)}</span><button type="button" class="cell ${on||!val?"":"hid"}" data-reveal="${c.k}" ${val?"":"disabled"}>${val?esc(val):"·"}</button></div>`}).join("")}</div></div>`).join("")}
+    <button class="btn block" id="backDecl">표로 돌아가기</button>`}
+/* ---- practice ---- */
+function declItems(onlyId,scope){scope=scope||{};const items=[];
+  let src=words().filter(w=>isDeclPos(w)&&!(w.declInfo&&w.declInfo.indecl));
+  if(onlyId)src=src.filter(w=>w.id===onlyId);
+  else if(scope.pos&&isDeclPos({pos:scope.pos}))src=byFilter(src,{pos:scope.pos,sub:scope.sub||undefined});
+  else if(scope.pos&&scope.pos!=="__none__")src=[];
+  src.forEach(w=>{const d=w.decl||{};declSlots(w).forEach(g=>g.cells.forEach(c=>{const val=d[c.k];if(!val||!val.trim())return;
+    if(c.k==="nom.s"||c.k==="nom.m"||(c.k==="nom.p"&&w.declInfo&&w.declInfo.plOnly))return;
+    const srs=(w.declSRS||{})[c.k];items.push({wid:w.id,key:c.k,label:(g.c.id==="extra"?"":g.c.ko+" ")+c.l,hint:g.c.hint,val,due:!srs||!srs.due||srs.due<=today()})}))});
+  return items}
+function declSame(a,val){const alts=String(val||"").split(/\s*[,\/]\s*/).filter(Boolean);if(!alts.length)return false;
+  const yo=s=>fold(s).replace(/ё/g,"е").replace(/е\u0308/g,"е");const x=yo(a);if(!x)return false;
+  return alts.some(v=>yo(v)===x)||yo(val)===x}
+async function startDeclPrac(onlyId,scope){
+  if(onlyId){const w=words().find(x=>x.id===onlyId);if(w&&(needsDecl(w)||declBusy.has(w.id)||declInflight.has(w.id))){toast("격변화표 가져오는 중이야");await declNow(w,{open:true})}}
+  let items=declItems(onlyId,scope);
+  if(!items.length){toast(onlyId?"이 단어는 채워 둔 격변화가 없어. 표부터 채워 줘":"아직 격변화표가 채워진 명사·형용사가 없어. 단어 하나 열어 줘, 온라인이면 알아서 가져와");scheduleWikiIdle(400);return}
+  const due=items.filter(i=>i.due);let q=shuffle((due.length?due:items).slice());if(!onlyId)q=q.slice(0,20);
+  S.dprac={queue:q,done:[],wait:false,typed:"",onlyId:onlyId||null,scope:scope||null};S.view="declprac";render();
+  setTimeout(()=>document.getElementById("dIn")?.focus(),40)}
+function viewDeclPrac(){const P=S.dprac;if(!P||!P.queue.length){
+  return `<div class="head"><button class="back" data-go="quiz" aria-label="뒤로">←</button><h2>격변화 연습</h2></div>
+    <div class="hero"><div class="k">결과</div><div class="n">${(P?.done||[]).filter(d=>d.ok).length}<small> 맞춤</small></div>
+    <p>${(P?.done||[]).length?`이번엔 ${(P.done||[]).length}칸을 봤어.`:"끝!"}</p>
+    <button class="btn primary block" id="declPracAgain">한 판 더</button>
+    <button class="btn ghost block" data-go="quiz" style="margin-top:8px">퀴즈로</button></div>`}
+  const it=P.queue[0],w=words().find(x=>x.id===it.wid)||{word:"?",meaning:""};const n=P.done.length+1,tot=P.done.length+P.queue.length;
+  return `<div class="head"><button class="back" data-go="quiz" aria-label="뒤로">←</button><h2>격변화 연습</h2><span class="duepill">${n} / ${tot}</span></div>
+    <div class="qcard"><div class="prompt">${esc(w.word)} · ${esc(it.label)} → ?</div>
+      <div class="q">${esc(w.word)}</div><p class="hint">${esc(w.meaning)}</p><p class="hint chint" style="margin-top:6px">${esc(it.hint)}</p></div>
+    ${P.wait?`<div class="feedback ${P.ok?"ok":"bad"}">${P.ok?"맞아! 「"+esc(it.val)+"」":"정답은 「"+esc(it.val)+"」"}</div>
+      <div class="rate"><button class="btn no" data-drate="1">모름</button><button class="btn kinda" data-drate="3">애매</button><button class="btn know" data-drate="5">앎</button></div>`
+      :`<form id="declForm"><input id="dIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="강세는 안 찍어도 돼" value="${esc(P.typed||"")}">
+        <button class="btn primary block" type="submit" style="margin-top:8px">확인</button></form>`}`}
+function checkDecl(){const P=S.dprac;if(!P||P.wait)return;const it=P.queue[0];const val=document.getElementById("dIn").value;if(!nfc(val).trim()){toast("답을 적어 줘");return}
+  P.ok=declSame(val,it.val);P.wait=true;render()}
+function rateDecl(q){const P=S.dprac;if(!P||!P.queue.length)return;const it=P.queue[0];const w=words().find(x=>x.id===it.wid);
+  if(w){w.declSRS=w.declSRS||{};const c=w.declSRS[it.key]||{ease:2.5,interval:0,reps:0,lapses:0,due:today(),last:null};grade(c,q);w.declSRS[it.key]=c;save()}
+  P.done.push({...it,ok:!!P.ok,q});P.queue.shift();P.wait=false;P.typed="";
+  if(q<3)P.queue.push(it);render();if(P.queue.length)document.getElementById("dIn")?.focus()}
 
 /* ===== starter word packs (packs.js) ===== */
 const PACKS=window.VOCAB_PACKS||{};
@@ -617,7 +815,7 @@ function fillNewGroup(pos,name){
   const n=addPackItems(pos,name,packSub);
   if(lid)markPackSeeded(lid,pos,name);
   save();
-  if(n&&pos==="v")scheduleWikiIdle(WIKI_IDLE_GAP);
+  if(n)scheduleWikiIdle(WIKI_IDLE_GAP);
   return n?"기본 단어 "+n+"개 넣어놨어":"「"+name+"」 칸을 만들었어"}
 function maybeSeedOpen(){
   const lid=wikiLangId();if(!lid)return;
@@ -660,7 +858,7 @@ function addPack(){const P=S._pack;if(!P)return;const lid=wikiLangId();
   pick.forEach(it=>{const k=dupKey(it.word,lid);if(have.has(k))return;have.add(k);
     const w=mkWord(it.raw,it.meaning,it.ex,P.pos,P.sub,it.gender,{lazyWiki:true});w.src="pack";words().push(w);n++});
   save();closeSheet();S._pack=null;S.view="list";S.listPos=P.pos;S.listSub=P.sub;S.q="";S.listGender="";render();
-  if(P.pos==="v"&&n)scheduleWikiIdle(WIKI_IDLE_GAP);
+  if(n)scheduleWikiIdle(WIKI_IDLE_GAP);
   toast(n+"개 넣었어!"+(P.pos==="v"&&n?" 변화표는 동사 칸을 열면 바로 가져오고, 나머지는 천천히 채울게":""))}
 
 /* ===== word auto-fill (ko.wiktionary → en.wiktionary → MyMemory) ===== */
@@ -829,13 +1027,13 @@ async function bulkAutoFill(){const ta=document.querySelector("#bulkForm textare
   const miss=BR.n-BR.ok;
   toast(BR.ok?BR.ok+"개 뜻 채웠어!"+(miss?" "+miss+"개는 못 찾았어. 직접 적어 줘":" 확인하고 넣어 줘"):(net?"인터넷 연결이 안 되는 것 같아 ㅠ":"하나도 못 찾았어 ㅠ 철자 한 번 봐 줘"))}
 
-function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac"].includes(v);
+function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac","decl","declrev","declprac"].includes(v);
   const nav=document.getElementById("nav");nav.style.display=hide?"none":"";
   nav.innerHTML=`<div class="bar">
     <button data-go="home" class="${v==="home"?"on":""}"><span class="ic">☁️</span>홈</button>
     <button data-go="cards" class="${v==="cards"?"on":""}"><span class="ic">🃏</span>카드</button>
-    <button data-go="quiz" class="${(v==="quiz"||v==="quizrun"||v==="conjprac")?"on":""}"><span class="ic">✏️</span>퀴즈</button>
-    <button data-go="list" class="${(v==="list"||v==="conj"||v==="conjrev")?"on":""}"><span class="ic">📋</span>목록</button>
+    <button data-go="quiz" class="${(v==="quiz"||v==="quizrun"||v==="conjprac"||v==="declprac")?"on":""}"><span class="ic">✏️</span>퀴즈</button>
+    <button data-go="list" class="${(v==="list"||v==="conj"||v==="conjrev"||v==="decl"||v==="declrev")?"on":""}"><span class="ic">📋</span>목록</button>
   </div>`}
 function langBar(){return `<div class="langs"><button class="chip add" id="addLang">＋</button>${S.langs.map(l=>`<button class="chip ${l.id===S.cur?"on":""}" data-lang="${l.id}">${l.flag} ${esc(l.name)}</button>`).join("")}</div>`}
 function installChip(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);const stand=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
@@ -851,6 +1049,9 @@ function render(){maybeSeedOpen();navHTML();const a=document.getElementById("app
   else if(v==="conj")a.innerHTML=viewConj();
   else if(v==="conjrev")a.innerHTML=viewConjReveal();
   else if(v==="conjprac")a.innerHTML=viewConjPrac();
+  else if(v==="decl")a.innerHTML=viewDecl();
+  else if(v==="declrev")a.innerHTML=viewDeclReveal();
+  else if(v==="declprac")a.innerHTML=viewDeclPrac();
 }
 function go(v){S.view=v;if(v==="cards")startCards();if(v==="quiz")S.quiz=null;render()}
 
@@ -960,7 +1161,8 @@ function viewQuizStart(){const tot=pool().length,all=words().length,verbs=byFilt
       <button class="btn block" id="quizType" ${tot?"":"disabled"}>주관식 · 뜻 보고 단어 쓰기</button>
       ${genderEnabled()?`<button class="btn ghost block" id="quizGender" ${(words().filter(w=>w.pos==="n"&&(w.gender==="m"||w.gender==="f")).length)?"":"disabled"} style="margin-top:8px">성수 퀴즈 · le 또는 la?</button>`:""}
       <button class="btn ghost block" id="conjPracStart" ${vtot?"":"disabled"} style="margin-top:8px">동사 변화 연습</button>
-      <p class="hint">틀린 건 다시 한 번 더 나와. 동사 변화는 채워 둔 칸만 문제로 나와.</p>
+      ${wikiLangId()==="ru"?`<button class="btn ghost block" id="declPracStart" ${words().some(isDeclPos)?"":"disabled"} style="margin-top:8px">격변화 연습 · 명사/형용사</button>`:""}
+      <p class="hint">틀린 건 다시 한 번 더 나와. 동사 변화${wikiLangId()==="ru"?"·격변화":""}는 채워 둔 칸만 문제로 나와.</p>
     </section>`}
 function startQuiz(mode){let list;
   if(mode==="gender"){list=byFilter(words(),{pos:"n",sub:(S.filter||{}).sub}).filter(w=>w.gender==="m"||w.gender==="f");if(!list.length){toast("성수가 정해진 명사가 없어");return}}
@@ -1025,6 +1227,7 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
       <button type="button" class="chip ${S.listGender==="m"?"on":""}" data-lgen="m">남성 m.</button>
       <button type="button" class="chip ${S.listGender==="f"?"on":""}" data-lgen="f">여성 f.</button>
     </div>`:""}
+    ${!q&&(lp==="n"||lp==="adj")&&wikiLangId()==="ru"?`<button class="btn ghost block" id="declPracList" style="margin:0 0 10px" ${ws.some(w=>w.pos===lp)?"":"disabled"}>이 범위 격변화 연습</button>`:""}
     ${!q&&lp==="v"?`<button class="btn ghost block" id="conjPracStart" style="margin:0 0 10px" ${ws.some(w=>w.pos==="v")?"":"disabled"}>이 범위 동사 변화 연습</button>`:""}
     ${arr.length?arr.map(w=>{const m=mastery(w);return `<div class="item">
       <button class="meta" data-edit="${w.id}" style="background:none;box-shadow:none;padding:0;min-height:44px;display:block;width:100%;text-align:left">
@@ -1032,7 +1235,7 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
         <div class="tag">${posName(w.pos)}${w.sub?" · "+esc(w.sub):(!w.pos?"":"")} </div>
         <div class="dots" aria-label="숙련도 ${m}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=m?(m>=5?"ok":"on"):""}"></i>`).join("")}</div>
       </button>
-      ${w.pos==="v"?`<button class="go" data-conj="${w.id}">변화</button>`:""}
+      ${w.pos==="v"?`<button class="go" data-conj="${w.id}">변화</button>`:declOn(w)?`<button class="go" data-decl="${w.id}">격</button>`:""}
     </div>`}).join(""):`<div class="empty">${q?"찾는 단어가 없어.":"이 칸은 아직 비어 있어."}</div>`}`}
 
 function openConj(id,mode){S.conjId=id;S.view=mode==="rev"?"conjrev":"conj";S.revealed={};
@@ -1109,7 +1312,7 @@ document.addEventListener("click",e=>{
     if(px==="add"){const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
       if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
     else if(px==="bulk"){const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta){ta.value=tx;paintBulkPreview()}}
-    else render()} else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=spPos.dataset.setpos;w.sub="";if(w.pos==="v"&&!w.vgroup)w.vgroup=guessGroup(w.word,L());if(w.pos==="v"&&!w.wikiAt)wikiQueue(w);if(w.pos==="n"&&!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender}save();openEdit(w.id)} }return}
+    else render()} else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=spPos.dataset.setpos;w.sub="";if(w.pos==="v"&&!w.vgroup)w.vgroup=guessGroup(w.word,L());if(w.pos==="v"&&!w.wikiAt)wikiQueue(w);if(declOn(w))scheduleWikiIdle(400);if(w.pos==="n"&&!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender}save();openEdit(w.id)} }return}
   const spSub=e.target.closest("[data-setsub]");if(spSub){const px=spSub.dataset.px;if(px==="add"){S.lastSub=spSub.dataset.setsub;S._afSub=false;save();
     const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
     if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
@@ -1142,6 +1345,15 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#wikiBtn")){const w=conjWord();if(w)wikiNow(w,{ui:true,overwrite:false,refresh:true});return}
   if(e.target.closest("#autoFillBtn")){const w=conjWord();const n=autoFill(w,false);save();render();toast(n?n+"칸을 채웠어. 점선 칸만 확인해 줘":"이미 다 채워져 있거나, 규칙으로 못 채워")}
   if(e.target.closest("#editSchema")){openSchema();return}
+  const dcl=e.target.closest("[data-decl]");if(dcl){closeSheet();S._edit=null;openDecl(dcl.dataset.decl);return}
+  if(e.target.closest("#declBtn")){const w=declWord();if(w)declNow(w,{ui:true,refresh:true});return}
+  if(e.target.closest("#declReveal")){openDecl(S.declId,"rev");return}
+  if(e.target.closest("#backDecl")){openDecl(S.declId);return}
+  if(e.target.closest("#declPracThis")){startDeclPrac(S.declId);return}
+  if(e.target.closest("#declPracStart")){startDeclPrac(null,S.filter||{});return}
+  if(e.target.closest("#declPracList")){startDeclPrac(null,{pos:S.listPos,sub:S.listSub&&S.listSub!=="__none__"?S.listSub:""});return}
+  if(e.target.closest("#declPracAgain")){startDeclPrac(S.dprac?.onlyId||null,S.dprac?.scope||null);return}
+  const drt=e.target.closest("[data-drate]");if(drt){rateDecl(+drt.dataset.drate);return}
   const vg=e.target.closest("[data-vgroup]");if(vg){const w=conjWord();if(w){w.vgroup=vg.dataset.vgroup;if(w.vgroup==="er")autoFill(w,false);save();render()}return}
   const rv=e.target.closest("[data-reveal]");if(rv){S.revealed[rv.dataset.reveal]=true;render();return}
   const cj=e.target.closest("[data-conj]");if(cj){closeSheet();S._edit=null;openConj(cj.dataset.conj);return}
@@ -1178,6 +1390,7 @@ document.addEventListener("submit",e=>{
     render();document.getElementById("addWord")?.focus();return}
   if(e.target.id==="typeForm"){e.preventDefault();checkType();return}
   if(e.target.id==="pracForm"){e.preventDefault();checkPrac();return}
+  if(e.target.id==="declForm"){e.preventDefault();checkDecl();return}
   if(e.target.id==="bulkForm"){e.preventDefault();doBulk();return}
   if(e.target.id==="editForm"){e.preventDefault();saveEdit();return}
   if(e.target.id==="langForm"){e.preventDefault();saveLang();return}
@@ -1191,6 +1404,8 @@ document.addEventListener("input",e=>{
   if(e.target.classList&&e.target.classList.contains("sug"))e.target.classList.remove("sug");
   if(e.target.id==="qIn"&&S.quiz)S.quiz.typed=e.target.value;
   if(e.target.id==="pIn"&&S.prac)S.prac.typed=e.target.value;
+  if(e.target.id==="dIn"&&S.dprac)S.dprac.typed=e.target.value;
+  if(e.target.dataset&&e.target.dataset.dk){const w=declWord();if(!w)return;const k=e.target.dataset.dk;w.decl=w.decl||{};w.declAuto=w.declAuto||{};w.decl[k]=nfc(e.target.value);w.declAuto[k]=false;e.target.classList.remove("auto","wk");e.target.closest(".dc")?.querySelector(".ab")?.remove();save()}
   if(e.target.dataset.ck){const w=conjWord();if(!w)return;const k=e.target.dataset.ck;w.conj[k]=nfc(e.target.value);w.conjAuto[k]=false;e.target.classList.remove("auto","wk");save()}
   if(e.target.dataset.aspect){const w=conjWord();if(!w)return;if(e.target.dataset.aspect==="imp")w.aspectImp=nfc(e.target.value);else w.aspectPf=nfc(e.target.value);save()}
 });
@@ -1305,6 +1520,7 @@ function openEdit(id,keep){const w=words().find(x=>x.id===id);if(!w)return;S._ed
       <div class="field"><label for="editMean">뜻</label><input id="editMean" name="mean" value="${esc(w.meaning)}" required autocomplete="off"></div>
       <div class="field"><label>예문 / 메모</label><input name="ex" value="${esc(w.ex||"")}" autocomplete="off"></div>
       ${w.pos==="v"?`<button class="btn ghost block" type="button" data-conj="${w.id}" style="margin-bottom:8px">동사 변화 표</button>`:""}
+      ${declOn(w)?`<button class="btn ghost block" type="button" data-decl="${w.id}" style="margin-bottom:8px">격변화 표</button>`:""}
       <button class="btn primary block" type="submit">저장</button>
       <button class="btn no block" type="button" id="delWord" style="margin-top:8px">삭제</button>
     </form>`);
@@ -1314,6 +1530,7 @@ function saveEdit(){S._af=null;const id=S._edit,w=words().find(x=>x.id===id),f=d
   if(!d.word||!meaning){toast("단어랑 뜻은 비울 수 없어");return}
   const prev=w.word;w.word=d.word;w.meaning=meaning;w.ex=ex;if(d.gender)w.gender=d.gender;
   if(w.pos==="v"&&w.word!==prev){if(!w.vgroup)w.vgroup=guessGroup(w.word,L());autoFill(w,false);wikiQueue(w)}
+  if(declOn(w)&&stripStress(w.word)!==stripStress(prev)){const d=w.decl||{},a=w.declAuto||{};Object.keys(d).forEach(k=>{if(a[k]==="wiki"){delete d[k];delete a[k]}});w.declAt=0;w.declInfo=null;scheduleWikiIdle(400)}
   save();closeSheet();S._edit=null;render();toast("고쳤어")}
 function doDelete(){const id=S._edit;if(!confirm("이 단어를 삭제할까?"))return;setWords(words().filter(w=>w.id!==id));closeSheet();S._edit=null;render();toast("삭제했어")}
 
