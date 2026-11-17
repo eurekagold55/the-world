@@ -1,4 +1,4 @@
-const CACHE = "vocab-cloud-v11";
+const CACHE = "vocab-cloud-v12";
 const ASSETS = [
   "./",
   "./index.html",
@@ -12,7 +12,7 @@ const ASSETS = [
   "./hands-reach.png",
   "./packs.js",
   "./rules.js",
-  "./stress-marks.woff2"
+  "./vocabpx.woff2"
 ];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));

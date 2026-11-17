@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <link rel="preload" href="Galmuri11.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="vocabpx.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -154,8 +155,9 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
 .bulk-preview li{word-break:break-word}
 /* ===== 1-bit void theme (black / white dither) ===== */
 @font-face{font-family:"Galmuri11";src:url("Galmuri11.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
-/* Galmuri11엔 결합 강세 부호(U+0301 등)가 없어서, 같은 패밀리로 도트 강세만 따로 얹어 줌 */
-@font-face{font-family:"Galmuri11";src:url("stress-marks.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:block;unicode-range:U+0300-0301,U+0308}
+/* VocabPx = Galmuri11의 라틴·키릴·기호 부분 + 도트 강세 모음(ccmp 합자) + 도트 아이콘(U+E000~).
+   글자랑 강세 부호가 같은 폰트 안에 있어서 사파리(WebKit)에서도 클러스터가 안 깨짐. 한글은 Galmuri11이 그림. */
+@font-face{font-family:"VocabPx";src:url("vocabpx.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:block}
 :root{
   --ink:#f2f2f2; --muted:#a8a8a8; --soft:#707070;
   --bg:#000; --card:#000; --card2:#0b0b0b; --line:#5c5c5c; --edge:#000;
@@ -171,7 +173,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
   --d6g:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Crect width='1' height='1' fill='%23333'/%3E%3C/svg%3E");
   --void:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='9' shape-rendering='crispEdges'%3E%3Crect x='3' y='4' width='1' height='1' fill='%23161616'/%3E%3C/svg%3E");
 }
-html,body{background:#000;color:var(--ink);font-family:"Galmuri11","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-weight:400;
+html,body{background:#000;color:var(--ink);font-family:"VocabPx","Galmuri11","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-weight:400;
   -webkit-font-smoothing:none;-moz-osx-font-smoothing:unset;letter-spacing:0}
 body{background-image:var(--void);background-size:7px 9px}
 *{border-radius:0!important}
@@ -334,6 +336,14 @@ input.sug{border:2px dashed #fff!important;background:linear-gradient(#000,#000)
 .setrow input{width:24px;height:24px;min-height:0;flex:0 0 auto}
 .setrow label{flex:1;font-size:.9rem}
 .setrow .hint{display:block;margin-top:2px}
+/* ---- v12: 도트 아이콘 · 익힘 막대 ---- */
+.pxf{display:inline-block;font-size:1em;line-height:1;vertical-align:-1px}
+.lvl{display:flex;align-items:center;gap:6px;padding-top:6px}
+.lbar{display:block;width:50px;height:6px;border:1px solid #777;background:#000;position:relative}
+.lbar i{display:block;height:100%;background:var(--chk) 0 0/2px 2px}
+.lbar.ok{border-color:#fff}.lbar.ok i{background:#fff}
+.lvl .lt{font-size:.62rem;color:#888;line-height:1}
+.nav .ic{font-size:1.25rem}
 </style>
 </head>
 <body>
@@ -443,6 +453,10 @@ function openSheet(html){closeSheet();const d=document.createElement("div");d.cl
 function isFr(l){l=l||L();return l.id==="fr"||l.tts==="fr-FR"}
 function isRu(l){l=l||L();return l.id==="ru"||l.tts==="ru-RU"}
 function isTr(l){l=l||L();return l.id==="tr"||l.tts==="tr-TR"}
+/* 국기 이모지는 사파리에서 컬러 그림으로 튀어서, 기본 3개는 도트 국기로 */
+const PX_FLAG={"🇫🇷":"\uE00C","🇷🇺":"\uE00D","🇹🇷":"\uE00E","🌍":"\uE005"};
+function flagOf(l){const f=(l&&l.flag)||"";if(PX_FLAG[f])return `<span class="pxf" aria-hidden="true">${PX_FLAG[f]}</span>`;
+  if(l&&(l.id==="fr"||l.id==="ru"||l.id==="tr")&&!f)return `<span class="pxf" aria-hidden="true">${PX_FLAG[{fr:"🇫🇷",ru:"🇷🇺",tr:"🇹🇷"}[l.id]]}</span>`;return esc(f)}
 /* ---- v11: 발음 표기 + 규칙 ---- */
 function prefOn(k){return !(S.prefs&&S.prefs[k]===false)}
 function phonOf(word){if(!isRu()||!prefOn("phon")||!window.RU_PHON)return null;try{return RU_PHON.phon(word)}catch(_){return null}}
@@ -454,7 +468,7 @@ function editPhonHTML(word){if(!isRu()||!prefOn("phon"))return"";const r=phonOf(
 function rulesFor(w){if(!w||!prefOn("rules")||!window.RULES)return null;const lid=wikiLangId();if(lid!=="ru"&&lid!=="fr")return null;try{return RULES.explain(w,lid)}catch(e){console.warn(e);return null}}
 function rq(key){const rx=S._rx;if(!rx||!rx.cells||!rx.cells[key])return"";return `<button type="button" class="rq" data-rule="${esc(key)}" aria-label="규칙 보기">?</button>`}
 function rulesPanel(rx,extra){if(!rx||!rx.summary||!rx.summary.length)return"";
-  return `<details class="rules" open><summary>📖 규칙</summary><ul>${rx.summary.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>${extra||""}<p class="rnote">칸 옆 <b>?</b>를 누르면 그 꼴이 왜 그렇게 되는지 나와. 확실하지 않으면 일반 규칙만 보여 줘.</p></details>`}
+  return `<details class="rules" open><summary> 규칙</summary><ul>${rx.summary.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>${extra||""}<p class="rnote">칸 옆 <b>?</b>를 누르면 그 꼴이 왜 그렇게 되는지 나와. 확실하지 않으면 일반 규칙만 보여 줘.</p></details>`}
 function closeRulePop(){document.getElementById("rpop")?.remove();document.querySelectorAll(".rq.on").forEach(b=>b.classList.remove("on"))}
 function showRulePop(btn){const k=btn.dataset.rule;const rx=S._rx;const t=rx&&rx.cells&&rx.cells[k];closeRulePop();if(!t)return;
   btn.classList.add("on");const d=document.createElement("div");d.className="rpop";d.id="rpop";d.setAttribute("role","tooltip");
@@ -467,7 +481,7 @@ function frAdjPanel(w){if(!isFr()||w.pos!=="adj"||!prefOn("rules")||!window.RULE
   return rulesPanel(rx,`<div class="fadj">${cell("ms","남성 단수",f.ms)}${cell("fs","여성 단수",f.fs)}${cell("mp","남성 복수",f.mp)}${cell("fp","여성 복수",f.fp)}${f.mv?cell("mv","남성 · 모음 앞",f.mv):""}</div>`)}
 function openSettings(){openSheet(`<div class="grab"></div><h3>설정 <button class="x" data-close aria-label="닫기">✕</button></h3>
   <div class="setrow"><input type="checkbox" id="setPhon" ${prefOn("phon")?"checked":""}><label for="setPhon">러시아어 발음 표기 <span class="hint">단어 옆에 [малако́]처럼 실제 소리 (강세 없는 о→а, е/я→и 등)</span></label></div>
-  <div class="setrow"><input type="checkbox" id="setRules" ${prefOn("rules")?"checked":""}><label for="setRules">📖 규칙 설명 <span class="hint">변화표 위 규칙 요약 + 칸마다 ? 설명</span></label></div>`)}
+  <div class="setrow"><input type="checkbox" id="setRules" ${prefOn("rules")?"checked":""}><label for="setRules"> 규칙 설명 <span class="hint">변화표 위 규칙 요약 + 칸마다 ? 설명</span></label></div>`)}
 function schema(l){l=l||L();
   if(isFr(l))return{tenses:[{id:"pres",name:"présent",persons:FR_P},{id:"pc",name:"passé composé",persons:FR_P},{id:"fut",name:"futur simple",persons:FR_P}],groups:[{id:"er",name:"-er"},{id:"ir",name:"-ir"},{id:"re",name:"-re"},{id:"irr",name:"불규칙"}]};
   if(isRu(l))return{tenses:[{id:"pres",name:"현재 / 미래",persons:RU_P},{id:"past",name:"과거",persons:RU_PAST}],groups:[],aspect:true};
@@ -745,7 +759,7 @@ async function declFill(wid,opts){opts=opts||{};const lid="ru";if(declBusy.has(w
       if(opts.ui)toast(n?"위키에서 "+n+"칸 가져왔어!":"이미 직접 고친 칸이라 그대로 뒀어");
       else if(opts.open&&res.info&&res.info.indecl)toast("격변화 안 하는 단어래. 모든 격이 똑같아")}}
   catch(e){declCool.set(wid,Date.now());
-    if(loud)toast(navigator.onLine===false?"오프라인이라 격변화표를 못 가져왔어. 인터넷 되면 다시 열어 줘":"위키 연결이 잘 안 돼 ㅠ 조금 있다 🔄 눌러 줘")}
+    if(loud)toast(navigator.onLine===false?"오프라인이라 격변화표를 못 가져왔어. 인터넷 되면 다시 열어 줘":"위키 연결이 잘 안 돼 ㅠ 조금 있다  눌러 줘")}
   finally{declBusy.delete(wid);if((S.view==="decl"||S.view==="declrev")&&S.declId===wid)render();scheduleWikiIdle(WIKI_IDLE_GAP)}}
 /* ---- views ---- */
 function openDecl(id,mode){S.declId=id;S.view=mode==="rev"?"declrev":"decl";S.revealed={};
@@ -768,10 +782,10 @@ function viewDecl(){const w=declWord();if(!w)return go("list"),"";const busy=dec
   const note=declNote(w);
   return `<div class="head"><button class="back" data-go="list" aria-label="목록">←</button><h2>격변화</h2></div>
     <div class="hero" style="padding:16px">
-      <div class="k" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${L().flag} ${esc(w.word)} · ${esc(w.meaning)}${stressBtn("")}</div>
+      <div class="k" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${flagOf(L())} ${esc(w.word)} · ${esc(w.meaning)}${stressBtn("")}</div>
       <p class="hint" style="margin:6px 0 0">${esc(declInfoLine(w))}</p>
     </div>
-    <button class="pack-again" id="declBtn" ${busy?"disabled":""}>${busy?"가져오는 중…":(w.declAt?"🔄 다시 가져오기":"🔄 위키에서 가져오기")}</button>
+    <button class="pack-again" id="declBtn" ${busy?"disabled":""}>${busy?"가져오는 중…":(w.declAt?" 다시 가져오기":" 위키에서 가져오기")}</button>
     <p class="hint" style="margin:0 0 12px">표를 열면 위키낱말사전에서 빈 칸을 알아서 채워 줘. 니가 직접 적은 칸은 안 덮어써. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, 연습할 땐 강세 안 찍어도 정답이야.${note?" "+esc(note):""}</p>
     ${rulesPanel(S._rx)}
     ${declSlots(w).map(g=>`<div class="tense dcase"><h4>${esc(g.c.ko)}${g.c.ru?` <span class="cru">${esc(g.c.ru)}</span>`:""}</h4><p class="chint">${esc(g.c.hint)}</p>
@@ -898,15 +912,15 @@ function packFind(raw,lid){if(!_packIdx[lid]){const m=new Map();Object.keys(PACK
   return _packIdx[lid].get(dupKey(raw,lid))||null}
 function packFreshCount(pos,sub){const lid=wikiLangId();const have=new Set(words().map(w=>dupKey(w.word,lid)));return packLines(lid,pos,sub).filter(it=>!have.has(dupKey(it.word,lid))).length}
 function openPackMenu(pos){const subs=packSubs(pos);if(!subs.length){toast("이 품사는 기본 단어가 아직 없어");return}
-  openSheet(`<div class="grab"></div><h3>📦 기본 단어 넣기 <button class="x" data-close aria-label="닫기">✕</button></h3>
-    <p class="hint" style="margin-top:0">${L().flag} ${esc(L().name)} · ${posName(pos)}. 분류를 고르면 단어 미리보기가 떠. 숫자는 아직 없는 단어 수야.</p>
+  openSheet(`<div class="grab"></div><h3> 기본 단어 넣기 <button class="x" data-close aria-label="닫기">✕</button></h3>
+    <p class="hint" style="margin-top:0">${flagOf(L())} ${esc(L().name)} · ${posName(pos)}. 분류를 고르면 단어 미리보기가 떠. 숫자는 아직 없는 단어 수야.</p>
     <div class="picks">${subs.map(s=>`<button type="button" class="chip" data-pack="${esc(s)}" data-ppos="${pos}">${esc(s)}<span class="c">${packFreshCount(pos,s)}</span></button>`).join("")}</div>`)}
 function openPack(pos,sub){const packSub=packSubMatch(pos,sub)||sub;const lid=wikiLangId();const items=packLines(lid,pos,packSub);if(!items.length){toast("이 분류는 기본 단어가 아직 없어");return}
   const have=new Set(words().map(w=>dupKey(w.word,lid)));const seen=new Set();
   items.forEach(it=>{const k=dupKey(it.word,lid);it.dup=have.has(k)||seen.has(k);seen.add(k)});
   const dup=items.filter(i=>i.dup).length,fresh=items.length-dup;S._pack={pos,sub,packSub,items};
-  openSheet(`<div class="grab"></div><h3>📦 ${esc(sub)} · 기본 단어 <button class="x" data-close aria-label="닫기">✕</button></h3>
-    <p class="hint" style="margin-top:0">${L().flag} ${esc(L().name)} · ${posName(pos)} · 초보용 ${items.length}개. 빼고 싶은 건 체크 풀어 줘.${dup?` 이미 있는 ${dup}개는 건너뛸게.`:""}</p>
+  openSheet(`<div class="grab"></div><h3> ${esc(sub)} · 기본 단어 <button class="x" data-close aria-label="닫기">✕</button></h3>
+    <p class="hint" style="margin-top:0">${flagOf(L())} ${esc(L().name)} · ${posName(pos)} · 초보용 ${items.length}개. 빼고 싶은 건 체크 풀어 줘.${dup?` 이미 있는 ${dup}개는 건너뛸게.`:""}</p>
     <div class="row" style="margin:8px 0"><button type="button" class="btn ghost" id="pkAll">전체 선택</button><button type="button" class="btn ghost" id="pkNone">전체 해제</button></div>
     <div class="pk-list" id="pkList">${items.map((it,i)=>`<label class="pk ${it.dup?"dup":""}"><input type="checkbox" data-pk="${i}" ${it.dup?"disabled":"checked"}><span class="pk-box" aria-hidden="true"></span>
       <span class="pk-t"><span class="w">${esc(it.word)}${it.gender?`<span class="gb ${it.gender}">${genderLabel(it.gender)}</span>`:""}</span><span class="m">${esc(it.meaning)}${it.ex?` · ${esc(it.ex)}`:""}</span></span>${it.dup?`<span class="pk-tag">이미 있는 단어</span>`:""}</label>`).join("")}</div>
@@ -1009,9 +1023,9 @@ function stressedFor(typed,r,lid){if(lid!=="ru"||!r||!r.stressed)return"";const 
   if(/\u0301/.test(t.normalize("NFD")))return"";if(stripStress(r.stressed).toLowerCase()!==t.toLowerCase())return"";
   return r.stressed===t?"":matchCase(r.stressed,t)}
 const AF={busy:"",done:""};
-function setAfBtn(ctx,busy){const b=document.querySelector(`[data-af="${ctx}"]`);if(b){b.disabled=busy;b.textContent=busy?"찾는 중…":"🌐 자동 채우기"}}
+function setAfBtn(ctx,busy){const b=document.querySelector(`[data-af="${ctx}"]`);if(b){b.disabled=busy;b.textContent=busy?"찾는 중…":" 자동 채우기"}}
 function afNoteHTML(r,info){const bits=[];
-  bits.push(r.src==="pack"?"📦 기본 단어장":r.src==="ko"?"🌐 위키낱말사전":r.src==="mt"?"🌐 사전+번역기":"🌐 위키낱말사전(영어)");
+  bits.push(r.src==="pack"?" 기본 단어장":r.src==="ko"?" 위키낱말사전":r.src==="mt"?" 사전+번역기":" 위키낱말사전(영어)");
   if(r.pos)bits.push(posName(r.pos));if(r.sub&&info.subSet)bits.push(r.sub);
   if(r.gender&&info.genderSet)bits.push(genderLabel(r.gender));if(info.stress)bits.push("강세 넣음");
   let tail="";if(info.meaningKept)tail=" · 뜻은 니가 적은 거 그대로 뒀어";else if(!r.meaning)tail=` · 뜻은 못 찾았어${r.gloss?` (영어로는 “${esc(r.gloss.slice(0,60))}”)`:""}. 직접 적어 줘`;
@@ -1057,7 +1071,7 @@ function applyAFEdit(r,lid){const w=words().find(x=>x.id===S._edit);if(!w)return
   if(!keep.x.trim()&&r.ex&&r.src==="pack"){keep.x=r.ex;sug.x=1}
   save();S._af={ctx:"edit",html:afNoteHTML(r,info),sug};openEdit(w.id,keep);
   const f2=document.getElementById("editForm");if(f2){f2.word.classList.toggle("sug",!!sug.w);f2.mean.classList.toggle("sug",!!sug.m);f2.ex.classList.toggle("sug",!!sug.x)}}
-function afButton(ctx){return wikiLangId()?`<button type="button" class="af-btn" data-af="${ctx}">🌐 자동 채우기</button>`:""}
+function afButton(ctx){return wikiLangId()?`<button type="button" class="af-btn" data-af="${ctx}"> 자동 채우기</button>`:""}
 
 /* bulk: words without meanings */
 const BR={run:false,i:0,n:0,ok:0,miss:[]};
@@ -1068,7 +1082,7 @@ function paintBulkAF(bare){const box=document.getElementById("bulkAF");if(!box)r
   if(bare==null){const ta=document.querySelector("#bulkForm textarea");bare=ta?parseBulkText(ta.value).bare:[]}
   if(!bare.length||!wikiLangId()){box.hidden=true;box.innerHTML="";return}
   box.hidden=false;box.innerHTML=`<div>뜻이 없는 단어 <b>${bare.length}개</b>: ${bare.slice(0,6).map(esc).join(", ")}${bare.length>6?" …":""}</div>
-    <button type="button" class="btn block" id="bulkAFGo" style="margin-top:8px">🌐 뜻 자동으로 채우기</button>
+    <button type="button" class="btn block" id="bulkAFGo" style="margin-top:8px"> 뜻 자동으로 채우기</button>
     <p class="hint" style="margin:6px 0 0">찾은 뜻은 위 칸에 「단어 - 뜻」으로 바꿔 줄게. 확인하고 넣으면 돼. 품사를 ‘미분류’로 두면 찾은 품사로 알아서 나눠.</p>`}
 function replaceBareLine(ta,word,text){const lines=ta.value.split(/\r\n|\r|\n/);
   for(let i=0;i<lines.length;i++){const nl=normBulk(lines[i]).trim();if(nl===word){lines[i]=text;ta.value=lines.join("\n");return true}
@@ -1092,15 +1106,15 @@ async function bulkAutoFill(){const ta=document.querySelector("#bulkForm textare
 function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac","decl","declrev","declprac"].includes(v);
   const nav=document.getElementById("nav");nav.style.display=hide?"none":"";
   nav.innerHTML=`<div class="bar">
-    <button data-go="home" class="${v==="home"?"on":""}"><span class="ic">☁️</span>홈</button>
-    <button data-go="cards" class="${v==="cards"?"on":""}"><span class="ic">🃏</span>카드</button>
-    <button data-go="quiz" class="${(v==="quiz"||v==="quizrun"||v==="conjprac"||v==="declprac")?"on":""}"><span class="ic">✏️</span>퀴즈</button>
-    <button data-go="list" class="${(v==="list"||v==="conj"||v==="conjrev"||v==="decl"||v==="declrev")?"on":""}"><span class="ic">📋</span>목록</button>
+    <button data-go="home" class="${v==="home"?"on":""}"><span class="ic"></span>홈</button>
+    <button data-go="cards" class="${v==="cards"?"on":""}"><span class="ic"></span>카드</button>
+    <button data-go="quiz" class="${(v==="quiz"||v==="quizrun"||v==="conjprac"||v==="declprac")?"on":""}"><span class="ic"></span>퀴즈</button>
+    <button data-go="list" class="${(v==="list"||v==="conj"||v==="conjrev"||v==="decl"||v==="declrev")?"on":""}"><span class="ic"></span>목록</button>
   </div>`}
-function langBar(){return `<div class="langs"><button class="chip add" id="addLang">＋</button>${S.langs.map(l=>`<button class="chip ${l.id===S.cur?"on":""}" data-lang="${l.id}">${l.flag} ${esc(l.name)}</button>`).join("")}</div>`}
+function langBar(){return `<div class="langs"><button class="chip add" id="addLang">＋</button>${S.langs.map(l=>`<button class="chip ${l.id===S.cur?"on":""}" data-lang="${l.id}">${flagOf(l)} ${esc(l.name)}</button>`).join("")}</div>`}
 function installChip(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);const stand=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
   if(stand)return"";if(!(ios||window._canInstall))return"";
-  return `<button class="install show" id="installBtn">📲 홈 화면에 두면 앱처럼 열려요</button>`}
+  return `<button class="install show" id="installBtn"> 홈 화면에 두면 앱처럼 열려요</button>`}
 
 function render(){maybeSeedOpen();navHTML();const a=document.getElementById("app");const v=S.view||"home";
   if(v==="home")a.innerHTML=viewHome();
@@ -1129,12 +1143,12 @@ function genderPicker(prefix,gender){if(!genderEnabled())return"";
   return `<div class="lbl">성수</div><div class="picks">${opts.map(([id,n])=>`<button type="button" class="chip ${gender===id?"on":""}" data-setgen="${id}" data-px="${prefix}">${n}</button>`).join("")}<button type="button" class="chip ${!gender?"on":""}" data-setgen="" data-px="${prefix}">미정</button></div>`}
 
 function viewHome(){const n=dueWords().length,tot=words().length,l=L();
-  const msg=tot===0?"아직 단어가 없어. 아래에 하나 넣어볼까?":(n===0?"오늘은 다 외운 것 같아 ☁️":"오늘 복습할 단어");
+  const msg=tot===0?"아직 단어가 없어. 아래에 하나 넣어볼까?":(n===0?"오늘은 다 외운 것 같아 ":"오늘 복습할 단어");
   const pos=S.lastPos||"",sub=S.lastSub||"";
   return `${langBar()}${installChip()}
   <div class="brand"><h1>단어 구름</h1><p>오늘도 천천히, 하나씩.</p></div>
   <section class="hero">
-    <div class="k">${l.flag} ${esc(l.name)} · ${msg}</div>
+    <div class="k">${flagOf(l)} ${esc(l.name)} · ${msg}</div>
     <div class="n">${tot?n:"–"} <small>${tot?`/ ${tot}개`:""}</small></div>
     ${tot?`<div class="meter" role="img" aria-label="오늘 남은 복습 ${n}개 / ${tot}개"><i style="width:${Math.round((tot-n)/tot*100)}%"></i></div>`:""}
     <div class="actions">
@@ -1154,11 +1168,11 @@ function viewHome(){const n=dueWords().length,tot=words().length,l=L();
       <div class="row"><button class="btn primary" type="submit">넣기</button>
       <button class="btn ghost" type="button" id="bulkBtn">여러 개</button></div>
     </form>
-    <p class="hint">품사를 고르고 이어서 넣으면 분류가 그대로 유지돼.${wikiLangId()?" 단어만 쓰고 🌐 자동 채우기를 누르면 뜻·품사도 찾아 줘.":""}</p>
+    <p class="hint">품사를 고르고 이어서 넣으면 분류가 그대로 유지돼.${wikiLangId()?" 단어만 쓰고  자동 채우기를 누르면 뜻·품사도 찾아 줘.":""}</p>
   </section>
   <div class="more">
-    <button type="button" id="backupBtn">💾 백업 · 가져오기</button>
-    <button type="button" id="settingsBtn">⚙️ 설정</button>
+    <button type="button" id="backupBtn"> 백업 · 가져오기</button>
+    <button type="button" id="settingsBtn"> 설정</button>
     <button type="button" id="howInstall" class="hint">이 앱을 폰에 설치하려면</button>
   </div>`}
 
@@ -1197,12 +1211,12 @@ function viewCards(){
     <p class="prog">카드를 눌러 뜻을 봐${w.pos?` · ${posName(w.pos)}${w.sub?" · "+esc(w.sub):""}`:""}</p>
     <div class="deck"><div class="flash ${sess.flipped?"flip":""}" id="flash">
       <div class="face">
-        <button class="spk" data-speak="${esc(w.word)}" aria-label="발음 듣기">🔊</button>
+        <button class="spk" data-speak="${esc(w.word)}" aria-label="발음 듣기"></button>
         <div class="w">${esc(w.word)}${genderBadge(w)}</div>${phonHTML(w.word,"div")}
         <div class="tap">탭해서 뒤집기</div>
       </div>
       <div class="face back">
-        <button class="spk" data-speak="${esc(w.word)}" aria-label="발음 듣기">🔊</button>
+        <button class="spk" data-speak="${esc(w.word)}" aria-label="발음 듣기"></button>
         <div class="m">${esc(w.meaning)}</div>
         ${w.ex?`<div class="ex">${esc(w.ex)}</div>`:""}
         <div class="tap" style="opacity:.5">${esc(w.word)} ${phonText(w.word)?`<span lang="ru">${esc(phonText(w.word).replace(/\u0301/g,""))}</span>`:""}</div>
@@ -1218,7 +1232,7 @@ function viewQuizStart(){const tot=pool().length,all=words().length,verbs=byFilt
   const vtot=words().filter(w=>w.pos==="v").length;
   return `<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>퀴즈</h2></div>
     ${filterBar()}
-    <section class="hero"><div class="k">${L().flag} ${esc(L().name)}${(S.filter||{}).pos?" · "+posName(S.filter.pos):""}${(S.filter||{}).sub?" · "+esc(S.filter.sub):""}</div>
+    <section class="hero"><div class="k">${flagOf(L())} ${esc(L().name)}${(S.filter||{}).pos?" · "+posName(S.filter.pos):""}${(S.filter||{}).sub?" · "+esc(S.filter.sub):""}</div>
       <p>${all?(tot?`이 범위에서 ${tot}개로 풀 수 있어.`:"이 분류에는 단어가 없어."):"아직 단어가 없어."}</p>
       <button class="btn primary block" id="quizMc" ${tot>=2?"":"disabled"} style="margin:8px 0">객관식 · 뜻 보고 고르기</button>
       <button class="btn block" id="quizType" ${tot?"":"disabled"}>주관식 · 뜻 보고 단어 쓰기</button>
@@ -1296,7 +1310,7 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
       <button class="meta" data-edit="${w.id}" style="background:none;box-shadow:none;padding:0;min-height:44px;display:block;width:100%;text-align:left">
         <div class="w">${esc(w.word)}${genderBadge(w)}</div>${phonHTML(w.word)}<div class="m">${esc(w.meaning)}</div>
         <div class="tag">${posName(w.pos)}${w.sub?" · "+esc(w.sub):(!w.pos?"":"")} </div>
-        <div class="dots" aria-label="숙련도 ${m}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=m?(m>=5?"ok":"on"):""}"></i>`).join("")}</div>
+        <div class="lvl" aria-label="익힘 ${m}/5"><span class="lbar ${m>=5?"ok":""}"><i style="width:${m*20}%"></i></span><span class="lt">익힘 ${m}/5</span></div>
       </button>
       ${w.pos==="v"?`<button class="go" data-conj="${w.id}">변화</button>`:declOn(w)?`<button class="go" data-decl="${w.id}">격</button>`:""}
     </div>`}).join(""):`<div class="empty">${q?"찾는 단어가 없어.":"이 칸은 아직 비어 있어."}</div>`}`}
@@ -1310,12 +1324,12 @@ function viewConj(){const w=conjWord();if(!w)return go("list"),"";
   const autoable=canAuto(w);
   return `<div class="head"><button class="back" data-go="list" aria-label="목록">←</button><h2>동사 변화</h2></div>
     <div class="hero" style="padding:16px">
-      <div class="k" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${L().flag} ${esc(w.word)} · ${esc(w.meaning)}${stressBtn("")}</div>
+      <div class="k" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${flagOf(L())} ${esc(w.word)} · ${esc(w.meaning)}${stressBtn("")}</div>
       ${isRu()?`<div class="row" style="margin-top:8px"><div class="field" style="margin:0"><label>несов. (불완료)</label><input data-aspect="imp" value="${esc(w.aspectImp||"")}" placeholder="писать"></div>
         <div class="field" style="margin:0"><label>сов. (완료)</label><input data-aspect="pf" value="${esc(w.aspectPf||"")}" placeholder="написать"></div></div>`:""}
       ${sc.groups.length?`<div class="lbl" style="margin-top:8px">그룹</div><div class="picks">${sc.groups.map(g=>`<button type="button" class="chip ${w.vgroup===g.id?"on":""}" data-vgroup="${g.id}">${g.name}</button>`).join("")}</div>`:""}
     </div>
-    ${wikiLangId()?`<button class="pack-again" id="wikiBtn" ${wikiBusy.has(w.id)?"disabled":""}>${wikiBusy.has(w.id)?"가져오는 중…":"🔄 다시 가져오기"}</button>`:""}
+    ${wikiLangId()?`<button class="pack-again" id="wikiBtn" ${wikiBusy.has(w.id)?"disabled":""}>${wikiBusy.has(w.id)?"가져오는 중…":" 다시 가져오기"}</button>`:""}
     ${autoable?`<button class="btn ghost block" id="autoFillBtn" style="margin-bottom:8px">규칙으로 채우기</button>`:""}
     ${wikiLangId()?`<p class="hint" style="margin:0 0 12px">표를 열면 위키낱말사전에서 빈 칸을 알아서 채워 줘. 니가 직접 적은 칸은 안 덮어써. 다른 동사는 온라인일 때 천천히 가져와. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, <span class="ab">자동</span> 칸은 규칙으로 채운 거야.${isFr()&&w.aux?` 조동사: <b>${esc(w.aux)}</b>${w.aux==="être"?" (주어 성·수에 맞춰 -e/-s 붙여)":""}`:""}${isRu()&&w.ruTense==="fut"?" 완료상이라 첫 칸은 <b>미래</b>야.":""}</p>`:
       (autoable?`<p class="hint" style="margin-top:-2px;margin-bottom:10px">점선 칸은 자동으로 채운 거야. 한 번만 확인해 줘.</p>`:`<p class="hint">이 언어는 칸 이름을 내가 정해 줘.</p>`)}
@@ -1512,11 +1526,11 @@ function ratePrac(q){const P=S.prac,it=P.queue[0];const w=words().find(x=>x.id==
 
 function openAddLang(){openSheet(`<div class="grab"></div><h3>언어 추가 <button class="x" data-close aria-label="닫기">✕</button></h3>
   <form id="langForm"><div class="field"><label>이름</label><input name="name" required placeholder="예) 스페인어" data-autofocus></div>
-  <div class="field"><label>국기 이모지 (선택)</label><input name="flag" placeholder="🇪🇸" maxlength="8"></div>
+  <div class="field"><label>국기 이모지 (선택)</label><input name="flag" placeholder="예) ES" maxlength="8"></div>
   <div class="field"><label>발음 언어 코드 (선택)</label><input name="tts" placeholder="es-ES"></div>
   <button class="btn primary block" type="submit">추가</button></form>`)}
 function saveLang(){const f=document.getElementById("langForm");const name=f.name.value.trim();if(!name)return;
-  const id=uid();S.langs.push({id,name,flag:(f.flag.value.trim()||"🌍"),tts:f.tts.value.trim()||""});S.cur=id;S.words[id]=[];save();closeSheet();render();toast(name+" 추가했어")}
+  const id=uid();S.langs.push({id,name,flag:(f.flag.value.trim()||""),tts:f.tts.value.trim()||""});S.cur=id;S.words[id]=[];save();closeSheet();render();toast(name+" 추가했어")}
 
 function openAddSub(pos){S._subPos=pos;openSheet(`<div class="grab"></div><h3>세부 분류 추가 <button class="x" data-close aria-label="닫기">✕</button></h3>
   <p class="hint">${posName(pos)}에 새 칸을 만들게.</p>
@@ -1571,7 +1585,7 @@ function paintBulkPreview(){const box=document.getElementById("bulkPreview"),ta=
   const extra=(skipped.length?` · ${skipped.length}개는 건너뜀`:"")+(bare.length?` · 뜻 없는 ${bare.length}개`:"");
   box.innerHTML=`<b>${pairs.length}개</b> 인식됨${extra}<ul>${pairs.map(p=>{const d=detectGender(p.word);const g=d.gender?` <span class="gb ${d.gender}">${genderLabel(d.gender)}</span>`:"";return `<li>${esc(d.word)}${g} — ${esc(p.meaning)}</li>`}).join("")}</ul>`}
 function doBulk(){if(BR.run){toast("뜻 찾는 중이야. 끝나고 눌러 줘");return}const raw=document.querySelector("#bulkForm textarea").value;const {pairs,skipped,bare}=parseBulkText(raw);
-  if(!pairs.length){paintBulkPreview();toast(bare.length?"뜻이 비어 있어. 🌐 뜻 자동으로 채우기를 먼저 눌러 줘":(raw.trim()?"단어와 뜻 짝을 찾지 못했어. 단어 - 뜻 형식으로 넣어 줘":"먼저 단어를 붙여넣어 줘"));return}
+  if(!pairs.length){paintBulkPreview();toast(bare.length?"뜻이 비어 있어.  뜻 자동으로 채우기를 먼저 눌러 줘":(raw.trim()?"단어와 뜻 짝을 찾지 못했어. 단어 - 뜻 형식으로 넣어 줘":"먼저 단어를 붙여넣어 줘"));return}
   const pos=S.lastPos||"",sub=pos?(S.bulkSub!=null?S.bulkSub:S.lastSub)||"":"";
   const g=(pos==="n"&&genderEnabled())?(S.bulkGender||""):"";
   const lid=wikiLangId(),info=S._bulkInfo||{};
@@ -1632,7 +1646,7 @@ function doExport(){const blob=new Blob([JSON.stringify({v:2,exported:new Date()
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="단어구름-백업-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("파일을 저장했어")}
 function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{
     const o=JSON.parse(r.result);if(!o||typeof o!=="object"||!o.words)throw new Error("형식");
-    const langs=Array.isArray(o.langs)?o.langs:[];langs.forEach(l=>{if(l&&l.id&&l.name&&!S.langs.some(x=>x.id===l.id))S.langs.push({id:l.id,name:l.name,flag:l.flag||"🌍",tts:l.tts||"",persons:l.persons,tenses:l.tenses})});
+    const langs=Array.isArray(o.langs)?o.langs:[];langs.forEach(l=>{if(l&&l.id&&l.name&&!S.langs.some(x=>x.id===l.id))S.langs.push({id:l.id,name:l.name,flag:l.flag||"",tts:l.tts||"",persons:l.persons,tenses:l.tenses})});
     if(o.customSub)Object.keys(o.customSub).forEach(k=>{S.customSub[k]=S.customSub[k]||[];(o.customSub[k]||[]).forEach(s=>{if(!S.customSub[k].includes(s))S.customSub[k].push(s)})});
     if(o.seeded&&typeof o.seeded==="object"){S.seeded=S.seeded||{};Object.keys(o.seeded).forEach(lid=>{S.seeded[lid]=S.seeded[lid]||{};if(o.seeded[lid]&&typeof o.seeded[lid]==="object")Object.assign(S.seeded[lid],o.seeded[lid])})}
     let add=0;const src=o.words||{};Object.keys(src).forEach(k=>{S.words[k]=S.words[k]||[];const ids=new Set(S.words[k].map(w=>w.id));
