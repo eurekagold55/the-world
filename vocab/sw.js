@@ -1,4 +1,4 @@
-const CACHE = "vocab-cloud-v5";
+const CACHE = "vocab-cloud-v6";
 const ASSETS = [
   "./",
   "./index.html",
@@ -6,7 +6,8 @@ const ASSETS = [
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png",
-  "./icon-maskable-512.png"
+  "./icon-maskable-512.png",
+  "./Galmuri11.woff2"
 ];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -19,7 +20,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) return; // Wiktionary etc. go straight to network (never cached here)
   const isHTML = e.request.mode === "navigate" || e.request.destination === "document" || url.pathname.endsWith(".html") || /\/$/.test(url.pathname);
   if (isHTML) {
     e.respondWith(

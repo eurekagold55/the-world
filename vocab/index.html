@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f6f5f8">
+<meta name="theme-color" content="#0b0d1a">
+<link rel="preload" href="Galmuri11.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="단어구름">
 <meta name="description" content="프랑스어·러시아어·터키어 단어 암기">
 <title>단어 구름</title>
@@ -149,6 +150,92 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
 .bulk-preview b{color:var(--accent);font-weight:600}
 .bulk-preview ul{margin:6px 0 0;padding-left:1.15em}
 .bulk-preview li{word-break:break-word}
+/* ===== 8-bit dark pixel theme ===== */
+@font-face{font-family:"Galmuri11";src:url("Galmuri11.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+:root{
+  --ink:#eef1ff; --muted:#a9b0d6; --soft:#7680ad;
+  --bg:#0b0d1a; --card:#151a33; --card2:#1c2244; --line:#3a4380; --edge:#05060d;
+  --accent:#4dff9a; --accent-ink:#06210f; --accent-soft:#12382a;
+  --cyan:#3de1ff; --mag:#ff5fd2; --yel:#ffe45c;
+  --know:#4dff9a; --know-bg:#103325;
+  --kinda:#ffe45c; --kinda-bg:#38320f;
+  --no:#ff6b8b; --no-bg:#3a1422;
+  --radius:0px;
+  --px:3px; --sh:4px 4px 0 var(--edge);
+}
+html,body{background:var(--bg);color:var(--ink);font-family:"Galmuri11","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-weight:400;
+  -webkit-font-smoothing:none;-moz-osx-font-smoothing:unset;letter-spacing:0}
+body{background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px);background-size:100% 4px}
+*{border-radius:0!important}
+h1,h2,h3,h4,.display,b,strong,.btn,.item .w,.face .w,.qcard .q,.hero .n{font-weight:400!important;letter-spacing:0}
+input,textarea,select{background:var(--edge);color:var(--ink);border:var(--px) solid var(--line);box-shadow:none;font-family:inherit}
+input::placeholder,textarea::placeholder{color:#555d8c}
+input:focus,textarea:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 0 var(--px) var(--edge)}
+.chip{background:var(--card);color:var(--ink);border:var(--px) solid var(--line);box-shadow:var(--sh)}
+.chip.on{background:var(--yel);color:#1a1600;border-color:var(--edge)}
+.chip.add{background:transparent;color:var(--muted);box-shadow:none;border-style:dashed}
+.brand h1{color:var(--accent);text-shadow:3px 3px 0 var(--edge),0 0 1px var(--accent);font-size:1.6rem}
+.brand p{color:var(--muted)}
+.hero,.panel,.qcard,.face,.item,.install,.cell{background:var(--card);border:var(--px) solid var(--line);box-shadow:var(--sh)}
+.hero{border-color:var(--cyan)}
+.hero .k{color:var(--cyan)}
+.hero .n{color:var(--yel);text-shadow:3px 3px 0 var(--edge)}
+.btn{background:var(--card2);color:var(--ink);border:var(--px) solid var(--line);box-shadow:var(--sh);transition:transform .05s}
+.btn:active,.chip:active,.item:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--edge)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--edge)}
+.btn.ghost{background:transparent;border-color:var(--line)}
+.btn.know{background:var(--know-bg);color:var(--know);border-color:var(--know)}
+.btn.kinda{background:var(--kinda-bg);color:var(--kinda);border-color:var(--kinda)}
+.btn.no{background:var(--no-bg);color:var(--no);border-color:var(--no)}
+.panel h2,.tense h4,.sheet h3{color:var(--cyan)}
+.tense h4::before{content:"▶ ";color:var(--mag)}
+.field label,.lbl{color:var(--muted)}
+.hint{color:var(--soft)}
+.toast{background:var(--yel);color:#1a1600;border:var(--px) solid var(--edge);box-shadow:var(--sh)}
+.nav{background:var(--bg);border-top:var(--px) solid var(--line)}
+.nav button{color:var(--muted)}
+.nav button.on{background:var(--accent-soft);color:var(--accent);outline:var(--px) solid var(--accent);outline-offset:-3px}
+.back,.sheet h3 .x{background:var(--card2);border:var(--px) solid var(--line);color:var(--ink);box-shadow:var(--sh)}
+.duepill{background:var(--mag);color:#2a0020;border:2px solid var(--edge)}
+.face{border-color:var(--mag)}
+.face .w{color:var(--yel);text-shadow:2px 2px 0 var(--edge)}
+.face .m{color:var(--ink)}
+.spk{background:var(--card2);border:var(--px) solid var(--line)}
+.item .m{color:var(--muted)}
+.item .tag{color:var(--cyan)}
+.item .go{background:var(--accent-soft);color:var(--accent);border:2px solid var(--accent)!important}
+.gb{border:2px solid currentColor;padding:0 5px}
+.gb.m{background:#0f2440;color:#6fc3ff}
+.gb.f{background:#3a1030;color:#ff8ad8}
+.gb.pl{background:#24164a;color:#c3a6ff}
+.gb.both{background:#332a10;color:#ffd46b}
+.stress{background:var(--card2);border:var(--px) solid var(--line);color:var(--yel)}
+.dots i{background:#2a3060}
+.dots i.on{background:var(--cyan)}
+.dots i.ok{background:var(--accent)}
+.choices button{background:var(--card);border:var(--px) solid var(--line);box-shadow:var(--sh);color:var(--ink)}
+.choices button.ok{background:var(--know-bg);border-color:var(--know)}
+.choices button.bad{background:var(--no-bg);border-color:var(--no)}
+.ov{background:#000000b0}
+.sheet{background:var(--card);border-top:var(--px) solid var(--cyan);color:var(--ink)}
+.sheet .grab{background:var(--line)}
+.more button{color:var(--ink);border-bottom:2px dashed var(--line)}
+.picks .chip{background:var(--card)}
+.picks .chip.on{background:var(--yel);color:#1a1600;border-color:var(--edge)}
+.picks .chip .c{color:inherit;opacity:.7}
+.crow .pn{color:var(--muted)}
+.crow input.auto{background:#0e2a33;border-color:var(--cyan);color:#d8f8ff}
+.crow input.auto.wk{background:#2e0f2a;border-color:var(--mag);color:#ffe3f6}
+.ab{color:var(--cyan)}
+.ab.wk{color:var(--mag)}
+.crow .pn .ab{display:block;margin-left:0;font-size:.62rem;line-height:1.2}
+.cell{color:var(--ink)}
+.cell.hid{background:var(--card2);border-color:var(--line);color:transparent}
+.cell.hid::after{color:var(--soft)}
+.bulk-preview b{color:var(--accent)}
+.empty{color:var(--muted)}
+.prog{color:var(--muted)}
+::selection{background:var(--mag);color:#000}
 </style>
 </head>
 <body>
@@ -242,7 +329,7 @@ function guessGroup(word,lang){const w=(word||"").toLowerCase().trim();if(!isFr(
   if(w==="aller")return"irr";if(w.endsWith("er"))return"er";if(w.endsWith("ir"))return"ir";if(w.endsWith("re"))return"re";return"irr"}
 function mkWord(word,meaning,ex,pos,sub,gender){const d=detectGender(word);
   const w={id:uid(),word:d.word,meaning:nfc(meaning).trim(),ex:nfc(ex||"").trim(),created:new Date().toISOString(),ease:2.5,interval:0,reps:0,lapses:0,due:today(),last:null,pos:pos||"",sub:sub||"",gender:d.gender||gender||"",conj:{},conjAuto:{},conjSRS:{},vgroup:"",aspectImp:"",aspectPf:""};
-  if(w.pos==="v"){w.vgroup=guessGroup(w.word,L());autoFill(w,false)}
+  if(w.pos==="v"){w.vgroup=guessGroup(w.word,L());autoFill(w,false);wikiQueue(w)}
   return w}
 function addOne(word,meaning,ex,pos,sub,gender){const d=detectGender(word);if(!d.word||!nfc(meaning).trim())return false;words().push(mkWord(d.word,meaning,ex,pos,sub,d.gender||gender||""));save();return true}
 const shuffle=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x};
@@ -300,6 +387,99 @@ function autoFill(w,overwrite){let forms=null;if(isFr()&&(w.vgroup||guessGroup(w
     if(!overwrite&&w.conj[k]&&!w.conjAuto[k])return;
     w.conj[k]=v;w.conjAuto[k]=true;n++});return n}
 function canAuto(w){return (isFr()&&(w.vgroup||guessGroup(w.word,L()))==="er"&&frEr(w.word))||(isTr()&&trForms(w.word))}
+/* ===== Wiktionary conjugation fetch ===== */
+const WIKI_KEY="vocab-cloud-wiki-v1",WIKI_VER=1;
+function stripStress(s){return nfc(String(s||"").normalize("NFD").replace(/[\u0301\u0300]/g,""))}
+function wikiCacheGet(lang,word){try{const c=JSON.parse(localStorage.getItem(WIKI_KEY)||"{}");const e=c[lang+":"+word];
+  if(e&&e.v===WIKI_VER&&(Date.now()-e.t)<1000*60*60*24*60)return e}catch(_){}return null}
+function wikiCachePut(lang,word,data){try{const c=JSON.parse(localStorage.getItem(WIKI_KEY)||"{}");c[lang+":"+word]={...data,v:WIKI_VER,t:Date.now()};
+  const ks=Object.keys(c);if(ks.length>300)ks.sort((a,b)=>c[a].t-c[b].t).slice(0,ks.length-300).forEach(k=>delete c[k]);
+  localStorage.setItem(WIKI_KEY,JSON.stringify(c))}catch(_){}}
+function wikiTitle(word,langId){let w=nfc(word).trim();
+  if(langId==="fr"){w=w.replace(/^(se|s['’])\s*/i,"");}
+  if(langId==="ru")w=stripStress(w);
+  w=w.replace(/[’]/g,"'").replace(/\s+/g," ");return w.toLowerCase()}
+function wikiSection(html,langName){const doc=new DOMParser().parseFromString(`<div id="root">${html}</div>`,"text/html");
+  const root=doc.getElementById("root").querySelector(".mw-parser-output")||doc.getElementById("root");
+  const out=doc.createElement("div");let on=false;
+  for(const n of Array.from(root.children)){
+    const h2=n.matches("h2")?n:(n.classList.contains("mw-heading2")?n.querySelector("h2"):null);
+    if(h2){if(on)break;if((h2.id||h2.textContent.trim())===langName||h2.textContent.trim()===langName)on=true;continue}
+    if(on)out.appendChild(n.cloneNode(true))}
+  return on?out:null}
+function cellText(el){if(!el)return"";const c=el.cloneNode(true);c.querySelectorAll(".tr,.IPA,sup,br~*").forEach(x=>x.remove());
+  return nfc(c.textContent.replace(/\s+/g," ").trim())}
+function firstForm(sec,cls){const els=sec.querySelectorAll("[class~='"+cls+"']");for(const e of els){const t=cellText(e);if(t&&t!=="—")return t}return""}
+const FR_PRON={je:"je",tu:"tu",il:"il",nous:"nous",vous:"vous",ils:"ils"};
+function frParse(sec,refl){const tbl=sec.querySelector(".roa-inflection-table");if(!tbl)return null;
+  const box=tbl.closest(".NavFrame")||tbl;
+  const pp=firstForm(box,"pp-form-of");
+  const P=[["je","1|s"],["tu","2|s"],["il","3|s"],["nous","1|p"],["vous","2|p"],["ils","3|p"]];
+  const f={};let n=0;
+  P.forEach(([p,t])=>{const pr=firstForm(box,t+"|pres|indc-form-of"),fu=firstForm(box,t+"|futr-form-of");
+    if(pr){f["pres."+p]=p==="je"?elideJe(pr):FR_PRON[p]+" "+pr;n++}
+    if(fu){f["fut."+p]=p==="je"?elideJe(fu):FR_PRON[p]+" "+fu;n++}});
+  if(!n)return null;
+  let aux="avoir";const hd=Array.from(box.querySelectorAll("th.roa-compound-row")).map(x=>x.textContent).join(" ");
+  const hE=/(^|[^\p{L}])être([^\p{L}]|$)/u.test(hd),hA=/(^|[^\p{L}])avoir([^\p{L}]|$)/u.test(hd);if(hE&&!hA)aux="être";else if(hE&&hA)aux="avoir/être";
+  if(pp){const A=aux==="être"?{je:"je suis",tu:"tu es",il:"il est",nous:"nous sommes",vous:"vous êtes",ils:"ils sont"}:{je:"j'ai",tu:"tu as",il:"il a",nous:"nous avons",vous:"vous avez",ils:"ils ont"};
+    const ag=aux==="être"?{je:"(e)",tu:"(e)",il:"(e)",nous:"(e)s",vous:"(e)(s)",ils:"(e)s"}:{};
+    P.forEach(([p])=>{f["pc."+p]=A[p]+" "+pp+(ag[p]||"")})}
+  if(refl){const RP={je:"me",tu:"te",il:"se",nous:"nous",vous:"vous",ils:"se"},V=/^[aeiouyàâäéèêëïîôùûh]/i;
+    const R=(p,form)=>{const r=RP[p];return V.test(form)&&r.length===2?r[0]+"'"+form:r+" "+form};
+    P.forEach(([p,t])=>{const pr=firstForm(box,t+"|pres|indc-form-of"),fu=firstForm(box,t+"|futr-form-of");const pn=FR_PRON[p];
+      if(pr)f["pres."+p]=pn+" "+R(p,pr);if(fu)f["fut."+p]=pn+" "+R(p,fu)});
+    if(pp){const E={je:"suis",tu:"es",il:"est",nous:"sommes",vous:"êtes",ils:"sont"},ag={je:"(e)",tu:"(e)",il:"(e)",nous:"(e)s",vous:"(e)(s)",ils:"(e)s"};
+      P.forEach(([p])=>{f["pc."+p]=FR_PRON[p]+" "+R(p,E[p])+" "+pp+ag[p]})}
+    aux="être"}
+  return{forms:f,aux,pp}}
+function ruParse(sec,head){const box=sec.querySelector(".inflection-ru.inflection-verb")||sec.querySelector("table.inflection-table");if(!box)return null;
+  const P=[["ja","1|s"],["ty","2|s"],["on","3|s"],["my","1|p"],["vy","2|p"],["oni","3|p"]];const f={};let n=0,tense="";
+  P.forEach(([p,t])=>{let v=firstForm(box,t+"|pres|ind-form-of");if(v)tense="pres";else{v=firstForm(box,t+"|fut|ind-form-of");if(v)tense="fut"}
+    if(v){f["pres."+p]=v;n++}});
+  [["m","m|s|past|ind-form-of"],["f","f|s|past|ind-form-of"],["n","n|s|past|ind-form-of"],["pl","p|past|ind-form-of"]].forEach(([p,c])=>{const v=firstForm(box,c);if(v){f["past."+p]=v;n++}});
+  if(!n)return null;
+  let aspect="",pair=[];const hl=sec.querySelector(".headword-line");
+  if(hl){const g=hl.querySelector(".gender abbr, .gender");const gt=g?(g.getAttribute("title")||g.textContent):"";
+    if(/imperfective|impf/.test(gt))aspect="impf";else if(/perfective|pf/.test(gt))aspect="pf";
+    const it=Array.from(hl.querySelectorAll("i"));for(const i of it){if(/^(im)?perfective$/.test(i.textContent.trim())){let s=i.nextSibling;
+      while(s){if(s.nodeType===1&&s.matches("b[lang=ru]")){pair.push(cellText(s))}else if(s.nodeType===1&&s.tagName==="I"&&s.textContent.trim()!=="or")break;else if(s.nodeType===3&&/[,)]/.test(s.textContent))break;s=s.nextSibling}break}}}
+  return{forms:f,aspect,pair,tense}}
+function trParse(sec){const tbls=Array.from(sec.querySelectorAll("table")).filter(t=>t.querySelector("th.vsShow")&&!t.querySelector("table"));
+  const tbl=tbls.find(t=>/positive/i.test(t.textContent.slice(0,300)))||tbls[0];if(!tbl)return null;
+  const map={aorist:"genis",continuous:"simdi",past:"gecmis"};const P=["ben","sen","o","biz","siz","onlar"];const f={};let n=0;
+  for(const tr of tbl.querySelectorAll("tr")){if(tr.closest("table")!==tbl)continue;const th=tr.querySelector("th.vsShow");if(!th)continue;const k=map[th.textContent.trim().toLowerCase()];if(!k||f[k+".ben"])continue;
+    const tds=Array.from(tr.querySelectorAll("td"));if(tds.length<6)continue;
+    P.forEach((p,i)=>{const v=cellText(tds[i]).split(/\s*[,\/]\s*/)[0];if(v){f[k+"."+p]=v;n++}})}
+  return n?{forms:f}:null}
+async function wikiFetch(word,langId){const title=wikiTitle(word,langId);const ckey=(langId==="fr"&&/^(se\s+|s['’]\s*)/i.test(nfc(word).trim())?"se ":"")+title;const cached=wikiCacheGet(langId,ckey);if(cached)return cached;
+  if(navigator.onLine===false)throw new Error("offline");
+  const url="https://en.wiktionary.org/w/api.php?action=parse&format=json&formatversion=2&prop=text&redirects=1&origin=*&page="+encodeURIComponent(title);
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),12000);
+  let j;try{const r=await fetch(url,{signal:ctl.signal,cache:"no-store"});if(!r.ok)throw new Error("http "+r.status);j=await r.json()}finally{clearTimeout(to)}
+  if(j.error)return{notFound:true};
+  const name={fr:"French",ru:"Russian",tr:"Turkish"}[langId];const sec=wikiSection(j.parse.text,name);if(!sec)return{notFound:true};
+  const res=langId==="fr"?frParse(sec,/^(se\s+|s['’]\s*)/i.test(nfc(word).trim())):langId==="ru"?ruParse(sec):trParse(sec);if(!res)return{notFound:true};
+  wikiCachePut(langId,ckey,res);return res}
+function wikiLangId(l){l=l||L();return isFr(l)?"fr":isRu(l)?"ru":isTr(l)?"tr":""}
+function applyWiki(w,res,overwrite){w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};let n=0;
+  Object.entries(res.forms||{}).forEach(([k,v])=>{if(!overwrite&&w.conj[k]&&w.conjAuto[k]===false)return;
+    w.conj[k]=v;w.conjAuto[k]="wiki";n++});
+  if(res.aux)w.aux=res.aux;
+  if(res.aspect){if(res.aspect==="impf"){if(!w.aspectImp)w.aspectImp=w.word;if(!w.aspectPf&&res.pair&&res.pair.length)w.aspectPf=res.pair.join(" / ")}
+    else{if(!w.aspectPf)w.aspectPf=w.word;if(!w.aspectImp&&res.pair&&res.pair.length)w.aspectImp=res.pair.join(" / ")}w.ruTense=res.tense||""}
+  w.wikiAt=Date.now();return n}
+const wikiBusy=new Set();let wikiQ=Promise.resolve();
+function wikiQueue(w){const lid=wikiLangId();if(!lid||!w)return;const id=w.id;setTimeout(()=>{wikiQ=wikiQ.then(()=>wikiFill(id,lid,{})).catch(()=>{})},30)}
+async function wikiFill(wid,langId,opts){opts=opts||{};if(!langId||wikiBusy.has(wid))return;wikiBusy.add(wid);
+  const find=()=>(S.words[langId]||[]).find(x=>x.id===wid);
+  if(opts.ui&&S.view==="conj")render();
+  try{const w0=find();if(!w0)return;const res=await wikiFetch(w0.word,langId);const w=find();if(!w)return;
+    if(res.notFound){const n=(langId===S.cur)?autoFill(w,false):0;save();if(opts.ui)toast(n?"위키에 표가 없어서 규칙으로 "+n+"칸 채웠어. 확인해 줘":"위키에서 이 동사를 못 찾았어 ㅠ 직접 적어 줘");}
+    else{const n=applyWiki(w,res,!!opts.overwrite);save();if(opts.ui)toast(n?"위키에서 "+n+"칸 가져왔어!":"이미 직접 고친 칸이라 그대로 뒀어")}}
+  catch(e){const w=find();const n=w&&langId===S.cur?autoFill(w,false):0;if(w)save();
+    if(opts.ui)toast(n?"인터넷 연결이 안 돼서 규칙으로 "+n+"칸만 채웠어":"인터넷 연결이 안 되는 것 같아. 나중에 다시 눌러 줘")}
+  finally{wikiBusy.delete(wid);if(S.view==="conj"&&S.conjId===wid)render()}}
 
 function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac"].includes(v);
   const nav=document.getElementById("nav");nav.style.display=hide?"none":"";
@@ -459,7 +639,10 @@ function viewQuizDone(){const Q=S.quiz||{correct:0,wrong:0};
     <button class="btn primary block" data-go="quiz">한 판 더</button>
     <button class="btn ghost block" data-go="home" style="margin-top:8px">홈으로</button></div>`}
 function norm(s){return fold(s)}
-function sameAns(a,b){const x=fold(a),y=fold(b);if(x===y)return true;
+function ansVariants(b){b=String(b??"");const parts=b.split(/(\([^)]*\))/);let out=[""];
+  parts.forEach(pt=>{if(/^\(.*\)$/.test(pt)){const inner=pt.slice(1,-1);out=out.flatMap(o=>[o,o+inner])}else out=out.map(o=>o+pt)});return out.slice(0,16)}
+function sameAns(a,b){if(/\(/.test(String(b??"")))return ansVariants(b).some(v=>sameAns1(a,v))||sameAns1(a,b);return sameAns1(a,b)}
+function sameAns1(a,b){const x=fold(a),y=fold(b);if(x===y)return true;
   const strip=s=>s.replace(/^(jai|j|je|tu|il|elle|on|nous|vous|ils|elles|ben|sen|o|biz|siz|onlar|я|ты|он|она|мы|вы|они)\s+/i,"").replace(/^j(?=[aeiou])/i,"");
   return strip(x)===strip(y)}
 
@@ -513,13 +696,15 @@ function viewConj(){const w=conjWord();if(!w)return go("list"),"";
         <div class="field" style="margin:0"><label>сов. (완료)</label><input data-aspect="pf" value="${esc(w.aspectPf||"")}" placeholder="написать"></div></div>`:""}
       ${sc.groups.length?`<div class="lbl" style="margin-top:8px">그룹</div><div class="picks">${sc.groups.map(g=>`<button type="button" class="chip ${w.vgroup===g.id?"on":""}" data-vgroup="${g.id}">${g.name}</button>`).join("")}</div>`:""}
     </div>
-    ${autoable?`<button class="btn ghost block" id="autoFillBtn" style="margin-bottom:10px">규칙으로 채우기</button><p class="hint" style="margin-top:-6px;margin-bottom:10px">연보라색 칸은 자동으로 채운 거야. 한 번만 확인해 줘.</p>`:
-      (isFr()||isTr()?`<p class="hint">이 동사는 자동으로 채우기 어려워서, 직접 적어 줘.</p>`:isRu()?`<p class="hint">러시아어는 예외가 많아서 칸만 열어 뒀어.</p>`:`<p class="hint">이 언어는 칸 이름을 내가 정해 줘.</p>`)}
+    ${wikiLangId()?`<button class="btn primary block" id="wikiBtn" style="margin-bottom:8px" ${wikiBusy.has(w.id)?"disabled":""}>${wikiBusy.has(w.id)?"가져오는 중…":"🌐 인터넷에서 가져오기"}</button>`:""}
+    ${autoable?`<button class="btn ghost block" id="autoFillBtn" style="margin-bottom:8px">규칙으로 채우기</button>`:""}
+    ${wikiLangId()?`<p class="hint" style="margin:0 0 12px">위키낱말사전(Wiktionary)에서 변화표를 가져와. <span class="ab wk">자동(위키)</span> 칸은 거기서 온 거고, <span class="ab">자동</span> 칸은 규칙으로 채운 거야. 다 고칠 수 있어.${isFr()&&w.aux?` 조동사: <b>${esc(w.aux)}</b>${w.aux==="être"?" (주어 성·수에 맞춰 -e/-s 붙여)":""}`:""}${isRu()&&w.ruTense==="fut"?" 완료상이라 첫 칸은 <b>미래</b>야.":""}</p>`:
+      (autoable?`<p class="hint" style="margin-top:-2px;margin-bottom:10px">연보라색 칸은 자동으로 채운 거야. 한 번만 확인해 줘.</p>`:`<p class="hint">이 언어는 칸 이름을 내가 정해 줘.</p>`)}
     ${sc.custom?`<button class="btn ghost block" id="editSchema" style="margin-bottom:10px">인칭 / 시제 이름 바꾸기</button>`:""}
     ${sc.tenses.map(t=>`<div class="tense"><h4>${esc(t.name)}</h4>
       ${t.persons.map(p=>{const k=ck(t.id,p.id),val=w.conj[k]||"",auto=!!w.conjAuto[k]&&!!val;
-        return `<div class="crow"><div class="pn">${esc(p.name)}${auto?`<span class="ab">자동</span>`:""}</div>
-          <input class="${auto?"auto":""}" data-ck="${k}" value="${esc(val)}" placeholder="${esc(p.name)}"></div>`}).join("")}
+        return `<div class="crow"><div class="pn">${esc(p.name)}${auto?(w.conjAuto[k]==="wiki"?`<span class="ab wk">자동(위키)</span>`:`<span class="ab">자동</span>`):""}</div>
+          <input class="${auto?(w.conjAuto[k]==="wiki"?"auto wk":"auto"):""}" data-ck="${k}" value="${esc(val)}" placeholder="${esc(p.name)}"></div>`}).join("")}
     </div>`).join("")}
     <div class="row"><button class="btn ghost" id="conjReveal">가리고 보기</button>
     <button class="btn primary" id="pracThis">이 동사 연습</button></div>`}
@@ -568,7 +753,7 @@ document.addEventListener("click",e=>{
     if(px==="add"){const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
       if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
     else if(px==="bulk"){const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta){ta.value=tx;paintBulkPreview()}}
-    else render()} else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=spPos.dataset.setpos;w.sub="";if(w.pos==="v"&&!w.vgroup)w.vgroup=guessGroup(w.word,L());if(w.pos==="n"&&!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender}save();openEdit(w.id)} }return}
+    else render()} else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=spPos.dataset.setpos;w.sub="";if(w.pos==="v"&&!w.vgroup)w.vgroup=guessGroup(w.word,L());if(w.pos==="v"&&!w.wikiAt)wikiQueue(w);if(w.pos==="n"&&!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender}save();openEdit(w.id)} }return}
   const spSub=e.target.closest("[data-setsub]");if(spSub){const px=spSub.dataset.px;if(px==="add"){S.lastSub=spSub.dataset.setsub;save();
     const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
     if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
@@ -598,6 +783,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#pracAgain")){startConjPrac(S.prac?.onlyId||null);return}
   if(e.target.closest("#conjReveal")){openConj(S.conjId,"rev");return}
   if(e.target.closest("#backConj")){openConj(S.conjId);return}
+  if(e.target.closest("#wikiBtn")){const w=conjWord();if(w)wikiFill(w.id,wikiLangId(),{ui:true,overwrite:false});return}
   if(e.target.closest("#autoFillBtn")){const w=conjWord();const n=autoFill(w,false);save();render();toast(n?n+"칸을 채웠어. 연보라색만 확인해 줘":"이미 다 채워져 있거나, 규칙으로 못 채워")}
   if(e.target.closest("#editSchema")){openSchema();return}
   const vg=e.target.closest("[data-vgroup]");if(vg){const w=conjWord();if(w){w.vgroup=vg.dataset.vgroup;if(w.vgroup==="er")autoFill(w,false);save();render()}return}
@@ -640,7 +826,7 @@ document.addEventListener("input",e=>{
   if(e.target.id==="search"){const pos=e.target.selectionStart;S.q=e.target.value;render();const s=document.getElementById("search");if(s){s.focus();s.setSelectionRange(pos,pos)}}
   if(e.target.id==="qIn"&&S.quiz)S.quiz.typed=e.target.value;
   if(e.target.id==="pIn"&&S.prac)S.prac.typed=e.target.value;
-  if(e.target.dataset.ck){const w=conjWord();if(!w)return;const k=e.target.dataset.ck;w.conj[k]=nfc(e.target.value);w.conjAuto[k]=false;e.target.classList.remove("auto");save()}
+  if(e.target.dataset.ck){const w=conjWord();if(!w)return;const k=e.target.dataset.ck;w.conj[k]=nfc(e.target.value);w.conjAuto[k]=false;e.target.classList.remove("auto","wk");save()}
   if(e.target.dataset.aspect){const w=conjWord();if(!w)return;if(e.target.dataset.aspect==="imp")w.aspectImp=nfc(e.target.value);else w.aspectPf=nfc(e.target.value);save()}
 });
 document.addEventListener("focusin",e=>{if(e.target&&(e.target.dataset.ck||e.target.id==="addWord"||e.target.id==="editWord"||e.target.id==="qIn"||e.target.id==="pIn"||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"))S._stressEl=e.target});
@@ -751,7 +937,7 @@ function saveEdit(){const id=S._edit,w=words().find(x=>x.id===id),f=document.get
   const d=detectGender(f.word.value);const meaning=nfc(f.mean.value).trim(),ex=nfc(f.ex.value).trim();
   if(!d.word||!meaning){toast("단어랑 뜻은 비울 수 없어");return}
   const prev=w.word;w.word=d.word;w.meaning=meaning;w.ex=ex;if(d.gender)w.gender=d.gender;
-  if(w.pos==="v"&&w.word!==prev){if(!w.vgroup)w.vgroup=guessGroup(w.word,L());autoFill(w,false)}
+  if(w.pos==="v"&&w.word!==prev){if(!w.vgroup)w.vgroup=guessGroup(w.word,L());autoFill(w,false);wikiQueue(w)}
   save();closeSheet();S._edit=null;render();toast("고쳤어")}
 function doDelete(){const id=S._edit;if(!confirm("이 단어를 삭제할까?"))return;setWords(words().filter(w=>w.id!==id));closeSheet();S._edit=null;render();toast("삭제했어")}
 
