@@ -91,6 +91,14 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
 .item .w{font-weight:600;word-break:break-word}
 .item .m{color:var(--muted);font-size:.9rem;word-break:break-word}
 .item .tag{font-size:.75rem;color:var(--accent);margin-top:2px}
+.gb{display:inline-block;font-size:.68rem;font-weight:600;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:middle;letter-spacing:.02em;line-height:1.4}
+.gb.m{background:#e8eef8;color:#3d5a8a}
+.gb.f{background:#f8e8ee;color:#8a3d5a}
+.gb.pl{background:#eeeaf6;color:#5a4a8a}
+.gb.both{background:#f3efe8;color:#6a5a40}
+.with-btn{display:flex;gap:8px;align-items:center}
+.with-btn input{flex:1;min-width:0}
+.stress{flex:0 0 auto;min-width:44px;min-height:44px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:600;color:var(--accent)}
 .dots{display:flex;gap:4px;padding-top:6px}
 .dots i{width:7px;height:7px;border-radius:50%;background:#e4e2e8;display:block}
 .dots i.on{background:var(--accent)}
@@ -162,18 +170,46 @@ const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).sli
 const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const addDays=(s,n)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nfc=s=>String(s??"").normalize("NFC");
+function fold(s){return String(s??"").normalize("NFD").replace(/[\u0301\u0300]/g,"").replace(/[\u00B4\u02CA\u02CB\u02B9\u02C8]/g,"").replace(/[''ʻʼˈˊ´`]/g,"").toLowerCase().replace(/\s+/g," ").trim()}
+function genderEnabled(l){l=l||(typeof L==="function"?L():null);return !!(l&&(l.id==="fr"||l.tts==="fr-FR"))}
+function genderLabel(g){return {m:"m.",f:"f.",pl:"pl.",both:"m./f."}[g]||""}
+function genderBadge(w){if(!w||!w.gender||!genderEnabled())return"";return `<span class="gb ${w.gender}">${genderLabel(w.gender)}</span>`}
+function detectGender(raw){let s=nfc(raw).trim();let fromMark="",fromArticle="";
+  const mark=s.match(/\s*[\(\[]\s*(m\.?\s*\/\s*f\.?|f\.?\s*\/\s*m\.?|m\.?|f\.?|pl\.?)\s*[\)\]]\s*$/i);
+  if(mark){const k=mark[1].toLowerCase().replace(/[\s.]/g,"");if(k==="m")fromMark="m";else if(k==="f")fromMark="f";else if(k==="pl")fromMark="pl";else fromMark="both";s=s.slice(0,mark.index).trim()}
+  if(/^(le)\s+/i.test(s))fromArticle="m";
+  else if(/^(la)\s+/i.test(s))fromArticle="f";
+  return{word:s,gender:fromMark||fromArticle||"",fromMark,fromArticle}}
+function stripFrArticle(s){return nfc(s).replace(/^(les|le|la|un|une)\s+/i,"").replace(/^l['’]/i,"").trim()}
+function stressBtn(fid){if(typeof isRu==="function"?!isRu():(L().id!=="ru"&&L().tts!=="ru-RU"))return"";return `<button type="button" class="stress" data-stress="${fid||""}" aria-label="강세 표시 넣기">́ 강세</button>`}
+function insertStress(el){if(!el||el.disabled)return;const V=/[аеёиоуыэюяaeiouyàâäéèêëïîôöùûüáéíóúýæœАЕЁИОУЫЭЮЯAEIOUY]/i;
+  let v=el.value,i=el.selectionStart??v.length,j=i;
+  while(j>0&&/\p{M}/u.test(v[j-1]))j--;
+  if(!(j>0&&V.test(v[j-1]))){toast("모음 바로 뒤에 커서를 두고 눌러 줘");return}
+  if(v[j]==="\u0301")return;
+  v=v.slice(0,j)+"\u0301"+v.slice(j);el.value=nfc(v);
+  const caret=nfc(v.slice(0,j+1)).length;el.setSelectionRange(caret,caret);
+  el.dispatchEvent(new Event("input",{bubbles:true}));el.focus()}
+
 const toast=(m)=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),1800)};
 function posName(id){return POS.find(p=>p.id===id)?.name||(id?"기타":"미분류")}
 function allSubs(pos){if(!pos)return[];const d=SUBS[pos]||["기타"],c=(S.customSub[pos]||[]);const extra=[];
   words().forEach(w=>{if(w.pos===pos&&w.sub&&!d.includes(w.sub)&&!c.includes(w.sub)&&!extra.includes(w.sub))extra.push(w.sub)});
   return [...d,...c.filter(x=>!d.includes(x)),...extra]}
 function migrate(s){s.customSub=s.customSub||{n:[],adj:[],v:[],adv:[],other:[]};
-  s.words=s.words||{};Object.values(s.words).forEach(arr=>(arr||[]).forEach(w=>{if(w.pos==null)w.pos="";if(w.sub==null)w.sub="";w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};w.conjSRS=w.conjSRS||{}}));
+  s.words=s.words||{};Object.values(s.words).forEach(arr=>(arr||[]).forEach(w=>{
+    if(w.pos==null)w.pos="";if(w.sub==null)w.sub="";w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};w.conjSRS=w.conjSRS||{};
+    w.word=nfc(w.word||"");w.meaning=nfc(w.meaning||"");w.ex=nfc(w.ex||"");
+    if(w.conj)Object.keys(w.conj).forEach(k=>{if(w.conj[k])w.conj[k]=nfc(w.conj[k])});
+    if(!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender||""}
+  }));
   return s}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&Array.isArray(s.langs)&&s.words)return migrate(s)}catch(e){}
   return migrate({cur:"fr",langs:PRESETS.map(l=>({...l})),words:{}})}
 let S=load();
 const save=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,lastPos:S.lastPos||"",lastSub:S.lastSub||""}));
+save();
 const L=()=>S.langs.find(l=>l.id===S.cur)||S.langs[0];
 const words=()=>S.words[S.cur]||(S.words[S.cur]=[]);
 const setWords=arr=>{S.words[S.cur]=arr;save()};
@@ -182,7 +218,8 @@ function byFilter(list,f){f=f||{};return list.filter(w=>{
   if(f.pos==="__none__")return !w.pos;
   if(f.pos&&w.pos!==f.pos)return false;
   if(f.sub==="__none__")return w.pos===(f.pos||w.pos)&&!w.sub;
-  if(f.sub&&w.sub!==f.sub)return false;return true})}
+  if(f.sub&&w.sub!==f.sub)return false;
+  if(f.gender&&w.gender!==f.gender)return false;return true})}
 function mastery(w){if(!w.last&&(w.reps||0)===0)return 0;if((w.reps||0)===0)return 1;if((w.interval||0)>=21)return 5;if((w.interval||0)>=7)return 4;if((w.reps||0)>=2)return 3;return 2}
 function grade(w,q){w.ease=w.ease||2.5;w.reps=w.reps||0;w.interval=w.interval||0;w.lapses=w.lapses||0;
   if(q<3){w.reps=0;w.interval=0;w.lapses++;w.due=addDays(today(),1)}
@@ -191,17 +228,19 @@ function grade(w,q){w.ease=w.ease||2.5;w.reps=w.reps||0;w.interval=w.interval||0
 function gradeConj(w,key,q){w.conjSRS=w.conjSRS||{};const c=w.conjSRS[key]||{ease:2.5,interval:0,reps:0,lapses:0,due:today(),last:null};
   grade(c,q);w.conjSRS[key]=c}
 function speak(text){if(!text||!window.speechSynthesis){toast("이 기기는 소리 읽기를 지원하지 않아");return}
-  const u=new SpeechSynthesisUtterance(text);u.lang=L().tts||"en-US";
+  const spoken=nfc(String(text).normalize("NFD").replace(/[\u0301\u0300]/g,"").replace(/[\u00B4\u02CA\u02CB]/g,""));
+  const u=new SpeechSynthesisUtterance(spoken);u.lang=L().tts||"en-US";
   const vs=speechSynthesis.getVoices()||[];const pref=(L().tts||"").slice(0,2).toLowerCase();
   u.voice=vs.find(v=>v.lang===L().tts)||vs.find(v=>v.lang.toLowerCase().startsWith(pref))||null;
   speechSynthesis.cancel();speechSynthesis.speak(u)}
 if(window.speechSynthesis)speechSynthesis.addEventListener("voiceschanged",()=>{});
 function guessGroup(word,lang){const w=(word||"").toLowerCase().trim();if(!isFr(lang))return"";
   if(w==="aller")return"irr";if(w.endsWith("er"))return"er";if(w.endsWith("ir"))return"ir";if(w.endsWith("re"))return"re";return"irr"}
-function mkWord(word,meaning,ex,pos,sub){const w={id:uid(),word:word.trim(),meaning:meaning.trim(),ex:(ex||"").trim(),created:new Date().toISOString(),ease:2.5,interval:0,reps:0,lapses:0,due:today(),last:null,pos:pos||"",sub:sub||"",conj:{},conjAuto:{},conjSRS:{},vgroup:"",aspectImp:"",aspectPf:""};
+function mkWord(word,meaning,ex,pos,sub,gender){const d=detectGender(word);
+  const w={id:uid(),word:d.word,meaning:nfc(meaning).trim(),ex:nfc(ex||"").trim(),created:new Date().toISOString(),ease:2.5,interval:0,reps:0,lapses:0,due:today(),last:null,pos:pos||"",sub:sub||"",gender:d.gender||gender||"",conj:{},conjAuto:{},conjSRS:{},vgroup:"",aspectImp:"",aspectPf:""};
   if(w.pos==="v"){w.vgroup=guessGroup(w.word,L());autoFill(w,false)}
   return w}
-function addOne(word,meaning,ex,pos,sub){if(!word||!meaning)return false;words().push(mkWord(word,meaning,ex,pos,sub));save();return true}
+function addOne(word,meaning,ex,pos,sub,gender){const d=detectGender(word);if(!d.word||!nfc(meaning).trim())return false;words().push(mkWord(d.word,meaning,ex,pos,sub,d.gender||gender||""));save();return true}
 const shuffle=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x};
 function closeSheet(){document.getElementById("ov")?.remove()}
 function openSheet(html){closeSheet();const d=document.createElement("div");d.className="ov";d.id="ov";d.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
@@ -289,7 +328,10 @@ function pickers(prefix,pos,sub,opts){opts=opts||{};
   let subChips="";
   if(pos){const subs=allSubs(pos);subChips=`<div class="lbl">세부 분류</div><div class="picks" id="${prefix}Sub">${subs.map(s=>`<button type="button" class="chip ${sub===s?"on":""}" data-setsub="${esc(s)}" data-px="${prefix}">${esc(s)}</button>`).join("")}
     <button type="button" class="chip add" data-addsub="${pos}">＋ 분류</button></div>`}
-  return `<div class="lbl">품사</div>${posChips}${subChips}`}
+  return `<div class="lbl">품사</div>${posChips}${subChips}${opts.gender!=null?genderPicker(prefix,opts.gender):""}`}
+function genderPicker(prefix,gender){if(!genderEnabled())return"";
+  const opts=[["m","남성 m."],["f","여성 f."],["pl","복수"],["both","둘 다"]];
+  return `<div class="lbl">성수</div><div class="picks">${opts.map(([id,n])=>`<button type="button" class="chip ${gender===id?"on":""}" data-setgen="${id}" data-px="${prefix}">${n}</button>`).join("")}<button type="button" class="chip ${!gender?"on":""}" data-setgen="" data-px="${prefix}">미정</button></div>`}
 
 function viewHome(){const n=dueWords().length,tot=words().length,l=L();
   const msg=tot===0?"아직 단어가 없어. 아래에 하나 넣어볼까?":(n===0?"오늘은 다 외운 것 같아 ☁️":"오늘 복습할 단어");
@@ -307,11 +349,11 @@ function viewHome(){const n=dueWords().length,tot=words().length,l=L();
   <section class="panel">
     <h2>빠른 추가</h2>
     <form id="addForm" autocomplete="off">
-      ${pickers("add",pos,sub)}
+      ${pickers("add",pos,sub,{gender:(pos==="n"&&genderEnabled())?(S.addGender||""):null})}
       ${pos==="v"&&isFr()?`<div class="lbl">동사 그룹</div><div class="picks">${[{id:"er",name:"-er"},{id:"ir",name:"-ir"},{id:"re",name:"-re"},{id:"irr",name:"불규칙"}].map(g=>`<button type="button" class="chip ${(S.lastGroup||"er")===g.id?"on":""}" data-setgroup="${g.id}">${g.name}</button>`).join("")}</div>`:""}
-      <div class="field"><label for="addWord">단어</label><input id="addWord" name="word" placeholder="예) toujours" required></div>
-      <div class="field"><label for="addMean">뜻 (한국어)</label><input id="addMean" name="mean" placeholder="예) 항상, 늘" required></div>
-      <div class="field"><label for="addEx">예문 / 메모 (선택)</label><input id="addEx" name="ex" placeholder="Je bois toujours du café."></div>
+      <div class="field"><label for="addWord">단어</label><div class="with-btn"><input id="addWord" name="word" placeholder="예) toujours" required autocomplete="off" spellcheck="false">${stressBtn("addWord")}</div></div>
+      <div class="field"><label for="addMean">뜻 (한국어)</label><input id="addMean" name="mean" placeholder="예) 항상, 늘" required autocomplete="off"></div>
+      <div class="field"><label for="addEx">예문 / 메모 (선택)</label><input id="addEx" name="ex" placeholder="Je bois toujours du café." autocomplete="off"></div>
       <div class="row"><button class="btn primary" type="submit">넣기</button>
       <button class="btn ghost" type="button" id="bulkBtn">여러 개</button></div>
     </form>
@@ -358,7 +400,7 @@ function viewCards(){
     <div class="deck"><div class="flash ${sess.flipped?"flip":""}" id="flash">
       <div class="face">
         <button class="spk" data-speak="${esc(w.word)}" aria-label="발음 듣기">🔊</button>
-        <div class="w">${esc(w.word)}</div>
+        <div class="w">${esc(w.word)}${genderBadge(w)}</div>
         <div class="tap">탭해서 뒤집기</div>
       </div>
       <div class="face back">
@@ -382,22 +424,28 @@ function viewQuizStart(){const tot=pool().length,all=words().length,verbs=byFilt
       <p>${all?(tot?`이 범위에서 ${tot}개로 풀 수 있어.`:"이 분류에는 단어가 없어."):"아직 단어가 없어."}</p>
       <button class="btn primary block" id="quizMc" ${tot>=2?"":"disabled"} style="margin:8px 0">객관식 · 뜻 보고 고르기</button>
       <button class="btn block" id="quizType" ${tot?"":"disabled"}>주관식 · 뜻 보고 단어 쓰기</button>
+      ${genderEnabled()?`<button class="btn ghost block" id="quizGender" ${(words().filter(w=>w.pos==="n"&&(w.gender==="m"||w.gender==="f")).length)?"":"disabled"} style="margin-top:8px">성수 퀴즈 · le 또는 la?</button>`:""}
       <button class="btn ghost block" id="conjPracStart" ${vtot?"":"disabled"} style="margin-top:8px">동사 변화 연습</button>
       <p class="hint">틀린 건 다시 한 번 더 나와. 동사 변화는 채워 둔 칸만 문제로 나와.</p>
     </section>`}
-function startQuiz(mode){const list=pool();if(!list.length){toast("이 분류에 단어가 없어");return}
+function startQuiz(mode){let list;
+  if(mode==="gender"){list=byFilter(words(),{pos:"n",sub:(S.filter||{}).sub}).filter(w=>w.gender==="m"||w.gender==="f");if(!list.length){toast("성수가 정해진 명사가 없어");return}}
+  else{list=pool();if(!list.length){toast("이 분류에 단어가 없어");return}}
   S.quiz={mode,queue:shuffle(list.slice()),correct:0,wrong:0,retry:[],wait:false,typed:""};S.view="quizrun";render();
   if(mode==="type")setTimeout(()=>document.getElementById("qIn")?.focus(),40)}
 function mcOptions(ans){const src=pool().length>=4?pool():words();return shuffle([ans,...shuffle(src.filter(w=>w.id!==ans.id)).slice(0,3)]).map(w=>({id:w.id,word:w.word}))}
 function viewQuizRun(){const Q=S.quiz;if(!Q||!Q.queue.length)return viewQuizDone();
   const w=Q.queue[0];const total=Q.correct+Q.wrong+Q.queue.length;const n=Q.correct+Q.wrong+1;
-  let body="";
+  let body="",prompt="이 뜻에 해당하는 단어는?",qtext=w.meaning;
   if(Q.mode==="mc"){Q.opts=Q.opts||mcOptions(w);
     body=`<div class="choices">${Q.opts.map(o=>`<button data-pick="${esc(o.id)}" ${Q.wait?"disabled":""}>${esc(o.word)}</button>`).join("")}</div>`}
+  else if(Q.mode==="gender"){prompt="이 명사에 맞는 관사는?";qtext=stripFrArticle(w.word);
+    body=`<div class="choices"><button data-pick="m" ${Q.wait?"disabled":""}>le</button><button data-pick="f" ${Q.wait?"disabled":""}>la</button></div>`}
   else body=`<form id="typeForm"><input id="qIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="단어를 적어줘" value="${esc(Q.typed||"")}">
       <button class="btn primary block" type="submit" style="margin-top:8px" ${Q.wait?"disabled":""}>확인</button></form>`;
   return `<div class="head"><button class="back" data-go="quiz" aria-label="뒤로">←</button><h2>퀴즈</h2><span class="duepill">${n} / ${total}</span></div>
-    <div class="qcard"><div class="prompt">이 뜻에 해당하는 단어는?</div><div class="q">${esc(w.meaning)}</div>
+    <div class="qcard"><div class="prompt">${prompt}</div><div class="q">${esc(qtext)}</div>
+    ${Q.mode==="gender"?`<div class="ex" style="color:var(--muted);margin-top:8px">${esc(w.meaning)}</div>`:""}
     ${w.ex&&Q.wait?`<div class="ex" style="color:var(--muted);margin-top:8px">${esc(w.ex)}</div>`:""}</div>
     ${body}<div class="feedback" id="fb"></div>${Q.wait?`<button class="btn block" id="qNext">다음</button>`:""}`}
 function viewQuizDone(){const Q=S.quiz||{correct:0,wrong:0};
@@ -406,9 +454,9 @@ function viewQuizDone(){const Q=S.quiz||{correct:0,wrong:0};
     <p>틀린 건 ${Q.wrong}개. ${Q.wrong?"복습 큐에 다시 넣었어.":"완벽해!"}</p>
     <button class="btn primary block" data-go="quiz">한 판 더</button>
     <button class="btn ghost block" data-go="home" style="margin-top:8px">홈으로</button></div>`}
-function norm(s){return String(s||"").trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu,"").replace(/[’']/g,"'").replace(/\s+/g," ")}
-function sameAns(a,b){const x=norm(a),y=norm(b);if(x===y)return true;
-  const strip=s=>s.replace(/^(j'|je|tu|il|elle|on|nous|vous|ils|elles|ben|sen|o|biz|siz|onlar|я|ты|он|она|мы|вы|они)\s+/i,"").replace(/^j'/i,"");
+function norm(s){return fold(s)}
+function sameAns(a,b){const x=fold(a),y=fold(b);if(x===y)return true;
+  const strip=s=>s.replace(/^(jai|j|je|tu|il|elle|on|nous|vous|ils|elles|ben|sen|o|biz|siz|onlar|я|ты|он|она|мы|вы|они)\s+/i,"").replace(/^j(?=[aeiou])/i,"");
   return strip(x)===strip(y)}
 
 function viewList(){const q=(S.q||"").trim().toLowerCase();
@@ -417,8 +465,8 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
   const pc=id=>ws.filter(w=>id==="__none__"?!w.pos:w.pos===id).length;
   const none=pc("__none__");
   let arr=ws.slice().sort((a,b)=>(b.created||"").localeCompare(a.created||""));
-  if(q)arr=arr.filter(w=>(w.word+" "+w.meaning+" "+(w.ex||"")+" "+posName(w.pos)+" "+(w.sub||"")).toLowerCase().includes(q));
-  else arr=byFilter(arr,{pos:lp||undefined,sub:ls||undefined});
+  if(q){const fq=fold(q);arr=arr.filter(w=>fold(w.word+" "+w.meaning+" "+(w.ex||"")+" "+posName(w.pos)+" "+(w.sub||"")).includes(fq))}
+  else arr=byFilter(arr,{pos:lp||undefined,sub:ls||undefined,gender:genderEnabled()?(S.listGender||undefined):undefined});
   const subBar=(!q&&lp&&lp!=="__none__")?(()=>{const empty=byFilter(ws,{pos:lp,sub:"__none__"}).length;
     return `<div class="picks hscroll">
       <button type="button" class="chip ${!ls?"on":""}" data-lsub="">전체<span class="c">${pc(lp)}</span></button>
@@ -434,10 +482,15 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
       ${none?`<button type="button" class="chip ${lp==="__none__"?"on":""}" data-lpos="__none__">미분류<span class="c">${none}</span></button>`:""}
     </div>
     ${subBar}
+    ${!q&&lp==="n"&&genderEnabled()?`<div class="picks hscroll">
+      <button type="button" class="chip ${!S.listGender?"on":""}" data-lgen="">성수 전체</button>
+      <button type="button" class="chip ${S.listGender==="m"?"on":""}" data-lgen="m">남성 m.</button>
+      <button type="button" class="chip ${S.listGender==="f"?"on":""}" data-lgen="f">여성 f.</button>
+    </div>`:""}
     ${!q&&lp==="v"?`<button class="btn ghost block" id="conjPracStart" style="margin:0 0 10px" ${ws.some(w=>w.pos==="v")?"":"disabled"}>이 범위 동사 변화 연습</button>`:""}
     ${arr.length?arr.map(w=>{const m=mastery(w);return `<div class="item">
       <button class="meta" data-edit="${w.id}" style="background:none;box-shadow:none;padding:0;min-height:44px;display:block;width:100%;text-align:left">
-        <div class="w">${esc(w.word)}</div><div class="m">${esc(w.meaning)}</div>
+        <div class="w">${esc(w.word)}${genderBadge(w)}</div><div class="m">${esc(w.meaning)}</div>
         <div class="tag">${posName(w.pos)}${w.sub?" · "+esc(w.sub):(!w.pos?"":"")} </div>
         <div class="dots" aria-label="숙련도 ${m}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=m?(m>=5?"ok":"on"):""}"></i>`).join("")}</div>
       </button>
@@ -451,7 +504,7 @@ function viewConj(){const w=conjWord();if(!w)return go("list"),"";
   const autoable=canAuto(w);
   return `<div class="head"><button class="back" data-go="list" aria-label="목록">←</button><h2>동사 변화</h2></div>
     <div class="hero" style="padding:16px">
-      <div class="k">${L().flag} ${esc(w.word)} · ${esc(w.meaning)}</div>
+      <div class="k" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${L().flag} ${esc(w.word)} · ${esc(w.meaning)}${stressBtn("")}</div>
       ${isRu()?`<div class="row" style="margin-top:8px"><div class="field" style="margin:0"><label>несов. (불완료)</label><input data-aspect="imp" value="${esc(w.aspectImp||"")}" placeholder="писать"></div>
         <div class="field" style="margin:0"><label>сов. (완료)</label><input data-aspect="pf" value="${esc(w.aspectPf||"")}" placeholder="написать"></div></div>`:""}
       ${sc.groups.length?`<div class="lbl" style="margin-top:8px">그룹</div><div class="picks">${sc.groups.map(g=>`<button type="button" class="chip ${w.vgroup===g.id?"on":""}" data-vgroup="${g.id}">${g.name}</button>`).join("")}</div>`:""}
@@ -511,16 +564,21 @@ document.addEventListener("click",e=>{
     if(px==="add"){const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
       if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
     else if(px==="bulk"){const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta)ta.value=tx}
-    else render()} else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=spPos.dataset.setpos;w.sub="";if(w.pos==="v"&&!w.vgroup)w.vgroup=guessGroup(w.word,L());save();openEdit(w.id)} }return}
+    else render()} else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.pos=spPos.dataset.setpos;w.sub="";if(w.pos==="v"&&!w.vgroup)w.vgroup=guessGroup(w.word,L());if(w.pos==="n"&&!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender}save();openEdit(w.id)} }return}
   const spSub=e.target.closest("[data-setsub]");if(spSub){const px=spSub.dataset.px;if(px==="add"){S.lastSub=spSub.dataset.setsub;save();
     const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();
     if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
     else if(px==="bulk"){S.bulkSub=spSub.dataset.setsub;const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta)ta.value=tx}
     else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.sub=spSub.dataset.setsub;save();openEdit(w.id)}}return}
+  const sgx=e.target.closest("[data-setgen]");if(sgx){const px=sgx.dataset.px,g=sgx.dataset.setgen||"";
+    if(px==="add"){S.addGender=g;const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}}
+    else if(px==="bulk"){S.bulkGender=g;const tx=document.querySelector("#bulkForm textarea")?.value||"";openBulk();const ta=document.querySelector("#bulkForm textarea");if(ta)ta.value=tx}
+    else if(S._edit){const w=words().find(x=>x.id===S._edit);if(w){w.gender=g;save();openEdit(w.id)}}return}
   const sg=e.target.closest("[data-setgroup]");if(sg){S.lastGroup=sg.dataset.setgroup;const keep={w:document.getElementById("addWord")?.value,m:document.getElementById("addMean")?.value,x:document.getElementById("addEx")?.value};render();if(keep.w!=null){addWord.value=keep.w;addMean.value=keep.m;addEx.value=keep.x}return}
   const fp=e.target.closest("[data-fpos]");if(fp){setFilter("pos",fp.dataset.fpos);return}
   const fs=e.target.closest("[data-fsub]");if(fs){setFilter("sub",fs.dataset.fsub);return}
   const lp=e.target.closest("[data-lpos]");if(lp){S.listPos=lp.dataset.lpos;S.listSub="";render();return}
+  const lgen=e.target.closest("[data-lgen]");if(lgen){S.listGender=lgen.dataset.lgen||"";render();return}
   const ls=e.target.closest("[data-lsub]");if(ls){S.listSub=ls.dataset.lsub;render();return}
   const as=e.target.closest("[data-addsub]");if(as){openAddSub(as.dataset.addsub);return}
   if(e.target.closest("#addLang")){openAddLang();return}
@@ -530,6 +588,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#studyAll")){S.sess={queue:shuffle(byFilter(words(),S.filter||{}).slice()),done:[],extra:{},flipped:false};render();return}
   if(e.target.closest("#quizMc")){startQuiz("mc");return}
   if(e.target.closest("#quizType")){startQuiz("type");return}
+  if(e.target.closest("#quizGender")){startQuiz("gender");return}
   if(e.target.closest("#conjPracStart")){startConjPrac(null);return}
   if(e.target.closest("#pracThis")){startConjPrac(S.conjId);return}
   if(e.target.closest("#pracAgain")){startConjPrac(S.prac?.onlyId||null);return}
@@ -547,6 +606,7 @@ document.addEventListener("click",e=>{
   const ed=e.target.closest("[data-edit]");if(ed){openEdit(ed.dataset.edit);return}
   const pk=e.target.closest("[data-pick]");if(pk){pickMC(pk.dataset.pick);return}
   if(e.target.closest("#qNext")){quizNext();return}
+  const st=e.target.closest("[data-stress]");if(st){const id=st.dataset.stress;const el=(id&&document.getElementById(id))||(document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)?document.activeElement:S._stressEl);if(el)insertStress(el);else toast("넣을 칸을 먼저 눌러 줘");return}
   if(e.target.closest("[data-close]")){closeSheet();return}
   if(e.target.closest("#exportBtn")){doExport();return}
   if(e.target.closest("#importBtn")){document.getElementById("importFile")?.click();return}
@@ -554,13 +614,14 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("submit",e=>{
   if(e.target.id==="addForm"){e.preventDefault();
-    const w=document.getElementById("addWord").value.trim(),m=document.getElementById("addMean").value.trim(),x=document.getElementById("addEx").value.trim();
-    if(!w||!m){toast("단어랑 뜻은 꼭 넣어줘");return}
+    const raw=document.getElementById("addWord").value,m=document.getElementById("addMean").value,x=document.getElementById("addEx").value;
+    if(!nfc(raw).trim()||!nfc(m).trim()){toast("단어랑 뜻은 꼭 넣어줘");return}
     const pos=S.lastPos||"",sub=pos?(S.lastSub||""):"";
-    const word=mkWord(w,m,x,pos,sub);if(pos==="v"&&S.lastGroup)word.vgroup=S.lastGroup,autoFill(word,false);
+    const g=(pos==="n"&&genderEnabled())?(S.addGender||""):"";
+    const word=mkWord(raw,m,x,pos,sub,g);if(pos==="v"&&S.lastGroup)word.vgroup=S.lastGroup,autoFill(word,false);
     words().push(word);save();
     const note=pos==="v"&&canAuto(word)?" 변화형은 한번 확인해 줘.":"";
-    toast("「"+w+"」 넣었어."+note);
+    toast("「"+word.word+"」 넣었어."+note);
     render();document.getElementById("addWord")?.focus();return}
   if(e.target.id==="typeForm"){e.preventDefault();checkType();return}
   if(e.target.id==="pracForm"){e.preventDefault();checkPrac();return}
@@ -574,9 +635,10 @@ document.addEventListener("input",e=>{
   if(e.target.id==="search"){const pos=e.target.selectionStart;S.q=e.target.value;render();const s=document.getElementById("search");if(s){s.focus();s.setSelectionRange(pos,pos)}}
   if(e.target.id==="qIn"&&S.quiz)S.quiz.typed=e.target.value;
   if(e.target.id==="pIn"&&S.prac)S.prac.typed=e.target.value;
-  if(e.target.dataset.ck){const w=conjWord();if(!w)return;const k=e.target.dataset.ck;w.conj[k]=e.target.value;w.conjAuto[k]=false;e.target.classList.remove("auto");save()}
-  if(e.target.dataset.aspect){const w=conjWord();if(!w)return;if(e.target.dataset.aspect==="imp")w.aspectImp=e.target.value;else w.aspectPf=e.target.value;save()}
+  if(e.target.dataset.ck){const w=conjWord();if(!w)return;const k=e.target.dataset.ck;w.conj[k]=nfc(e.target.value);w.conjAuto[k]=false;e.target.classList.remove("auto");save()}
+  if(e.target.dataset.aspect){const w=conjWord();if(!w)return;if(e.target.dataset.aspect==="imp")w.aspectImp=nfc(e.target.value);else w.aspectPf=nfc(e.target.value);save()}
 });
+document.addEventListener("focusin",e=>{if(e.target&&(e.target.dataset.ck||e.target.id==="addWord"||e.target.id==="editWord"||e.target.id==="qIn"||e.target.id==="pIn"||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"))S._stressEl=e.target});
 document.addEventListener("change",e=>{if(e.target.id==="importFile")doImport(e.target.files[0])});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 
@@ -585,12 +647,17 @@ function rateCard(q){const sess=S.sess,w=sess.queue[0];if(!w)return;
   sess.queue.shift();sess.done.push({id:w.id,q});
   if(q<3){sess.extra[w.id]=(sess.extra[w.id]||0)+1;if(sess.extra[w.id]<2)sess.queue.push(w)}
   sess.flipped=false;render()}
-function pickMC(id){const Q=S.quiz;if(!Q||Q.wait)return;const w=Q.queue[0];finishQ(id===w.id,w,id)}
+function pickMC(id){const Q=S.quiz;if(!Q||Q.wait)return;const w=Q.queue[0];finishQ(Q.mode==="gender"?id===w.gender:id===w.id,w,id)}
 function checkType(){const Q=S.quiz;if(!Q||Q.wait)return;const w=Q.queue[0];const val=document.getElementById("qIn").value;finishQ(sameAns(val,w.word),w)}
-function finishQ(ok,w,picked){const Q=S.quiz;Q.wait=true;if(ok){Q.correct++;grade(w,5)}else{Q.wrong++;grade(w,1);Q.retry.push(w)}
-  const arr=words();const i=arr.findIndex(x=>x.id===w.id);if(i>=0)arr[i]=w;save();
-  render();const el=document.getElementById("fb");if(el){el.textContent=ok?"맞아!":"정답은 「"+w.word+"」";el.style.color=ok?"#1f6d5a":"#9a2748"}
-  if(Q.mode==="mc"){document.querySelectorAll("[data-pick]").forEach(b=>{b.disabled=true;if(b.dataset.pick===w.id)b.classList.add("ok");if(picked&&b.dataset.pick===picked&&!ok)b.classList.add("bad")})}}
+function finishQ(ok,w,picked){const Q=S.quiz;Q.wait=true;
+  if(Q.mode==="gender"){if(ok)Q.correct++;else{Q.wrong++;Q.retry.push(w)}}
+  else{if(ok){Q.correct++;grade(w,5)}else{Q.wrong++;grade(w,1);Q.retry.push(w)}
+    const arr=words();const i=arr.findIndex(x=>x.id===w.id);if(i>=0)arr[i]=w;save()}
+  render();const el=document.getElementById("fb");if(el){
+    el.textContent=ok?"맞아!":(Q.mode==="gender"?`정답은 ${w.gender==="m"?"le":"la"} · ${w.word}`:"정답은 「"+w.word+"」");
+    el.style.color=ok?"#1f6d5a":"#9a2748"}
+  if(Q.mode==="mc"||Q.mode==="gender"){const right=Q.mode==="gender"?w.gender:w.id;
+    document.querySelectorAll("[data-pick]").forEach(b=>{b.disabled=true;if(b.dataset.pick===right)b.classList.add("ok");if(picked&&b.dataset.pick===picked&&!ok)b.classList.add("bad")})}}
 function quizNext(){const Q=S.quiz;Q.queue.shift();Q.wait=false;Q.typed="";Q.opts=null;
   if(!Q.queue.length&&Q.retry.length){Q.queue=Q.retry.splice(0);toast("틀린 거 다시 한 번!")}
   render();if(Q.queue.length&&Q.mode==="type")document.getElementById("qIn")?.focus()}
@@ -619,31 +686,40 @@ function saveSub(){const name=document.querySelector("#subForm [name=name]").val
 
 function openBulk(){const pos=S.lastPos||"",sub=S.bulkSub!=null?S.bulkSub:S.lastSub||"";
   openSheet(`<div class="grab"></div><h3>여러 개 넣기 <button class="x" data-close aria-label="닫기">✕</button></h3>
-  <p class="hint">한 줄에 하나씩. 아래 분류가 이번 묶음 전체에 적용돼.</p>
-  ${pickers("bulk",pos,sub,{allowNone:true})}
-  <form id="bulkForm"><textarea name="bulk" data-autofocus placeholder="chat - 고양이&#10;chien - 개"></textarea>
+  <p class="hint">한 줄에 하나씩. 단어와 뜻 사이에 빈칸을 두고 - 나 = 로 나눠 줘. 프랑스어 명사는 le/la, 또는 (m.)/(f.)로 성수를 자동 인식해.</p>
+  ${pickers("bulk",pos,sub,{allowNone:true,gender:(pos==="n"&&genderEnabled())?(S.bulkGender||""):null})}
+  <form id="bulkForm"><textarea name="bulk" data-autofocus placeholder="le chat - 고양이&#10;l'aigle (m.) - 독수리"></textarea>
   <button class="btn primary block" type="submit" style="margin-top:8px">한꺼번에 넣기</button></form>`)}
-function parseLine(line){const s=line.trim();if(!s||s.startsWith("#"))return null;
-  const m=s.match(/^(.+?)\s*[-–—=:：]+\s+(.+)$/)||s.match(/^(.+?)\t+(.+)$/);
-  if(!m)return null;return{word:m[1].trim(),meaning:m[2].trim()}}
+function parseLine(line){let s=String(line||"").replace(/^\uFEFF/,"").trim();if(!s||s.startsWith("#"))return null;
+  const seps="-\u2010\u2011\u2012\u2013\u2014\u2015\u2212=:\uFF1A";
+  let m=s.match(new RegExp("^(.+?)\\s+["+seps+"]+\\s+(.+)$"))
+    ||s.match(/^(.+?)\t+(.+)$/)
+    ||s.match(new RegExp("^(.+?)\\s+["+seps+"]+(.+)$"))
+    ||s.match(new RegExp("^(.+?)["+seps+"]\\s+(.+)$"))
+    ||s.match(/^(.+?)\s*[=:\uFF1A]\s*(.+)$/)
+    ||s.match(/^(.+?[\p{L}\p{M}'’ʼ])\s*[-–—−‐‑]\s*([\p{Script=Hangul}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}].*)$/u);
+  if(!m)return null;return{word:nfc(m[1].trim()),meaning:nfc(m[2].trim())}}
 function doBulk(){const raw=document.querySelector("#bulkForm textarea").value.split(/\n+/);let n=0,skip=0;
   const pos=S.lastPos||"",sub=pos?(S.bulkSub!=null?S.bulkSub:S.lastSub)||"":"";
-  raw.forEach(line=>{const p=parseLine(line);if(!p||!p.word||!p.meaning){if(line.trim())skip++;return}addOne(p.word,p.meaning,"",pos,sub);n++});
+  const g=(pos==="n"&&genderEnabled())?(S.bulkGender||""):"";
+  raw.forEach(line=>{const p=parseLine(line);if(!p||!p.word||!p.meaning){if(line.trim())skip++;return}addOne(p.word,p.meaning,"",pos,sub,g);n++});
   closeSheet();render();toast(n?n+"개 넣었어"+(skip?" · "+skip+"줄은 건너뛰었어":""):"형식을 확인해 줘")}
 
 function openEdit(id){const w=words().find(x=>x.id===id);if(!w)return;S._edit=id;
   openSheet(`<div class="grab"></div><h3>단어 고치기 <button class="x" data-close aria-label="닫기">✕</button></h3>
     <form id="editForm">
-      ${pickers("edit",w.pos||"",w.sub||"",{allowNone:true})}
-      <div class="field"><label>단어</label><input name="word" value="${esc(w.word)}" required data-autofocus></div>
-      <div class="field"><label>뜻</label><input name="mean" value="${esc(w.meaning)}" required></div>
-      <div class="field"><label>예문 / 메모</label><input name="ex" value="${esc(w.ex||"")}"></div>
+      ${pickers("edit",w.pos||"",w.sub||"",{allowNone:true,gender:(w.pos==="n"&&genderEnabled())?(w.gender||""):null})}
+      <div class="field"><label>단어</label><div class="with-btn"><input id="editWord" name="word" value="${esc(w.word)}" required data-autofocus autocomplete="off" spellcheck="false">${stressBtn("editWord")}</div></div>
+      <div class="field"><label>뜻</label><input name="mean" value="${esc(w.meaning)}" required autocomplete="off"></div>
+      <div class="field"><label>예문 / 메모</label><input name="ex" value="${esc(w.ex||"")}" autocomplete="off"></div>
       ${w.pos==="v"?`<button class="btn ghost block" type="button" data-conj="${w.id}" style="margin-bottom:8px">동사 변화 표</button>`:""}
       <button class="btn primary block" type="submit">저장</button>
       <button class="btn no block" type="button" id="delWord" style="margin-top:8px">삭제</button>
     </form>`)}
 function saveEdit(){const id=S._edit,w=words().find(x=>x.id===id),f=document.getElementById("editForm");if(!w)return;
-  const prev=w.word;w.word=f.word.value.trim();w.meaning=f.mean.value.trim();w.ex=f.ex.value.trim();if(!w.word||!w.meaning){toast("단어랑 뜻은 비울 수 없어");return}
+  const d=detectGender(f.word.value);const meaning=nfc(f.mean.value).trim(),ex=nfc(f.ex.value).trim();
+  if(!d.word||!meaning){toast("단어랑 뜻은 비울 수 없어");return}
+  const prev=w.word;w.word=d.word;w.meaning=meaning;w.ex=ex;if(d.gender)w.gender=d.gender;
   if(w.pos==="v"&&w.word!==prev){if(!w.vgroup)w.vgroup=guessGroup(w.word,L());autoFill(w,false)}
   save();closeSheet();S._edit=null;render();toast("고쳤어")}
 function doDelete(){const id=S._edit;if(!confirm("이 단어를 삭제할까?"))return;setWords(words().filter(w=>w.id!==id));closeSheet();S._edit=null;render();toast("삭제했어")}
@@ -679,6 +755,8 @@ function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{t
     let add=0;const src=o.words||{};Object.keys(src).forEach(k=>{S.words[k]=S.words[k]||[];const ids=new Set(S.words[k].map(w=>w.id));
       (src[k]||[]).forEach(w=>{if(!w||!w.word||!w.meaning)return;if(w.id&&ids.has(w.id))return;if(!w.id)w.id=uid();
         if(w.pos==null)w.pos="";if(w.sub==null)w.sub="";w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};
+        w.word=nfc(w.word);w.meaning=nfc(w.meaning);if(w.ex)w.ex=nfc(w.ex);
+        if(!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender||""}
         S.words[k].push(w);ids.add(w.id);add++})});
     migrate(S);save();closeSheet();render();toast(add?add+"개 가져왔어":"새 단어가 없었어");
   }catch(err){toast("파일을 읽지 못했어")}};r.readAsText(file)}
