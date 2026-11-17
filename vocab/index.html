@@ -372,7 +372,7 @@ const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4)
 const addDays=(s,n)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);const z=new Date(d-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const nfc=s=>String(s??"").normalize("NFC");
-function fold(s){return String(s??"").normalize("NFD").replace(/[\u0301\u0300]/g,"").replace(/[\u00B4\u02CA\u02CB\u02B9\u02C8]/g,"").replace(/[''ʻʼˈˊ´`]/g,"").toLowerCase().replace(/\s+/g," ").trim()}
+function fold(s){return String(s??"").normalize("NFD").replace(/[\u0301\u0300]/g,"").replace(/[\u00B4\u02CA\u02CB\u02B9\u02C8]/g,"").replace(/[''\u2018\u2019\u201B\u2032ʻʼˈˊ´`]/g,"").toLowerCase().replace(/\s+/g," ").trim()}
 function genderEnabled(l){l=l||(typeof L==="function"?L():null);return !!(l&&(l.id==="fr"||l.tts==="fr-FR"))}
 function genderLabel(g){return {m:"m.",f:"f.",pl:"pl.",both:"m./f."}[g]||""}
 function genderBadge(w){if(!w||!w.gender||!genderEnabled())return"";return `<span class="gb ${w.gender}">${genderLabel(w.gender)}</span>`}
@@ -1272,7 +1272,7 @@ function ansVariants(b){b=String(b??"");const parts=b.split(/(\([^)]*\))/);let o
   parts.forEach(pt=>{if(/^\(.*\)$/.test(pt)){const inner=pt.slice(1,-1);out=out.flatMap(o=>[o,o+inner])}else out=out.map(o=>o+pt)});return out.slice(0,16)}
 function sameAns(a,b){if(/\(/.test(String(b??"")))return ansVariants(b).some(v=>sameAns1(a,v))||sameAns1(a,b);return sameAns1(a,b)}
 function sameAns1(a,b){const x=fold(a),y=fold(b);if(x===y)return true;
-  const strip=s=>s.replace(/^(jai|j|je|tu|il|elle|on|nous|vous|ils|elles|ben|sen|o|biz|siz|onlar|я|ты|он|она|мы|вы|они)\s+/i,"").replace(/^j(?=[aeiou])/i,"");
+  const strip=s=>s.replace(/^(je|tu|il|elle|on|nous|vous|ils|elles|ben|sen|o|biz|siz|onlar|я|ты|он|она|мы|вы|они)\s+/i,"").replace(/^j(?=[aeiouyh])/i,"");
   return strip(x)===strip(y)}
 
 function viewList(){const q=(S.q||"").trim().toLowerCase();
