@@ -506,6 +506,40 @@ html[data-view="note"] body,html[data-view="notes"] body{overscroll-behavior:non
 .nmark{font-size:.7rem;border:1px solid currentColor;padding:0 3px;margin-left:2px}
 html.wide .n-split .npaper{max-width:max(280px,calc((100dvh - 190px) / 1.3))}
 html.wide .n-split .pane-l .empty{margin-top:12px}
+/* v19 빠른 스크롤 + 글자 색인 */
+.fscroll{position:fixed;z-index:15;display:none;flex-direction:row;align-items:stretch;gap:2px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.fscroll.on{display:flex}
+.fs-idx{display:none;flex-direction:column;width:26px;border:2px solid #fff;background:#000;padding:2px 0}
+.fscroll.alpha .fs-idx{display:flex}
+.fs-idx b{flex:1 1 0;display:flex;align-items:center;justify-content:center;font-weight:400;line-height:1;color:#fff;min-height:0}
+.fs-idx b.off{color:#777}
+.fs-idx b.cur{background:#fff;color:#000}
+.fs-track{position:relative;width:36px;border:2px dashed #fff;background:var(--chk,#000)}
+.fs-thumb{position:absolute;left:0;right:0;top:0;min-height:56px;background:#fff;border:2px solid #000;box-shadow:0 0 0 2px #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:grab}
+.fs-thumb i{display:block;width:14px;height:2px;background:#000}
+.fscroll.drag .fs-thumb{background:#000;border-color:#fff}
+.fscroll.drag .fs-thumb i{background:#fff}
+.fs-bub{position:absolute;right:calc(100% + 10px);top:0;min-width:64px;height:64px;padding:0 8px;display:none;align-items:center;justify-content:center;font-size:2.2rem;line-height:1;background:#000;color:#fff;border:3px solid #fff;box-shadow:4px 4px 0 #fff;pointer-events:none}
+.fs-bub.small{font-size:1rem}
+.fscroll.bub .fs-bub{display:flex}
+#app.fs-pad{padding-right:calc(16px + var(--fsw,0px))}
+html.wide .pane-l.fs-pad{padding-right:calc(8px + var(--fsw,0px))}
+/* v19 언어 바꾸기 */
+.lsw{flex:0 0 auto;min-height:40px;display:inline-flex;align-items:center;gap:5px;padding:0 10px;border:2px solid #fff;background:#000;color:#fff;font:inherit;font-size:.85rem;border-radius:0;max-width:46%;white-space:nowrap;overflow:hidden}
+.lsw .nm{overflow:hidden;text-overflow:ellipsis}
+.head .lsw~.duepill{flex:0 0 auto}
+@media (max-width:440px){#app.fs-pad .lsw .nm{display:none}#app.fs-pad .lsw{padding:0 8px}}
+.head:has(.lsw) h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lsw::after{content:"▾";font-size:.75rem}
+.lswl{display:grid;gap:8px;margin:6px 0 4px}
+.lswl button{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border:2px solid #fff;background:#000;color:#fff;font:inherit;text-align:left;border-radius:0}
+.lswl button[aria-current="true"]{background:#fff;color:#000}
+.lswl button[aria-current="true"]::after{content:"지금";margin-left:auto;font-size:.75rem;border:1px solid currentColor;padding:0 4px}
+.lswl .c{margin-left:auto;font-size:.8rem;opacity:.8}
+.lswl button[aria-current="true"] .c{margin-left:0}
+.nav .nlang{display:none}
+html.wide .nav .nlang{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:76px;margin:0 0 10px;border:2px solid #fff;color:#fff;font-size:.72rem;padding:4px 2px}
+html.wide .nav .nlang .nln{max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1462,7 +1496,7 @@ async function bulkAutoFill(){const ta=document.querySelector("#bulkForm textare
 function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac","decl","declrev","declprac"].includes(v);
   const hideAll=hide||(v==="note"&&!isWide());
   const nav=document.getElementById("nav");nav.style.display=hideAll?"none":"";document.documentElement.classList.toggle("nonav",hideAll);
-  nav.innerHTML=`<div class="bar">
+  nav.innerHTML=`${isWide()?`<button type="button" class="nlang" data-lsw aria-label="언어 바꾸기 (지금: ${esc(L().name)})"><span class="ic">${flagOf(L())}</span><span class="nln">${esc(L().name)}</span></button>`:""}<div class="bar">
     <button data-go="home" class="${v==="home"?"on":""}"><span class="ic"></span>홈</button>
     <button data-go="cards" class="${v==="cards"?"on":""}"><span class="ic"></span>카드</button>
     <button data-go="quiz" class="${(v==="quiz"||v==="quizrun"||v==="conjprac"||v==="declprac")?"on":""}"><span class="ic"></span>퀴즈</button>
@@ -1531,6 +1565,7 @@ function render(){applyLayout();const a=document.getElementById("app");unmountPa
   }
   document.documentElement.dataset.view=v;
   if(v==="note"||v==="notes")mountPad();
+  lswInject(v);fsMount(v);
 }
 function markSel(){document.querySelectorAll(".pane-l [data-edit]").forEach(b=>{const on=b.dataset.edit===S.selWord;b.closest(".item")?.classList.toggle("sel",on);b.setAttribute("aria-current",on?"true":"false")});
   const el=document.querySelector(".pane-l .item.sel");if(el&&el.scrollIntoView&&!markSel._busy){const pl=el.closest(".pane-l");if(pl){const r=el.getBoundingClientRect(),pr=pl.getBoundingClientRect();if(r.top<pr.top||r.bottom>pr.bottom)el.scrollIntoView({block:"nearest"})}}}
@@ -1792,7 +1827,7 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
       <button type="button" class="btn ghost lquiz" id="listQuiz" ${arr.length?"":"disabled"}>이 ${arr.length}개로 퀴즈 →</button></div>
     ${!q&&(lp==="n"||lp==="adj")&&wikiLangId()==="ru"?`<button class="btn ghost block" id="declPracList" style="margin:0 0 10px" ${ws.some(w=>w.pos===lp)?"":"disabled"}>이 범위 격변화 연습</button>`:""}
     ${!q&&lp==="v"?`<button class="btn ghost block" id="conjPracStart" style="margin:0 0 10px" ${ws.some(w=>w.pos==="v")?"":"disabled"}>이 범위 동사 변화 연습</button>`:""}
-    ${arr.length?arr.map(w=>{const m=mastery(w);return `<div class="item">
+    ${arr.length?arr.map(w=>{const m=mastery(w);return `<div class="item" data-fi="${recent?"":fsIdx(w)}">
       <button class="meta" data-edit="${w.id}" style="background:none;box-shadow:none;padding:0;min-height:44px;display:block;width:100%;text-align:left">
         <div class="w">${esc(w.word)}${genderBadge(w)}</div>${phonHTML(w.word)}<div class="m">${esc(w.meaning)}</div>
         <div class="tag">${posName(w.pos)}${w.sub?" · "+esc(w.sub):(!w.pos?"":"")} ${w.src==="topic"?`<span class="ab" title="${esc(w.srcNote||"")}">자동 추가</span>`:""}</div>
@@ -1902,6 +1937,7 @@ document.addEventListener("pointermove",e=>{if(_lpXY&&Math.hypot(e.clientX-_lpXY
 document.addEventListener("contextmenu",e=>{const c=e.target.closest("[data-lang]");if(c){e.preventDefault();clearTimeout(_lpT);_lpFired=false;openLangManage(c.dataset.lang)}});
 document.addEventListener("click",e=>{
   if(noteClick(e))return;
+  if(lswClick(e))return;
   const t=e.target.closest("[data-go]");if(t){go(t.dataset.go);return}
   const lg=e.target.closest("[data-lang]");if(lg){if(_lpFired){_lpFired=false;return}S.cur=lg.dataset.lang;S._af=null;save();render();return}
   if(e.target.closest("#langManage")){openLangList();return}
@@ -2332,6 +2368,101 @@ function noteClick(e){const T=e.target;
 document.addEventListener("toggle",e=>{const d=e.target;if(!d||!d.matches||!d.matches("details.gcat"))return;if((S.gq||"").trim()||S.gCat)return;S.gShut=S.gShut||{};S.gShut[d.dataset.gcatbox]=!d.open},true);
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="noteTitle"){const n=noteById(S.noteId);if(!n)return;n.title=e.target.value.slice(0,60);NP.fresh.delete(n.id);clearTimeout(noteClick._s);noteClick._s=setTimeout(()=>{save();const b=document.querySelector(`[data-nopen="${CSS.escape(n.id)}"] .nmeta b`);if(b)b.textContent=noteTitle(n)},500)}});
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="noteTitle")save()});
+
+/* ---- v19: 단어 목록 빠른 스크롤 (끌 수 있는 손잡이 + 글자 색인) ----
+   폰: 페이지 전체 스크롤 / 아이패드 두 칸: 왼쪽 목록 칸 스크롤. 최근 추가 순일 땐 색인 숨기고 손잡이만. */
+const ALPHA={fr:"ABCDEFGHIJKLMNOPQRSTUVWXYZ",ru:"АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЭЮЯ",tr:"ABCÇDEFGHIİJKLMNOÖPRSŞTUÜVYZ"};
+const FSX={alpha:null,lid:null};
+function fsLetter(w){const lid=wikiLangId();const k=sortKey(w);const m=k.match(/\p{L}/u);if(!m)return"#";let c=m[0];
+  if(lid==="tr")c=c.toLocaleUpperCase("tr");else if(lid==="ru")c=c.toUpperCase().replace("Ё","Е");else c=c.normalize("NFD")[0].toUpperCase();return c}
+function fsAlpha(){const lid=wikiLangId()||("x:"+S.cur);if(FSX.lid===lid&&FSX.alpha&&!FSX.dyn)return FSX.alpha;
+  let a=ALPHA[lid]?[...ALPHA[lid]]:null;FSX.dyn=!a;
+  if(!a){const set=[];sortAlpha(words()).forEach(w=>{const c=fsLetter(w);if(!set.includes(c))set.push(c)});a=set}
+  FSX.lid=lid;FSX.alpha=a;return a}
+function fsIdx(w){const a=fsAlpha();const c=fsLetter(w);let i=a.indexOf(c);if(i>=0)return i;if(c==="#")return 0;
+  const col=collator();i=0;for(let j=0;j<a.length;j++)if(col.compare(a[j],c)<=0)i=j;return i}
+const FS={el:null,tgt:null,v:null,drag:null,raf:0,hideT:0};
+function fsEl(){if(FS.el)return FS.el;const d=document.createElement("div");d.id="fscroll";d.className="fscroll";
+  d.innerHTML=`<div class="fs-idx" role="group" aria-label="글자로 건너뛰기"></div><div class="fs-track"><div class="fs-thumb" role="scrollbar" aria-orientation="vertical" aria-label="목록 스크롤 손잡이" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="-1"><i></i><i></i><i></i></div></div><div class="fs-bub" aria-hidden="true"></div>`;
+  document.body.appendChild(d);FS.el=d;fsBind(d);return d}
+function fsMetrics(){const t=FS.tgt;if(t===window){const de=document.scrollingElement||document.documentElement;return{sh:de.scrollHeight,ch:innerHeight,st:scrollY}}
+  return{sh:t.scrollHeight,ch:t.clientHeight,st:t.scrollTop}}
+function fsSetScroll(st){const t=FS.tgt;if(t===window)window.scrollTo(0,st);else t.scrollTop=st}
+function fsListRoot(){return FS.tgt===window?document.getElementById("app"):FS.tgt}
+function fsMount(v){const el=fsEl();const wide=isWide();let tgt=null;
+  if(wide&&["list","conj","conjrev","decl","declrev"].includes(v)){tgt=document.querySelector(".pane-l")}else if(!wide&&v==="list")tgt=window;
+  if(FS.tgt&&FS.tgt!==window&&FS.tgt!==tgt)FS.tgt.removeEventListener("scroll",fsOnScroll);
+  document.querySelectorAll(".fs-pad").forEach(x=>x.classList.remove("fs-pad"));
+  const items=tgt?(tgt===window?document.querySelectorAll("#app .item"):tgt.querySelectorAll(".item")):[];
+  FS.tgt=tgt;if(!tgt||items.length<12){el.classList.remove("on");return}
+  if(tgt!==window)tgt.addEventListener("scroll",fsOnScroll,{passive:true});
+  const alpha=!((S.prefs||{}).listSort==="recent")&&!(S.q||"").trim();el.classList.toggle("alpha",alpha);
+  if(alpha){const a=fsAlpha();const has=new Set([...items].map(x=>+x.dataset.fi));
+    el.querySelector(".fs-idx").innerHTML=a.map((c,i)=>`<b data-fsi="${i}" class="${has.has(i)?"":"off"}">${esc(c)}</b>`).join("")}
+  el.classList.add("on");const root=fsListRoot();root.classList.add("fs-pad");fsPlace();fsUpdate()}
+function fsPlace(){const el=FS.el,t=FS.tgt;if(!el||!t)return;const alpha=el.classList.contains("alpha");const W=alpha?60:34;
+  const root=fsListRoot();root.style.setProperty("--fsw","0px");
+  let top,bot,right;if(t===window){const nav=document.getElementById("nav");const nh=nav&&getComputedStyle(nav).display!=="none"?nav.getBoundingClientRect().height:0;
+    top="calc(env(safe-area-inset-top, 0px) + 8px)";bot=nh+8;right=Math.max(2,(innerWidth-(document.getElementById("app").getBoundingClientRect().right))+2)}
+  else{const r=t.getBoundingClientRect();top=(r.top+4)+"px";bot=innerHeight-r.bottom+4;right=innerWidth-r.right+12}
+  Object.assign(el.style,{top,bottom:bot+"px",right:right+"px"});
+  const er=el.getBoundingClientRect();const it=root.querySelector(".item");if(it){const ir=it.getBoundingClientRect();root.style.setProperty("--fsw",Math.max(0,Math.ceil(ir.right-er.left+6))+"px")}
+  const h=er.height||innerHeight;const n=Math.max(1,el.querySelectorAll(".fs-idx b").length);el.querySelector(".fs-idx").style.fontSize=Math.max(8,Math.min(14,(h-8)/n*0.8))+"px"}
+function fsUpdate(){const el=FS.el;if(!el||!FS.tgt||!el.classList.contains("on"))return;const {sh,ch,st}=fsMetrics();const tr=el.querySelector(".fs-track"),th=el.querySelector(".fs-thumb");
+  const H=tr.clientHeight;const h=Math.max(56,Math.min(H,H*ch/Math.max(sh,1)));const max=Math.max(1,sh-ch);const y=(H-h)*Math.min(1,Math.max(0,st/max));
+  th.style.height=h+"px";th.style.transform=`translateY(${y}px)`;th.setAttribute("aria-valuenow",String(Math.round(st/max*100)));
+  if(el.classList.contains("alpha")){const it=fsFirstVisible();const fi=it?it.dataset.fi:"";el.querySelectorAll(".fs-idx b.cur").forEach(b=>{if(b.dataset.fsi!==fi)b.classList.remove("cur")});const b=fi!==""&&el.querySelector(`.fs-idx b[data-fsi="${fi}"]`);if(b)b.classList.add("cur")}}
+function fsOnScroll(){if(FS.raf)return;FS.raf=requestAnimationFrame(()=>{FS.raf=0;fsUpdate()})}
+window.addEventListener("scroll",()=>{if(FS.tgt===window)fsOnScroll()},{passive:true});
+window.addEventListener("resize",()=>{if(FS.tgt){fsPlace();fsUpdate()}});
+function fsItems(){const r=fsListRoot();return r?r.querySelectorAll(".item"):[]}
+function fsFirstVisible(){const its=fsItems();if(!its.length)return null;const top=FS.tgt===window?0:FS.tgt.getBoundingClientRect().top;
+  let lo=0,hi=its.length-1;while(lo<hi){const m=(lo+hi)>>1;if(its[m].getBoundingClientRect().bottom<=top+4)lo=m+1;else hi=m}return its[lo]}
+function fsJumpTo(item){if(!item)return;const t=FS.tgt;const y=item.getBoundingClientRect().top;
+  if(t===window)window.scrollTo(0,y+scrollY-10);else t.scrollTop+=y-t.getBoundingClientRect().top-6;fsUpdate()}
+function fsJumpLetter(i){const its=fsItems();for(const it of its)if(+it.dataset.fi>=i){fsJumpTo(it);return it}const last=its[its.length-1];if(last)fsJumpTo(last);return last}
+function fsBubble(txt,y,small){const el=FS.el,b=el.querySelector(".fs-bub");b.textContent=txt;b.classList.toggle("small",!!small);const H=el.clientHeight;b.style.top=Math.max(0,Math.min(H-64,y-32))+"px";el.classList.add("bub");clearTimeout(FS.hideT)}
+function fsBubbleOff(){clearTimeout(FS.hideT);FS.hideT=setTimeout(()=>FS.el&&FS.el.classList.remove("bub"),650)}
+function fsBind(d){const idx=d.querySelector(".fs-idx"),tr=d.querySelector(".fs-track"),th=d.querySelector(".fs-thumb");
+  const idxAt=e=>{const r=idx.getBoundingClientRect();const n=idx.children.length;return Math.max(0,Math.min(n-1,Math.floor((e.clientY-r.top)/r.height*n)))};
+  const doIdx=e=>{const i=idxAt(e);const a=fsAlpha();const it=fsJumpLetter(i);const r=d.getBoundingClientRect();fsBubble(a[i]||"",e.clientY-r.top);if(FS.drag)FS.drag.last=i};
+  idx.addEventListener("pointerdown",e=>{e.preventDefault();try{idx.setPointerCapture(e.pointerId)}catch(_){}FS.drag={k:"idx",id:e.pointerId};d.classList.add("drag");doIdx(e)});
+  idx.addEventListener("pointermove",e=>{if(FS.drag&&FS.drag.k==="idx"&&FS.drag.id===e.pointerId){e.preventDefault();doIdx(e)}});
+  const thumbBubble=()=>{const r=d.getBoundingClientRect(),tr2=th.getBoundingClientRect();const it=fsFirstVisible();if(!it)return;
+    if(d.classList.contains("alpha")){fsBubble(fsAlpha()[+it.dataset.fi]||"",tr2.top-r.top+tr2.height/2)}else{const its=[...fsItems()];fsBubble((its.indexOf(it)+1)+" / "+its.length,tr2.top-r.top+tr2.height/2,true)}};
+  const dragThumb=e=>{const D=FS.drag;const {sh,ch}=fsMetrics();const H=tr.clientHeight,h=th.offsetHeight;const k=(sh-ch)/Math.max(1,H-h);fsSetScroll(Math.max(0,D.st0+(e.clientY-D.y0)*k));fsUpdate();thumbBubble()};
+  tr.addEventListener("pointerdown",e=>{e.preventDefault();try{tr.setPointerCapture(e.pointerId)}catch(_){}const m=fsMetrics();
+    if(!e.target.closest(".fs-thumb")){/* 트랙 누르면 그 자리로 손잡이 이동 */const r=tr.getBoundingClientRect(),h=th.offsetHeight;const f=Math.max(0,Math.min(1,(e.clientY-r.top-h/2)/Math.max(1,r.height-h)));fsSetScroll(f*(m.sh-m.ch));fsUpdate()}
+    FS.drag={k:"thumb",id:e.pointerId,y0:e.clientY,st0:fsMetrics().st};d.classList.add("drag");thumbBubble()});
+  tr.addEventListener("pointermove",e=>{if(FS.drag&&FS.drag.k==="thumb"&&FS.drag.id===e.pointerId){e.preventDefault();dragThumb(e)}});
+  const end=e=>{if(FS.drag&&FS.drag.id===e.pointerId){FS.drag=null;d.classList.remove("drag");fsBubbleOff()}};
+  [idx,tr].forEach(x=>{x.addEventListener("pointerup",end);x.addEventListener("pointercancel",end)});
+  d.addEventListener("touchmove",e=>{if(e.cancelable)e.preventDefault()},{passive:false})}
+
+/* ---- v19: 어느 화면에서든 언어 바꾸기 ---- */
+const LSW_VIEWS=["list","quiz","quizrun","cards","conjprac","declprac","grammar","notes"];
+function lswChip(){const l=L();return `<button type="button" class="lsw" data-lsw aria-haspopup="dialog" aria-label="언어 바꾸기 (지금: ${esc(l.name)})">${flagOf(l)}<span class="nm">${esc(l.name)}</span></button>`}
+function lswInject(v){if(!LSW_VIEWS.includes(v)||S.langs.length<1)return;const h=document.querySelector("#app .head");if(!h||h.querySelector(".lsw"))return;
+  const h2=h.querySelector("h2");if(h2)h2.insertAdjacentHTML("afterend",lswChip());else h.insertAdjacentHTML("beforeend",lswChip())}
+function lswBusy(){const v=S.view;if(v==="quizrun")return!!(S.quiz&&S.quiz.queue&&S.quiz.queue.length);if(v==="conjprac")return!!(S.prac&&S.prac.queue&&S.prac.queue.length);if(v==="declprac")return!!(S.dprac&&S.dprac.queue&&S.dprac.queue.length);
+  if(v==="cards")return!!(S.sess&&S.sess.done&&S.sess.done.length&&S.sess.queue&&S.sess.queue.length);return false}
+function openLangSwitch(){openSheet(`<div class="grab"></div><h3>언어 바꾸기 <button class="x" data-close aria-label="닫기">✕</button></h3>
+  <div class="lswl" role="list">${S.langs.map(l=>`<button type="button" role="listitem" data-lswto="${esc(l.id)}" aria-current="${l.id===S.cur?"true":"false"}">${flagOf(l)}<span>${esc(l.name)}</span><span class="c">${(S.words[l.id]||[]).length}단어</span></button>`).join("")}</div>
+  <p class="hint">지금 보던 화면 그대로 언어만 바뀌어.</p>`)}
+function lswAsk(id){const l=S.langs.find(x=>x.id===id);const what=S.view==="cards"?"카드":S.view==="quizrun"?"퀴즈":"연습";
+  openSheet(`<div class="grab"></div><h3>${what} 중이야</h3><p>${esc(l?l.name:"")}로 바꾸면 이번 ${what}는 여기서 끝나. 지금까지 한 건 저장돼 있어.</p>
+  <button type="button" class="btn primary block" data-lswgo="${esc(id)}">바꿀래</button><button type="button" class="btn ghost block" data-close style="margin-top:8px">계속할래</button>`)}
+function switchLang(id){if(!S.langs.some(l=>l.id===id)){closeSheet();return}if(id===S.cur){closeSheet();return}
+  S.cur=id;S._af=null;S.listSub="";S.listGender="";S.q="";S.selWord=null;if(S.filter){S.filter.sub="";delete S.filter.gender}
+  const g=wikiLangId();if(g&&window.GRAMMAR&&GRAMMAR.LANGS[g]){S.gLang=g;S.gOpen="";S.gCat=""}
+  const v=S.view;if(v==="quizrun"||v==="conjprac"||v==="declprac"){S.view="quiz";S.quiz=null;S.prac=null;S.dprac=null}
+  else if(v==="quiz")S.quiz=null;else if(v==="cards")startCards();else if(["conj","conjrev","decl","declrev"].includes(v))S.view="list";
+  save();closeSheet();render();if(FS.tgt===window)window.scrollTo(0,0);toast((L().name||"")+"(으)로 바꿨어")}
+function lswClick(e){const T=e.target;
+  if(T.closest("[data-lsw]")){openLangSwitch();return true}
+  const to=T.closest("[data-lswto]");if(to){const id=to.dataset.lswto;if(id===S.cur){closeSheet();return true}if(lswBusy())lswAsk(id);else switchLang(id);return true}
+  const go=T.closest("[data-lswgo]");if(go){switchLang(go.dataset.lswgo);return true}
+  return false}
 
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;window._canInstall=true;if((S.view||"home")==="home")render()});
