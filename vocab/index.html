@@ -573,6 +573,28 @@ html.nfocus .nedit-s .nword,html.nfocus .nbar .ntitle,html.nfocus .nbar #nDrawer
 .nzhud{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:4px 10px;background:#000;color:#fff;border:2px solid #fff;font-size:1rem;display:none;pointer-events:none}
 .nzhud.on{display:block}
 .nstage .nstat{position:absolute;left:8px;bottom:6px;margin:0;font-size:.7rem;color:#aaa;background:#000;padding:1px 4px;pointer-events:none}
+/* v21 문법 개념 필기 */
+.gnmark{font-size:.85em;border:1px solid currentColor;padding:0 2px;margin-left:4px;line-height:1}
+.gnrow{margin:2px 0 8px}
+.gnbtn{min-height:40px;padding:0 12px}
+.gart .gnrow{margin:0 0 10px}
+.ngtag{font-size:.7rem;border:1px solid currentColor;padding:0 3px;font-weight:400;vertical-align:1px}
+.nfilt{margin:0 0 10px}
+.ncptd{border:2px dashed #fff;margin:0 0 8px;padding:6px 10px}
+.ncptd>summary{cursor:pointer;min-height:32px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ncptd .gbody{max-height:40vh;overflow:auto;margin-top:6px}
+.nwork{flex:1;min-height:0;display:flex;gap:8px;margin-top:8px}
+.nwork .nstage{margin-top:0;flex:1;min-width:0}
+.ncpt{display:none;flex:0 0 360px;min-width:0;overflow:auto;overscroll-behavior:contain;border:2px solid #fff;padding:10px 12px;background:#000}
+.nwork.cpt .ncpt{display:block}
+.ncpt-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ncpt-back{min-height:36px;padding:0 10px}
+.ncpt .gat{margin:4px 0 8px}
+.ncpt .gbody{font-size:.9rem}
+.ncpt table{font-size:.8rem}
+html.mid .nwork{flex-direction:column}
+html.mid .ncpt{flex:0 0 auto;max-height:28vh}
+html.nfocus .nwork.cpt .ncpt{display:none}
 </style>
 </head>
 <body>
@@ -1569,9 +1591,9 @@ function splitHTML(left,right,cls){return `<div class="split ${cls||""}"><aside 
 function viewGrammarWide(){if(!window.GRAMMAR)return viewGrammar();
   const lg=gLang();const ws=langWordsFor(lg);const {all,secs}=gSecs(lg);
   let sel=secs.find(x=>x.id===S.gOpen)||secs[0];
-  const left=`${gHead(lg)}${gCatChips(lg,all)}<nav class="gidx">${gGroups(secs,x=>`<button type="button" class="gix ${sel&&x.id===sel.id?"on":""}" data-gsel="${esc(x.id)}" aria-current="${sel&&x.id===sel.id?"true":"false"}">${esc(x.title)}</button>`)||`<p class="hint">찾는 개념이 없어.</p>`}</nav>`;
+  const left=`${gHead(lg)}${gCatChips(lg,all)}<nav class="gidx">${gGroups(secs,x=>`<button type="button" class="gix ${sel&&x.id===sel.id?"on":""}" data-gsel="${esc(x.id)}" aria-current="${sel&&x.id===sel.id?"true":"false"}">${esc(x.title)}${gNoteMark(x.id,lg)}</button>`)||`<p class="hint">찾는 개념이 없어.</p>`}</nav>`;
   let right=`<p class="hint">왼쪽에서 개념을 골라 줘.</p>`;
-  if(sel)right=`<article class="gsec gart" id="g-${sel.id}"><div class="gcatl">${esc(gCatName(sel.cat))}</div><h3 class="gat">${esc(sel.title)}</h3><div class="gbody" lang="${lg}">${sel.body}</div>${gMineHTML(sel,lg,ws,40)}</article>`;
+  if(sel)right=`<article class="gsec gart" id="g-${sel.id}"><div class="gcatl">${esc(gCatName(sel.cat))}</div><h3 class="gat">${esc(sel.title)}</h3>${gNoteBtn(sel.id,lg)}<div class="gbody" lang="${lg}">${sel.body}</div>${gMineHTML(sel,lg,ws,40)}</article>`;
   return splitHTML(left,right,"g-split")}
 function render(){applyLayout();const a=document.getElementById("app");unmountPad();if(!S.langs.length){document.getElementById("nav").style.display="none";a.innerHTML=viewNoLang();return}
   if(S.view==="note"&&layoutMode()!=="phone")S.view="notes";pruneFresh();
@@ -1626,7 +1648,7 @@ function viewGrammar(){if(!window.GRAMMAR)return `<div class="head"><h2>문법</
   const lg=gLang();const ws=langWordsFor(lg);const open=S.gOpen||"";const {all,secs}=gSecs(lg);
   return `${gHead(lg)}${gCatChips(lg,all)}
     <p class="hint" style="margin:0 0 10px">어형이 바뀌는 규칙 모음. 칸의 ? 설명이나 틀린 답 아래 ‘개념 보기’에서도 여기로 와. 각 항목 아래엔 내 단어 중 그 규칙에 해당하는 것들이 떠.</p>
-    ${gGroups(secs,x=>`<details class="gsec" id="g-${x.id}" ${open===x.id?"open":""}><summary>${esc(x.title)}</summary><div class="gbody" lang="${lg}">${x.body}</div>${gMineHTML(x,lg,ws)}</details>`)||`<div class="empty">찾는 개념이 없어.</div>`}`}
+    ${gGroups(secs,x=>`<details class="gsec" id="g-${x.id}" ${open===x.id?"open":""}><summary>${esc(x.title)}${gNoteMark(x.id,lg)}</summary>${gNoteBtn(x.id,lg)}<div class="gbody" lang="${lg}">${x.body}</div>${gMineHTML(x,lg,ws)}</details>`)||`<div class="empty">찾는 개념이 없어.</div>`}`}
 function openConcept(id){if(!window.GRAMMAR)return;const f=GRAMMAR.find(id);if(!f)return;S.gLang=f.lang;S.gOpen=id;S.gq="";S.gCat="";closeRulePop();S.view="grammar";render();
   setTimeout(()=>{const el=document.getElementById("g-"+id);if(el){el.open=true;el.scrollIntoView({block:"start"});window.scrollBy(0,-8)}},30)}
 function go(v){S.view=v;if(v==="cards")startCards();if(v==="quiz")S.quiz=null;render()}
@@ -2320,13 +2342,13 @@ function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{t
 /* ---- v18: 필기 (그림판) ----
    S.notes=[{id,title,wordId,lang,created,updatedAt,strokes:[{c,s,e,d}]}]  (좌표는 1000×1300 종이 기준, d=압축한 점들)
    펜(애플 펜슬)을 쓰면 손 터치는 무시 → 손바닥 올려도 안 그려짐. "손가락도" 켜면 다시 손으로 그려짐. */
-const NP={views:{},drawer:null,focus:false,tool:"pen",color:"#ffffff",width:6,penSeen:false,fingerOk:true,hist:{},fresh:new Set(),thumbs:new Map(),delArm:null};
+const NP={views:{},drawer:null,focus:false,cpt:true,filter:"",tool:"pen",color:"#ffffff",width:6,penSeen:false,fingerOk:true,hist:{},fresh:new Set(),thumbs:new Map(),delArm:null};
 window.PAD=null;
 function notesAll(){return S.notes||(S.notes=[])}
 function noteById(id){return notesAll().find(n=>n.id===id)}
 function noteOfWord(wid){return notesAll().find(n=>n.wordId===wid)}
 function noteWord(n){if(!n||!n.wordId)return null;const arr=S.words[n.lang]||[];return arr.find(w=>w.id===n.wordId)||null}
-function noteTitle(n){if(n.title&&n.title.trim())return n.title;const w=noteWord(n);return w?w.word:"제목 없는 필기"}
+function noteTitle(n){if(n.title&&n.title.trim())return n.title;const w=noteWord(n);if(w)return w.word;const c=noteConcept(n);if(c)return c.sec.title;return n.cid?"(없는 문법 개념)":"제목 없는 필기"}
 function noteThumb(n){const k=n.id+":"+(n.updatedAt||0)+":"+(n.strokes||[]).length;const c=NP.thumbs.get(n.id);if(c&&c.k===k)return c.u;let u="";try{u=NOTES.thumbURL(n,96)}catch(e){}NP.thumbs.set(n.id,{k,u});return u}
 function fmtDay(t){if(!t)return"";const d=new Date(t);return (d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
 function newNote(o){const n={id:"n"+uid(),title:"",created:new Date().toISOString(),updatedAt:0,strokes:[],...(o||{})};notesAll().unshift(n);NP.fresh.add(n.id);return n}
@@ -2334,12 +2356,16 @@ function newNote(o){const n={id:"n"+uid(),title:"",created:new Date().toISOStrin
 function pruneFresh(){if(!NP.fresh.size)return;const keep=(S.view==="note"||(S.view==="notes"&&layoutMode()!=="phone"))?S.noteId:null;let ch=false;
   [...NP.fresh].forEach(id=>{if(id===keep)return;NP.fresh.delete(id);const n=noteById(id);if(n&&!(n.strokes||[]).length&&!(n.title||"").trim()){S.notes=notesAll().filter(x=>x!==n);ch=true}});
   if(ch)save()}
-function noteListHTML(sel){const ns=notesAll().slice().sort((a,b)=>(b.updatedAt||Date.parse(b.created)||0)-(a.updatedAt||Date.parse(a.created)||0));
-  if(!ns.length)return `<div class="empty">아직 필기가 없어.<br>‘새 필기’를 눌러 시작해.</div>`;
-  return `<ul class="nlist">${ns.map(n=>{const w=noteWord(n);const lg=S.langs.find(l=>l.id===n.lang);const u=noteThumb(n);
+function noteKind(n){return n.cid?"gram":n.wordId?"word":"free"}
+function noteFiltHTML(){const all=notesAll();if(!all.length)return"";const f=NP.filter||"";const cnt=k=>all.filter(n=>noteKind(n)===k).length;
+  return `<div class="picks hscroll nfilt" role="group" aria-label="필기 종류"><button type="button" class="chip ${!f?"on":""}" data-nf="" aria-pressed="${!f}">전체<span class="c">${all.length}</span></button>${[["gram","문법"],["word","단어"],["free","자유"]].map(([k,l])=>`<button type="button" class="chip ${f===k?"on":""}" data-nf="${k}" aria-pressed="${f===k}">${l}<span class="c">${cnt(k)}</span></button>`).join("")}</div>`}
+function noteListHTML(sel){const f=NP.filter||"";const all=notesAll();const ns=all.filter(n=>!f||noteKind(n)===f).sort((a,b)=>(b.updatedAt||Date.parse(b.created)||0)-(a.updatedAt||Date.parse(a.created)||0));
+  if(!all.length)return `<div class="empty">아직 필기가 없어.<br>‘새 필기’를 눌러 시작해.</div>`;
+  if(!ns.length)return noteFiltHTML()+`<div class="empty">이 종류의 필기는 없어.</div>`;
+  return noteFiltHTML()+`<ul class="nlist">${ns.map(n=>{const w=noteWord(n);const lg=S.langs.find(l=>l.id===n.lang);const u=noteThumb(n);
     return `<li class="nitem ${n.id===sel?"sel":""}"><button type="button" class="nopen" data-nopen="${esc(n.id)}" aria-current="${n.id===sel?"true":"false"}">
-      <span class="nthumb">${u?`<img src="${u}" alt="">`:""}</span><span class="nmeta"><b>${esc(noteTitle(n))}</b>
-      <span class="hint">${w?`${lg?flagOf(lg)+" ":""}단어 · ${esc(w.word)} · `:n.wordId?"(지운 단어) · ":""}${(n.strokes||[]).length}획 · ${fmtDay(n.updatedAt||Date.parse(n.created))}</span></span></button></li>`}).join("")}</ul>`}
+      <span class="nthumb">${u?`<img src="${u}" alt="">`:""}</span><span class="nmeta"><b>${n.cid?`<span class="ngtag" aria-label="문법 필기">문법</span> `:""}${esc(noteTitle(n))}</b>
+      <span class="hint">${n.cid?noteCptLabel(n)+" · ":w?`${lg?flagOf(lg)+" ":""}단어 · ${esc(w.word)} · `:n.wordId?"(지운 단어) · ":""}${(n.strokes||[]).length}획 · ${fmtDay(n.updatedAt||Date.parse(n.created))}</span></span></button></li>`}).join("")}</ul>`}
 function notesHead(){return `<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>필기</h2><span class="duepill">${notesAll().length}</span></div>
   <button type="button" class="btn primary block" id="noteNew">\ue010 새 필기</button>`}
 function viewNotes(){return `${notesHead()}<p class="hint" style="margin:8px 0 10px">손가락이나 애플 펜슬로 써. 펜을 쓰면 손바닥은 자동으로 무시해. 단어 화면의 ‘필기’로 단어마다 노트를 붙일 수도 있어.</p>${noteListHTML(null)}`}
@@ -2359,9 +2385,10 @@ function ntoolsHTML(){const pr=b=>`aria-pressed="${b?"true":"false"}"`;const h=N
   </div>`}
 function noteEditorHTML(n,wide){const w=noteWord(n);
   return `<div class="nedit" data-note="${esc(n.id)}">
-    <div class="head nhead">${wide?"":`<button class="back" data-go="notes" aria-label="필기 목록">←</button>`}<input class="ntitle" id="noteTitle" maxlength="60" placeholder="${esc(w?w.word:"제목")}" value="${esc(n.title||"")}" aria-label="필기 제목">
+    <div class="head nhead">${wide?"":n.cid?`<button class="back" data-gback="${esc(n.cid)}" aria-label="문법 개념으로">←</button>`:`<button class="back" data-go="notes" aria-label="필기 목록">←</button>`}<input class="ntitle" id="noteTitle" maxlength="60" placeholder="${esc(w?w.word:noteConcept(n)?noteConcept(n).sec.title:"제목")}" value="${esc(n.title||"")}" aria-label="필기 제목">
       <button type="button" class="btn ghost ndel" id="nDel">${NP.delArm===n.id?"정말 지울까?":"삭제"}</button></div>
     ${w?`<div class="nword hint">단어 · <b lang="${esc(wikiLangId(S.langs.find(l=>l.id===n.lang))||"")}">${esc(w.word)}</b> — ${esc(w.meaning||"")}</div>`:""}
+    ${n.cid?noteCptPhone(n):""}
     ${ntoolsHTML()}
     <div class="npaper" id="npaper"><canvas id="noteCv" class="ncv" aria-label="필기 공간 (그리기)"></canvas></div>
     <p class="hint nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"}</p></div>`}
@@ -2387,9 +2414,13 @@ function noteClick(e){const T=e.target;
   if(T.closest("#noteNew")){const n=newNote();openNote(n.id);return true}
   const o=T.closest("[data-nopen]");if(o){openNote(o.dataset.nopen);return true}
   const wn=T.closest("[data-wnote]");if(wn){openWordNote(wn.dataset.wnote);return true}
+  const gn=T.closest("[data-gnote]");if(gn){openConceptNote(gn.dataset.gnote,gn.dataset.glg);return true}
+  const gb=T.closest("[data-gback]");if(gb){openConcept(gb.dataset.gback);return true}
+  const nf=T.closest("[data-nf]");if(nf){NP.filter=nf.dataset.nf||"";render();return true}
   if(T.closest("#nDrawer")){NP.drawer=!studioDrawerOpen();const st=document.getElementById("nstudio");if(st)st.classList.toggle("dopen",NP.drawer);T.closest("#nDrawer").setAttribute("aria-pressed",String(NP.drawer));if(PAD&&layoutMode()==="wide")PAD.resize();return true}
   if(T.closest("#nDrawerX")){NP.drawer=false;const st=document.getElementById("nstudio");if(st)st.classList.remove("dopen");return true}
   if(T.closest("#nFocus")){NP.focus=!NP.focus;render();return true}
+  if(T.closest("#nCpt")){NP.cpt=!NP.cpt;const w=document.getElementById("nwork");if(w)w.classList.toggle("cpt",NP.cpt);const b=T.closest("#nCpt");b.classList.toggle("on",NP.cpt);b.setAttribute("aria-pressed",String(NP.cpt));if(PAD)PAD.resize();return true}
   if(T.closest("#nZoomIn")){PAD&&PAD.zoomBy(1.25);return true}
   if(T.closest("#nZoomOut")){PAD&&PAD.zoomBy(0.8);return true}
   if(T.closest("#nZoomReset")){PAD&&PAD.resetView();return true}
@@ -2518,21 +2549,40 @@ function studioEditorHTML(n){const w=noteWord(n);const dr=studioDrawerOpen()&&!N
   return `<div class="nedit nedit-s" data-note="${esc(n.id)}">
     <div class="nbar" id="nbar">
       <button type="button" class="nt" id="nDrawer" aria-pressed="${dr}" aria-label="필기 목록 열고 닫기"><span class="ic">\ue003</span></button>
-      <input class="ntitle" id="noteTitle" maxlength="60" placeholder="${esc(w?w.word:"제목")}" value="${esc(n.title||"")}" aria-label="필기 제목">
+      <input class="ntitle" id="noteTitle" maxlength="60" placeholder="${esc(w?w.word:noteConcept(n)?noteConcept(n).sec.title:"제목")}" value="${esc(n.title||"")}" aria-label="필기 제목">
       ${ntoolsHTML()}
       <div class="ngrp nzg" role="group" aria-label="확대"><button type="button" class="nt" id="nZoomOut" aria-label="축소">−</button><button type="button" class="nt nzpct" id="nZoomReset" aria-label="확대 초기화 (지금 ${Math.round(z*100)}%)">${Math.round(z*100)}%</button><button type="button" class="nt" id="nZoomIn" aria-label="확대">+</button></div>
+      ${n.cid?`<button type="button" class="nt ${NP.cpt?"on":""}" id="nCpt" aria-pressed="${NP.cpt}" aria-label="개념 내용 보이기/숨기기">개념</button>`:""}
       <button type="button" class="nt ${NP.focus?"on":""}" id="nFocus" aria-pressed="${NP.focus}" aria-label="집중 모드">${NP.focus?"집중 끄기":"집중"}</button>
       <button type="button" class="nt ndel" id="nDel">${NP.delArm===n.id?"정말 지울까?":"삭제"}</button>
     </div>
     ${w?`<div class="nword hint">단어 · <b lang="${esc(wikiLangId(S.langs.find(l=>l.id===n.lang))||"")}">${esc(w.word)}</b> — ${esc(w.meaning||"")}</div>`:""}
-    <div class="nstage" id="nstage"><div class="npage" id="npage" aria-hidden="true"></div><canvas id="noteCv" class="ncv" aria-label="필기 공간 (그리기, 두 손가락으로 확대·이동)"></canvas>
+    ${n.cid&&!noteConcept(n)?`<div class="nword hint">문법 · (없는 개념: ${esc(n.cid)})</div>`:""}
+    <div class="nwork ${n.cid&&NP.cpt&&noteConcept(n)?"cpt":""}" id="nwork">${n.cid?noteCptPane(n):""}<div class="nstage" id="nstage"><div class="npage" id="npage" aria-hidden="true"></div><canvas id="noteCv" class="ncv" aria-label="필기 공간 (그리기, 두 손가락으로 확대·이동)"></canvas>
       <div class="nzhud" id="nzhud" aria-hidden="true">${Math.round(z*100)}%</div>
-      <p class="nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"} · 두 손가락: 확대/이동</p></div></div>`}
+      <p class="nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"} · 두 손가락: 확대/이동</p></div></div></div>`}
 function studioPlace(){const st=document.getElementById("nstudio");if(!st)return;const nav=document.getElementById("nav");
   const nh=layoutMode()==="mid"&&!NP.focus&&nav&&getComputedStyle(nav).display!=="none"?nav.getBoundingClientRect().height:0;st.style.bottom=nh+"px";window.scrollTo(0,0)}
 function studioView(id,v){NP.views[id]={z:v.z,px:v.px,py:v.py};const pg=document.getElementById("npage");
   if(pg){pg.style.transform=`translate(${v.tx}px,${v.ty}px)`;pg.style.width=(NOTES.PAGE_W*v.s)+"px";pg.style.height=(NOTES.PAGE_H*v.s)+"px";pg.style.backgroundSize=`${20*v.s}px ${20*v.s}px`}
   const pct=Math.round(v.z*100)+"%";const b=document.getElementById("nZoomReset");if(b){b.textContent=pct;b.setAttribute("aria-label","확대 초기화 (지금 "+pct+")")}const h=document.getElementById("nzhud");if(h)h.textContent=pct}
+
+/* ---- v21: 문법 개념 필기 ----
+   노트에 cid(개념 id, 예: fr-impf) + clang(문법 언어) 를 붙여 둠. 개념 id 는 버전이 바뀌어도 그대로라 동기화·다른 기기에서도 같은 개념에 붙음.
+   예전 버전(v20)은 이 필드를 몰라도 그냥 일반 노트로 보여 주고 그대로 보존해 (노트 통째로 동기화). */
+function noteConcept(n){if(!n||!n.cid||!window.GRAMMAR)return null;const f=GRAMMAR.find(n.cid);return f?{lang:f.lang,sec:f.sec}:null}
+function noteOfConcept(cid,lg){const ms=notesAll().filter(n=>n.cid===cid&&(n.clang||"")===lg);return ms.sort((a,b)=>(b.strokes||[]).length-(a.strokes||[]).length||(b.updatedAt||0)-(a.updatedAt||0))[0]||null}
+const GLNAME={fr:"프랑스어",ru:"러시아어",tr:"터키어"};
+function noteCptLabel(n){const c=noteConcept(n);const lg=n.clang||(c&&c.lang)||"";const fl=S.langs.find(l=>wikiLangId(l)===lg);return `${fl?flagOf(fl)+" ":""}문법 · ${esc(c?c.sec.title:n.cid)}`}
+function gNoteMark(cid,lg){const n=noteOfConcept(cid,lg);return n&&(n.strokes||[]).length?` <span class="gnmark" title="필기 있음" aria-label="필기 있음">\ue010</span>`:""}
+function gNoteBtn(cid,lg){const n=noteOfConcept(cid,lg);const has=n&&(n.strokes||[]).length;return `<div class="gnrow"><button type="button" class="btn ghost gnbtn" data-gnote="${esc(cid)}" data-glg="${esc(lg)}">\ue010 ${has?"필기 열기":"이 개념 필기"}${has?` <span class="nmark">${n.strokes.length}획</span>`:""}</button></div>`}
+function openConceptNote(cid,lg){if(!window.GRAMMAR)return;const f=GRAMMAR.find(cid);if(!f)return;lg=lg||f.lang;let n=noteOfConcept(cid,lg);
+  if(!n)n=newNote({cid,clang:lg});if(layoutMode()==="wide")NP.drawer=false;NP.cpt=true;closeSheet();openNote(n.id)}
+function noteCptBody(n){const c=noteConcept(n);if(!c)return"";return `<div class="gbody" lang="${esc(c.lang)}">${c.sec.body}</div>`}
+function noteCptPane(n){const c=noteConcept(n);if(!c)return"";
+  return `<aside class="ncpt" id="ncpt" aria-label="문법 개념 내용"><div class="ncpt-h"><button type="button" class="btn ghost ncpt-back" data-gback="${esc(n.cid)}">← 문법</button><span class="gcatl">${esc(gCatName(c.sec.cat))}</span></div><h3 class="gat">${esc(c.sec.title)}</h3>${noteCptBody(n)}</aside>`}
+function noteCptPhone(n){const c=noteConcept(n);if(!c)return `<div class="nword hint">문법 · (없는 개념: ${esc(n.cid)})</div>`;
+  return `<details class="ncptd"><summary>문법 · <b>${esc(c.sec.title)}</b> <span class="hint">(눌러서 내용 보기)</span></summary>${noteCptBody(n)}</details>`}
 
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;window._canInstall=true;if((S.view||"home")==="home")render()});
