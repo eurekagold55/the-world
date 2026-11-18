@@ -35,14 +35,14 @@ function drawStroke(ctx,st,k,pts){pts=pts||decode(st.d);if(!pts.length)return;ct
     ctx.lineWidth=Math.max(0.6,widthAt(st.s,(a[2]+b[2])/2,st.e)*k);ctx.beginPath();ctx.moveTo(m0[0]*k,m0[1]*k);ctx.quadraticCurveTo(a[0]*k,a[1]*k,(i===pts.length-1?b[0]:m1[0])*k,(i===pts.length-1?b[1]:m1[1])*k);ctx.stroke()}
   ctx.restore()}
 function drawAll(ctx,note,k,wpx,hpx){ctx.clearRect(0,0,wpx,hpx);(note.strokes||[]).forEach(st=>{try{drawStroke(ctx,st,k)}catch(e){}})}
-function thumbURL(note,w){if(typeof document==="undefined")return"";w=w||120;const h=Math.round(w*PAGE_H/PAGE_W);const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");
-  const ink=document.createElement("canvas");ink.width=w;ink.height=h;drawAll(ink.getContext("2d"),note,w/PAGE_W,w,h);x.fillStyle="#000";x.fillRect(0,0,w,h);x.drawImage(ink,0,0);return c.toDataURL("image/png")}
+function thumbURL(note,w){if(typeof document==="undefined")return"";w=w||120;const PW=note.pw||PAGE_W,PH=note.ph||(note.pw?Math.round(note.pw*1.3):PAGE_H);const h=Math.round(w*PH/PW);const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");
+  const ink=document.createElement("canvas");ink.width=w;ink.height=h;drawAll(ink.getContext("2d"),note,w/PW,w,h);x.fillStyle="#000";x.fillRect(0,0,w,h);x.drawImage(ink,0,0);return c.toDataURL("image/png")}
 
 /* ---- v20: 보기 변환 (확대·이동) ----
    화면 좌표 = 종이 좌표 × s + (tx,ty).  s0 = 종이 너비를 화면 너비에 맞춘 배율(100%).
    저장 좌표는 항상 종이(1000×1300) 기준이라 예전 노트·동기화와 그대로 호환. */
 const ZMIN=0.5,ZMAX=5;
-function fitView(vw,vh){const s=vw/PAGE_W;return{s,s0:s,tx:0,ty:0}}
+function fitView(vw,vh,pw){const s=vw/(pw||PAGE_W);return{s,s0:s,tx:0,ty:0}}
 function clampScale(s,s0){return Math.max(s0*ZMIN,Math.min(s0*ZMAX,s))}
 function toPage(v,x,y){return[(x-v.tx)/v.s,(y-v.ty)/v.s]}
 function toScreen(v,px,py){return[px*v.s+v.tx,py*v.s+v.ty]}
@@ -52,8 +52,8 @@ function pinchView(v0,a0,b0,a1,b1){const m0=[(a0[0]+b0[0])/2,(a0[1]+b0[1])/2],m1
   const s=clampScale(v0.s*d1/d0,v0.s0);const P=toPage(v0,m0[0],m0[1]);return{s,s0:v0.s0,tx:m1[0]-P[0]*s,ty:m1[1]-P[1]*s}}
 function zoomAt(v,f,x,y){const s=clampScale(v.s*f,v.s0);const P=toPage(v,x,y);return{s,s0:v.s0,tx:x-P[0]*s,ty:y-P[1]*s}}
 /* 종이가 화면 밖으로 다 나가지 않게: 화면보다 작으면 가운데, 크면 가장자리 48px 여유까지만 */
-function clampView(v,vw,vh){const s=clampScale(v.s,v.s0),M=48;const ax=(t,size,view)=>size<=view?(view-size)/2:Math.min(M,Math.max(view-size-M,t));
-  return{s,s0:v.s0,tx:ax(v.tx,PAGE_W*s,vw),ty:ax(v.ty,PAGE_H*s,vh)}}
+function clampView(v,vw,vh,pw,ph){const s=clampScale(v.s,v.s0),M=48;const ax=(t,size,view)=>size<=view?(view-size)/2:Math.min(M,Math.max(view-size-M,t));
+  return{s,s0:v.s0,tx:ax(v.tx,(pw||PAGE_W)*s,vw),ty:ax(v.ty,(ph||PAGE_H)*s,vh)}}
 const PTS=typeof WeakMap!=="undefined"?new WeakMap():null;
 function ptsOf(st){if(!PTS)return decode(st.d);let c=PTS.get(st);if(!c||c.d!==st.d){c={d:st.d,v:decode(st.d)};PTS.set(st,c)}return c.v}
 
@@ -61,19 +61,22 @@ function ptsOf(st){if(!PTS)return decode(st.d);let c=PTS.get(st);if(!c||c.d!==st
 class Pad{
   constructor(canvas,note,opt){this.cv=canvas;this.note=note;this.opt=opt||{};this.tool="pen";this.color=COLORS[0][0];this.width=WIDTHS[1][0];
     this.undo=[];this.redo=[];this.cur=null;this.pid=null;this.curType="";this.penSeen=!!(opt&&opt.penSeen);this.fingerOk=!this.penSeen;
-    this.zoomable=!!(opt&&opt.zoom);this.touches=new Map();this.gest=null;this.lock=false;this.view=null;
+    this.zoomable=!!(opt&&opt.zoom);this.PW=(opt&&opt.pw)||PAGE_W;this.PH=(opt&&opt.ph)||PAGE_H;this.pan=null;this.touches=new Map();this.gest=null;this.lock=false;this.view=null;
     this.ctx=canvas.getContext("2d");this._bind();this.resize()}
   resize(){const dpr=Math.min(3,(typeof devicePixelRatio!=="undefined"?devicePixelRatio:1)||1);this.dpr=dpr;let w,h;
-    if(this.zoomable){w=this.cv.clientWidth||500;h=this.cv.clientHeight||650}else{const r=this.cv.getBoundingClientRect();w=r.width||PAGE_W/2;h=w*PAGE_H/PAGE_W}
-    this.vw=w;this.vh=h;this.cv.width=Math.round(w*dpr);this.cv.height=Math.round(h*dpr);const f=fitView(w,h);
+    if(this.zoomable){w=this.cv.clientWidth||500;h=this.cv.clientHeight||650}else{const r=this.cv.getBoundingClientRect();w=r.width||PAGE_W/2;h=w*this.PH/this.PW}
+    this.vw=w;this.vh=h;this.cv.width=Math.round(w*dpr);this.cv.height=Math.round(h*dpr);const f=fitView(w,h,this.PW);
     if(!this.zoomable)this.view=f;
-    else if(this.view){/* 회전·창 크기 바뀌어도 배율(%)과 왼쪽 위 종이 점 유지 */const z=this.view.s/this.view.s0,P=toPage(this.view,0,0);const s=f.s0*z;this.view=clampView({s,s0:f.s0,tx:-P[0]*s,ty:-P[1]*s},w,h)}
-    else if(this.opt.initView&&this.opt.initView.z){const iv=this.opt.initView,s=f.s0*iv.z;this.view=clampView({s,s0:f.s0,tx:-iv.px*s,ty:-iv.py*s},w,h)}
-    else this.view=clampView(f,w,h);
+    else if(this.view){/* 회전·창 크기 바뀌어도 배율(%)과 왼쪽 위 종이 점 유지 */const z=this.view.s/this.view.s0,P=toPage(this.view,0,0);const s=f.s0*z;this.view=this._clamp({s,s0:f.s0,tx:-P[0]*s,ty:-P[1]*s},w,h)}
+    else if(this.opt.initView&&this.opt.initView.z){const iv=this.opt.initView,s=f.s0*iv.z;this.view=this._clamp({s,s0:f.s0,tx:-iv.px*s,ty:-iv.py*s},w,h)}
+    else this.view=this._clamp(f,w,h);
     this.k=this.view.s;this.redraw();this._emit()}
   zoom(){return this.view?this.view.s/this.view.s0:1}
-  setView(v){if(!this.zoomable)return;this.view=clampView(v,this.vw,this.vh);this.k=this.view.s;this._sched();this._emit()}
-  resetView(){this.setView(fitView(this.vw,this.vh))}
+  _clamp(v,w,h){return clampView(v,w,h,this.PW,this.PH)}
+  /* v22: 종이 높이 바뀜 (문법 설명 위 필기: 글 높이 + 여백) */
+  setPage(ph){if(!ph||ph===this.PH)return;this.PH=ph;if(this.zoomable&&this.view)this.setView(this.view);else this.resize()}
+  setView(v){if(!this.zoomable)return;this.view=this._clamp(v,this.vw,this.vh);this.k=this.view.s;this._sched();this._emit()}
+  resetView(){this.setView(fitView(this.vw,this.vh,this.PW))}
   zoomBy(f){this.setView(zoomAt(this.view,f,this.vw/2,this.vh/2))}
   _emit(){const v=this.view;this.opt.onView&&this.opt.onView({...v,z:v.s/v.s0,px:-v.tx/v.s,py:-v.ty/v.s})}
   _sched(){if(this._raf)return;const f=typeof requestAnimationFrame!=="undefined"?requestAnimationFrame:(c=>setTimeout(c,16));this._raf=f(()=>{this._raf=0;this.redraw()})}
@@ -82,7 +85,7 @@ class Pad{
     (this.note.strokes||[]).forEach(st=>{try{drawStroke(c,st,1,ptsOf(st))}catch(e){}});if(this.cur)drawStroke(c,this.cur.st,1,this.cur.pts)}
   _xy(e){const r=this.cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
   pt(e){const [sx,sy]=this._xy(e);const [x,y]=toPage(this.view,sx,sy);
-    let pr=0.5;if(e.pointerType==="pen"&&e.pressure>0)pr=e.pressure;return[Math.max(0,Math.min(PAGE_W,x)),Math.max(0,Math.min(PAGE_H,y)),pr*15]}
+    let pr=0.5;if(e.pointerType==="pen"&&e.pressure>0)pr=e.pressure;return[Math.max(0,Math.min(this.PW,x)),Math.max(0,Math.min(this.PH,y)),pr*15]}
   accept(e){if(e.pointerType==="pen"){if(!this.penSeen){this.penSeen=true;this.fingerOk=false;this.opt.onPen&&this.opt.onPen()}return true}
     if(e.pointerType==="touch")return this.fingerOk;/* 펜을 쓰고 있으면 손바닥·손가락 무시 */return true}
   cancelStroke(){if(!this.cur)return;const id=this.pid;this.cur=null;this.pid=null;this.curType="";try{this.cv.releasePointerCapture(id)}catch(_){}this.redraw();this.opt.onCancel&&this.opt.onCancel()}
@@ -93,16 +96,19 @@ class Pad{
     this._down=e=>{if(e.button>0)return;
       if(e.pointerType==="touch"){this.touches.set(e.pointerId,this._xy(e));
         if(this.pid!==null&&this.curType==="pen")return;/* 펜으로 쓰는 중엔 손 터치 전부 무시 */
-        if(this.touches.size>=2){e.preventDefault();/* 두 번째 손가락 → 긋던 획 취소 (엉뚱한 선 안 남게) */if(this.cur&&this.curType==="touch")this.cancelStroke();
+        if(this.touches.size>=2){e.preventDefault();this.pan=null;/* 두 번째 손가락 → 긋던 획 취소 (엉뚱한 선 안 남게) */if(this.cur&&this.curType==="touch")this.cancelStroke();
           this.lock=true;if(this.zoomable&&!this.gest)this._startGesture();return}
-        if(this.lock||!this.accept(e)||this.pid!==null)return;e.preventDefault();this._beginStroke(e);return}
+        if(this.lock||!this.accept(e)||this.pid!==null){/* v22: 펜 쓰는 중(손가락 그리기 꺼짐)엔 한 손가락으로 끌어서 이동 */
+          if(this.opt.panFinger&&this.zoomable&&!this.lock&&this.pid===null&&this.touches.size===1&&!this.accept(e)){e.preventDefault();this.pan={id:e.pointerId,p0:this._xy(e),v0:{...this.view}}}return}
+        e.preventDefault();this._beginStroke(e);return}
       if(this.pid!==null){if(this.curType==="touch"&&e.pointerType==="pen")this.cancelStroke();else return}
       if(!this.accept(e))return;e.preventDefault();this._beginStroke(e)};
     this._move=e=>{if(e.pointerType==="touch"&&this.touches.has(e.pointerId)){this.touches.set(e.pointerId,this._xy(e));
-        if(this.gest){e.preventDefault();const a1=this.touches.get(this.gest.a),b1=this.touches.get(this.gest.b);if(a1&&b1)this.setView(pinchView(this.gest.v0,this.gest.a0,this.gest.b0,a1,b1));return}}
+        if(this.gest){e.preventDefault();const a1=this.touches.get(this.gest.a),b1=this.touches.get(this.gest.b);if(a1&&b1)this.setView(pinchView(this.gest.v0,this.gest.a0,this.gest.b0,a1,b1));return}
+        if(this.pan&&this.pan.id===e.pointerId){e.preventDefault();const p=this.touches.get(e.pointerId),v=this.pan.v0;this.setView({...v,tx:v.tx+p[0]-this.pan.p0[0],ty:v.ty+p[1]-this.pan.p0[1]});return}}
       if(e.pointerId!==this.pid||!this.cur)return;e.preventDefault();const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];(evs.length?evs:[e]).forEach(ev=>{const p=this.pt(ev);const l=this._last;if(l&&Math.abs(p[0]-l[0])<0.4&&Math.abs(p[1]-l[1])<0.4)return;this.cur.pts.push(p);this._last=p});
       const n=this.cur.pts.length;this._T();drawStroke(this.ctx,this.cur.st,1,this.cur.pts.slice(Math.max(0,n-3)))};
-    this._endTouch=e=>{if(e.pointerType!=="touch")return;this.touches.delete(e.pointerId);
+    this._endTouch=e=>{if(e.pointerType!=="touch")return;this.touches.delete(e.pointerId);if(this.pan&&this.pan.id===e.pointerId)this.pan=null;
       if(this.gest&&(!this.touches.has(this.gest.a)||!this.touches.has(this.gest.b))){this.gest=null;this.opt.onGesture&&this.opt.onGesture(false)}
       if(this.touches.size===0)this.lock=false};
     this._up=e=>{this._endTouch(e);if(e.pointerId!==this.pid)return;e.preventDefault();this.pid=null;this.curType="";const c=this.cur;this.cur=null;if(!c)return;

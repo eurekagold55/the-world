@@ -595,6 +595,49 @@ html.nfocus .nedit-s .nword,html.nfocus .nbar .ntitle,html.nfocus .nbar #nDrawer
 html.mid .nwork{flex-direction:column}
 html.mid .ncpt{flex:0 0 auto;max-height:28vh}
 html.nfocus .nwork.cpt .ncpt{display:none}
+/* v22: 문법 설명 위 필기 + 궁금증 */
+.gnrow{display:flex;flex-wrap:wrap;gap:6px}
+.gqmark{font-size:.75em;border:1px dashed currentColor;padding:0 3px;margin-left:4px;line-height:1.2;white-space:nowrap}
+.annread{position:relative;overflow-x:auto;overflow-y:hidden;margin:4px 0 8px;border:1px dashed #555;scrollbar-width:thin;overscroll-behavior-x:contain}
+.annsz{position:relative;overflow:hidden}
+.annpage{position:relative;transform-origin:0 0;background:#000}
+.anntext.gbody{box-sizing:border-box;line-height:1.6;padding:12px 14px 16px;border-right:2px dashed #444;background:#000;overflow-wrap:anywhere}
+.anntext .gtbl{font-size:.8em;min-width:0}
+.annink{position:absolute;left:0;top:0;pointer-events:none}
+.annws{position:fixed;top:0;right:0;bottom:0;left:0;z-index:6;display:flex;flex-direction:column;background:#000;padding:8px 10px 10px;padding-top:calc(8px + env(safe-area-inset-top));border-left:2px dashed #fff}
+html.annon body{overflow:hidden;overscroll-behavior:none}
+.annbar .annttl{flex:1 1 120px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+.annvp .annpage{position:absolute;left:0;top:0;background:#000 radial-gradient(#3a3a3a 1px,transparent 1.3px) 0 0/20px 20px;box-shadow:0 0 0 2px #fff;pointer-events:none}
+.qa{border:2px dashed #888;margin:10px 0 8px;padding:8px 10px}
+.qa-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.qa-h .qat{font-weight:400}
+.qa-h .qadd{margin-left:auto;min-height:40px;padding:0 12px}
+.qcnt{font-size:.8rem;border:1px solid #fff;padding:0 4px}
+.qlist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.qi{border:2px solid #fff;padding:6px 8px}
+.qi.done{border-style:dashed;border-color:#888}
+.qrow{display:flex;gap:8px;align-items:flex-start}
+.qst{flex:0 0 auto;min-height:40px;min-width:64px;border:2px dashed #fff;background:#000;color:#fff;font:inherit;font-size:.8rem;padding:0 6px}
+.qi.done .qst{border-style:solid;background:#fff;color:#000}
+.qtx{flex:1;min-width:0}
+.qq{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.qinkimg{display:block;max-width:100%;width:260px;border:1px dashed #555;image-rendering:pixelated;margin:4px 0}
+.qed{flex:0 0 auto;min-height:40px;border:2px solid #888;background:#000;color:#fff;font:inherit;font-size:.75rem;padding:0 8px}
+.qans{margin:6px 0 0;padding:4px 6px;border-left:4px solid #fff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.9rem}
+.qal{font-size:.75rem;border:1px solid #fff;padding:0 3px;margin-right:4px}
+.qmeta{font-size:.72rem;margin-top:4px}
+.qstp .chip{min-height:40px}
+.qstp .chip.on{background:#fff;color:#000}
+.qink{margin:6px 0 10px;border:2px solid #fff;background:#000 radial-gradient(#333 1px,transparent 1.3px) 0 0/16px 16px}
+.qink .qcv{aspect-ratio:1000/400;height:auto}
+.qinktools{display:flex;gap:4px;flex-wrap:wrap;padding:4px;border-bottom:2px dashed #555}
+.qinktools button{min-height:36px;min-width:40px;border:2px solid #fff;background:#000;color:#fff;font:inherit;font-size:.75rem;padding:0 6px}
+.qinktools button.on{background:#fff;color:#000}
+.qinkbtn{min-height:40px;padding:0 12px}
+.gqf .chip.on{background:#fff;color:#000}
+.gqsum{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:4px}
+.gqs{width:100%;text-align:left;border:2px dashed #fff;background:#000;color:#fff;font:inherit;font-size:.85rem;padding:6px 8px;min-height:40px}
+
 </style>
 </head>
 <body>
@@ -654,6 +697,7 @@ function allSubs(pos){if(!pos)return[];const d=SUBS[pos]||["기타"],c=(S.custom
   return [...d,...c.filter(x=>!d.includes(x)),...extra]}
 function migrate(s){s.customSub=s.customSub||{n:[],adj:[],v:[],adv:[],other:[]};
   s.notes=Array.isArray(s.notes)?s.notes.filter(n=>n&&n.id):[];s.notes.forEach(n=>{n.strokes=Array.isArray(n.strokes)?n.strokes:[];if(n.title==null)n.title=""});
+  s.qs=Array.isArray(s.qs)?s.qs.filter(q=>q&&q.id):[];
   s.seeded=s.seeded||{};
   s.words=s.words||{};Object.values(s.words).forEach(arr=>(arr||[]).forEach(w=>{
     if(w.pos==null)w.pos="";if(w.sub==null)w.sub="";w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};w.conjSRS=w.conjSRS||{};
@@ -668,7 +712,7 @@ let S=load();
 /* v17: 동기화용 시간표 — 저장할 때마다 바뀐 곳만 시각 찍기 (단어 updatedAt/srsAt, 지운 건 묘비) */
 if(window.SYNC)SYNC.migrateStamps(S);
 let SYNC_SNAP=window.SYNC?SYNC.snapshot(S):null;
-const saveRaw=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||"",prefs:S.prefs||{},notes:S.notes||[],stamps:S.stamps||{}}));
+const saveRaw=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||"",prefs:S.prefs||{},notes:S.notes||[],qs:S.qs||[],stamps:S.stamps||{}}));
 const save=()=>{let ch=false;if(window.SYNC){try{const r=SYNC.stamp(S,SYNC_SNAP);SYNC_SNAP=r.snap;ch=r.changed}catch(e){console.warn("stamp",e&&e.message)}}
   saveRaw();if(ch&&typeof syncDirty==="function")syncDirty()};
 save();
@@ -805,6 +849,7 @@ function syncApply(m){const byId=new Map();Object.values(S.words||{}).forEach(a=
   S.langs=JSON.parse(JSON.stringify(m.langs||[]));S.words=words;S.customSub=JSON.parse(JSON.stringify(m.customSub||{}));["n","adj","v","adv","other"].forEach(k=>{S.customSub[k]=S.customSub[k]||[]});
   S.seeded=JSON.parse(JSON.stringify(m.seeded||{}));S.prefs=JSON.parse(JSON.stringify(m.prefs||{}));S.stamps=JSON.parse(JSON.stringify(m.stamps||{}));
   {const loc=new Map((S.notes||[]).map(n=>[n.id,n]));S.notes=(m.notes||[]).map(n=>{const o=loc.get(n.id);return o&&o.updatedAt===n.updatedAt&&JSON.stringify(o)===JSON.stringify(n)?o:JSON.parse(JSON.stringify(n))})}
+  {const loc=new Map((S.qs||[]).map(q=>[q.id,q]));S.qs=(m.qs||[]).map(q=>{const o=loc.get(q.id);return o&&JSON.stringify(o)===JSON.stringify(q)?o:JSON.parse(JSON.stringify(q))})}
   if(!S.langs.some(l=>l.id===S.cur))S.cur=S.langs[0]?S.langs[0].id:"";
   migrate(S);SYNC_SNAP=SYNC.snapshot(S);saveRaw()}
 const SYNC_BUSY_VIEWS=["quizrun","prac","dprac","cards"];
@@ -1586,17 +1631,18 @@ function wordDetail(w){if(!w)return `<div class="wd empty-pane"><p class="hint">
     <dl class="wd-srs"><dt>다음 복습</dt><dd>${esc(w.due||"-")}</dd><dt>맞힌 횟수</dt><dd>${w.reps||0}</dd><dt>틀린 횟수</dt><dd>${w.lapses||0}</dd></dl>
     <div class="row wd-act"><button type="button" class="btn primary" data-wedit="${w.id}">\ue002 편집</button>
     ${w.pos==="v"?`<button type="button" class="btn ghost" data-conj="${w.id}">동사 변화표</button>`:declOn(w)?`<button type="button" class="btn ghost" data-decl="${w.id}">격변화표</button>`:""}
-    <button type="button" class="btn ghost" data-wnote="${w.id}">\ue010 필기${noteOfWord(w.id)?` <span class="nmark">있음</span>`:""}</button></div></article>`}
+    <button type="button" class="btn ghost" data-wnote="${w.id}">\ue010 필기${noteOfWord(w.id)?` <span class="nmark">있음</span>`:""}</button></div>${qaHTML("w",w.id,S.cur)}</article>`}
 function splitHTML(left,right,cls){return `<div class="split ${cls||""}"><aside class="pane-l" aria-label="목록">${left}</aside><section class="pane-r">${right}</section></div>`}
 function viewGrammarWide(){if(!window.GRAMMAR)return viewGrammar();
   const lg=gLang();const ws=langWordsFor(lg);const {all,secs}=gSecs(lg);
   let sel=secs.find(x=>x.id===S.gOpen)||secs[0];
-  const left=`${gHead(lg)}${gCatChips(lg,all)}<nav class="gidx">${gGroups(secs,x=>`<button type="button" class="gix ${sel&&x.id===sel.id?"on":""}" data-gsel="${esc(x.id)}" aria-current="${sel&&x.id===sel.id?"true":"false"}">${esc(x.title)}${gNoteMark(x.id,lg)}</button>`)||`<p class="hint">찾는 개념이 없어.</p>`}</nav>`;
+  const left=`${gHead(lg)}${gCatChips(lg,all)}${gQfHTML(lg)}<nav class="gidx">${gGroups(secs,x=>`<button type="button" class="gix ${sel&&x.id===sel.id?"on":""}" data-gsel="${esc(x.id)}" aria-current="${sel&&x.id===sel.id?"true":"false"}">${esc(x.title)}${gNoteMark(x.id,lg)}</button>`)||`<p class="hint">찾는 개념이 없어.</p>`}</nav>`;
   let right=`<p class="hint">왼쪽에서 개념을 골라 줘.</p>`;
-  if(sel)right=`<article class="gsec gart" id="g-${sel.id}"><div class="gcatl">${esc(gCatName(sel.cat))}</div><h3 class="gat">${esc(sel.title)}</h3>${gNoteBtn(sel.id,lg)}<div class="gbody" lang="${lg}">${sel.body}</div>${gMineHTML(sel,lg,ws,40)}</article>`;
+  if(sel)right=`<article class="gsec gart" id="g-${sel.id}"><div class="gcatl">${esc(gCatName(sel.cat))}</div><h3 class="gat">${esc(sel.title)}</h3>${gConceptHTML(sel,lg,ws,40)}</article>`;
   return splitHTML(left,right,"g-split")}
 function render(){applyLayout();const a=document.getElementById("app");unmountPad();if(!S.langs.length){document.getElementById("nav").style.display="none";a.innerHTML=viewNoLang();return}
   if(S.view==="note"&&layoutMode()!=="phone")S.view="notes";pruneFresh();
+  if(AN.on&&(S.view!=="grammar"||S.gOpen!==AN.cid||!window.GRAMMAR||!GRAMMAR.find(AN.cid)))AN.on=false;annPrune();
   maybeSeedOpen();navHTML();const v=S.view||"home";
   if(v==="home")a.innerHTML=viewHome();
   else if(v==="cards")a.innerHTML=viewCards();
@@ -1618,9 +1664,12 @@ function render(){applyLayout();const a=document.getElementById("app");unmountPa
     else if(["conj","conjrev","decl","declrev"].includes(v)){const right=a.innerHTML;const id=(v.startsWith("conj")?S.conjId:S.declId);if(id)S.selWord=id;a.innerHTML=splitHTML(viewList(),right);markSel()}
     else if(v==="grammar")a.innerHTML=viewGrammarWide();
   }
+  if(v==="grammar"&&AN.on)a.insertAdjacentHTML("beforeend",annWsHTML());
+  document.documentElement.classList.toggle("annon",v==="grammar"&&AN.on);
   document.documentElement.dataset.view=v;
   document.documentElement.classList.toggle("nfocus",!!NP.focus&&v==="notes"&&layoutMode()!=="phone");
   if(v==="note"||v==="notes")mountPad();
+  if(v==="grammar")annMount();
   lswInject(v);fsMount(v);
 }
 function markSel(){document.querySelectorAll(".pane-l [data-edit]").forEach(b=>{const on=b.dataset.edit===S.selWord;b.closest(".item")?.classList.toggle("sel",on);b.setAttribute("aria-current",on?"true":"false")});
@@ -1632,7 +1681,9 @@ function langWordsFor(lid){const l=S.langs.find(x=>wikiLangId(x)===lid);return l
 function gCats(){return(window.GRAMMAR&&GRAMMAR.CATS)||[]}
 function gCatName(c){const f=gCats().find(x=>x[0]===c);return f?f[1]:"기타"}
 function gSecs(lg){const L0=GRAMMAR.LANGS[lg];const q=fold(S.gq||"");const cat=S.gCat||"";
-  const hit=L0.list.filter(x=>!q||fold(x.title+" "+(x.tags||"")+" "+gCatName(x.cat)+" "+x.body.replace(/<[^>]+>/g," ")).includes(q));
+  const qf=S.gQf||"";
+  const hit=L0.list.filter(x=>!q||fold(x.title+" "+(x.tags||"")+" "+gCatName(x.cat)+" "+x.body.replace(/<[^>]+>/g," ")).includes(q))
+    .filter(x=>{if(!qf)return true;const a=qsOf("g",x.id,lg);return qf==="open"?a.some(z=>z.st!=="done"):a.length>0});
   return{all:hit,secs:hit.filter(x=>!cat||x.cat===cat)}}
 function gCatChips(lg,hits){const L0=GRAMMAR.LANGS[lg];const has=gCats().filter(c=>L0.list.some(x=>x.cat===c[0]));const cnt=c=>hits.filter(x=>x.cat===c).length;
   return `<div class="picks hscroll gcats" role="group" aria-label="문법 분류"><button type="button" class="chip ${!S.gCat?"on":""}" data-gcat="">전체<span class="c">${hits.length}</span></button>${has.map(([id,nm])=>`<button type="button" class="chip ${S.gCat===id?"on":""}" data-gcat="${id}">${esc(nm)}<span class="c">${cnt(id)}</span></button>`).join("")}</div>`}
@@ -1646,9 +1697,9 @@ function gGroups(secs,fn){const out=[];secs.forEach(x=>{let g=out.find(o=>o.cat=
   return out.map(g=>`<details class="gcat" data-gcatbox="${g.cat}" ${q||S.gCat||!S.gShut[g.cat]||g.items.some(x=>x.id===S.gOpen)?"open":""}><summary><span class="gct">${esc(gCatName(g.cat))}</span><span class="c">${g.items.length}</span></summary>${g.items.map(fn).join("")}</details>`).join("")}
 function viewGrammar(){if(!window.GRAMMAR)return `<div class="head"><h2>문법</h2></div><p class="hint">문법 자료를 못 불러왔어.</p>`;
   const lg=gLang();const ws=langWordsFor(lg);const open=S.gOpen||"";const {all,secs}=gSecs(lg);
-  return `${gHead(lg)}${gCatChips(lg,all)}
+  return `${gHead(lg)}${gCatChips(lg,all)}${gQfHTML(lg)}
     <p class="hint" style="margin:0 0 10px">어형이 바뀌는 규칙 모음. 칸의 ? 설명이나 틀린 답 아래 ‘개념 보기’에서도 여기로 와. 각 항목 아래엔 내 단어 중 그 규칙에 해당하는 것들이 떠.</p>
-    ${gGroups(secs,x=>`<details class="gsec" id="g-${x.id}" ${open===x.id?"open":""}><summary>${esc(x.title)}${gNoteMark(x.id,lg)}</summary>${gNoteBtn(x.id,lg)}<div class="gbody" lang="${lg}">${x.body}</div>${gMineHTML(x,lg,ws)}</details>`)||`<div class="empty">찾는 개념이 없어.</div>`}`}
+    ${gGroups(secs,x=>`<details class="gsec" id="g-${x.id}" ${open===x.id?"open":""}><summary>${esc(x.title)}${gNoteMark(x.id,lg)}</summary>${gConceptHTML(x,lg,ws)}</details>`)||`<div class="empty">찾는 개념이 없어.</div>`}`}
 function openConcept(id){if(!window.GRAMMAR)return;const f=GRAMMAR.find(id);if(!f)return;S.gLang=f.lang;S.gOpen=id;S.gq="";S.gCat="";closeRulePop();S.view="grammar";render();
   setTimeout(()=>{const el=document.getElementById("g-"+id);if(el){el.open=true;el.scrollIntoView({block:"start"});window.scrollBy(0,-8)}},30)}
 function go(v){S.view=v;if(v==="cards")startCards();if(v==="quiz")S.quiz=null;render()}
@@ -1993,6 +2044,8 @@ document.addEventListener("pointermove",e=>{if(_lpXY&&Math.hypot(e.clientX-_lpXY
 document.addEventListener("contextmenu",e=>{const c=e.target.closest("[data-lang]");if(c){e.preventDefault();clearTimeout(_lpT);_lpFired=false;openLangManage(c.dataset.lang)}});
 document.addEventListener("click",e=>{
   if(noteClick(e))return;
+  if(annClick(e))return;
+  if(qaClick(e))return;
   if(lswClick(e))return;
   const t=e.target.closest("[data-go]");if(t){go(t.dataset.go);return}
   const lg=e.target.closest("[data-lang]");if(lg){if(_lpFired){_lpFired=false;return}S.cur=lg.dataset.lang;S._af=null;save();render();return}
@@ -2286,6 +2339,7 @@ function openEdit(id,keep){const w=words().find(x=>x.id===id);if(!w)return;S._ed
       ${w.pos==="v"?`<button class="btn ghost block" type="button" data-conj="${w.id}" style="margin-bottom:8px">동사 변화 표</button>`:""}
       ${declOn(w)?`<button class="btn ghost block" type="button" data-decl="${w.id}" style="margin-bottom:8px">격변화 표</button>`:""}
       <button class="btn ghost block" type="button" data-wnote="${w.id}" style="margin-bottom:8px">\ue010 이 단어 필기${noteOfWord(w.id)?" (있음)":""}</button>
+      <button class="btn ghost block" type="button" data-wqa="${w.id}" style="margin-bottom:8px">? 궁금증${(()=>{const a=qsOf("w",w.id),o=a.filter(q=>q.st!=="done").length;return a.length?` (${o?"미해결 "+o:"다 해결"})`:""})()}</button>
       <button class="btn primary block" type="submit">저장</button>
       <button class="btn no block" type="button" id="delWord" style="margin-top:8px">삭제</button>
     </form>`);
@@ -2321,7 +2375,7 @@ function openBackup(){openSheet(`<div class="grab"></div><h3>백업 · 가져오
   <button class="btn primary block" id="exportBtn" type="button">내보내기</button>
   <button class="btn block" id="importBtn" type="button" style="margin-top:8px">가져오기</button>
   <input id="importFile" type="file" accept="application/json,.json" hidden>`)}
-function doExport(){const blob=new Blob([JSON.stringify({v:2,exported:new Date().toISOString(),cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},notes:S.notes||[]},null,2)],{type:"application/json"});
+function doExport(){const blob=new Blob([JSON.stringify({v:2,exported:new Date().toISOString(),cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},notes:S.notes||[],qs:S.qs||[]},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="단어구름-백업-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("파일을 저장했어")}
 function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{
     const o=JSON.parse(r.result);if(!o||typeof o!=="object"||!o.words)throw new Error("형식");
@@ -2336,6 +2390,7 @@ function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{t
         S.words[k].push(w);ids.add(w.id);add++})});
     let nAdd=0;if(Array.isArray(o.notes)){S.notes=S.notes||[];o.notes.forEach(n=>{if(!n||!n.id||!Array.isArray(n.strokes))return;const i=S.notes.findIndex(x=>x.id===n.id);
       if(i<0){S.notes.push(n);nAdd++}else if((n.updatedAt||0)>(S.notes[i].updatedAt||0)){S.notes[i]=n;nAdd++}})}
+    if(Array.isArray(o.qs)){S.qs=S.qs||[];o.qs.forEach(q=>{if(!q||!q.id||!q.k)return;const i=S.qs.findIndex(x=>x.id===q.id);if(i<0)S.qs.push(q);else if((q.updatedAt||0)>(S.qs[i].updatedAt||0))S.qs[i]=q})}
     migrate(S);save();closeSheet();render();toast(add?add+"개 가져왔어"+(nAdd?" · 필기 "+nAdd+"개":""):nAdd?"필기 "+nAdd+"개 가져왔어":"새 단어가 없었어");
   }catch(err){toast("파일을 읽지 못했어")}};r.readAsText(file)}
 
@@ -2356,7 +2411,7 @@ function newNote(o){const n={id:"n"+uid(),title:"",created:new Date().toISOStrin
 function pruneFresh(){if(!NP.fresh.size)return;const keep=(S.view==="note"||(S.view==="notes"&&layoutMode()!=="phone"))?S.noteId:null;let ch=false;
   [...NP.fresh].forEach(id=>{if(id===keep)return;NP.fresh.delete(id);const n=noteById(id);if(n&&!(n.strokes||[]).length&&!(n.title||"").trim()){S.notes=notesAll().filter(x=>x!==n);ch=true}});
   if(ch)save()}
-function noteKind(n){return n.cid?"gram":n.wordId?"word":"free"}
+function noteKind(n){return n.cid||n.ann?"gram":n.wordId?"word":"free"}
 function noteFiltHTML(){const all=notesAll();if(!all.length)return"";const f=NP.filter||"";const cnt=k=>all.filter(n=>noteKind(n)===k).length;
   return `<div class="picks hscroll nfilt" role="group" aria-label="필기 종류"><button type="button" class="chip ${!f?"on":""}" data-nf="" aria-pressed="${!f}">전체<span class="c">${all.length}</span></button>${[["gram","문법"],["word","단어"],["free","자유"]].map(([k,l])=>`<button type="button" class="chip ${f===k?"on":""}" data-nf="${k}" aria-pressed="${f===k}">${l}<span class="c">${cnt(k)}</span></button>`).join("")}</div>`}
 function noteListHTML(sel){const f=NP.filter||"";const all=notesAll();const ns=all.filter(n=>!f||noteKind(n)===f).sort((a,b)=>(b.updatedAt||Date.parse(b.created)||0)-(a.updatedAt||Date.parse(a.created)||0));
@@ -2364,15 +2419,15 @@ function noteListHTML(sel){const f=NP.filter||"";const all=notesAll();const ns=a
   if(!ns.length)return noteFiltHTML()+`<div class="empty">이 종류의 필기는 없어.</div>`;
   return noteFiltHTML()+`<ul class="nlist">${ns.map(n=>{const w=noteWord(n);const lg=S.langs.find(l=>l.id===n.lang);const u=noteThumb(n);
     return `<li class="nitem ${n.id===sel?"sel":""}"><button type="button" class="nopen" data-nopen="${esc(n.id)}" aria-current="${n.id===sel?"true":"false"}">
-      <span class="nthumb">${u?`<img src="${u}" alt="">`:""}</span><span class="nmeta"><b>${n.cid?`<span class="ngtag" aria-label="문법 필기">문법</span> `:""}${esc(noteTitle(n))}</b>
-      <span class="hint">${n.cid?noteCptLabel(n)+" · ":w?`${lg?flagOf(lg)+" ":""}단어 · ${esc(w.word)} · `:n.wordId?"(지운 단어) · ":""}${(n.strokes||[]).length}획 · ${fmtDay(n.updatedAt||Date.parse(n.created))}</span></span></button></li>`}).join("")}</ul>`}
+      <span class="nthumb">${u?`<img src="${u}" alt="">`:""}</span><span class="nmeta"><b>${noteKind(n)==="gram"?`<span class="ngtag" aria-label="문법 필기">문법</span> `:""}${esc(noteTitle(n))}</b>
+      <span class="hint">${noteKind(n)==="gram"?noteCptLabel(n)+(n.ann?" · 설명 위":"")+" · ":w?`${lg?flagOf(lg)+" ":""}단어 · ${esc(w.word)} · `:n.wordId?"(지운 단어) · ":""}${(n.strokes||[]).length}획 · ${fmtDay(n.updatedAt||Date.parse(n.created))}</span></span></button></li>`}).join("")}</ul>`}
 function notesHead(){return `<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>필기</h2><span class="duepill">${notesAll().length}</span></div>
   <button type="button" class="btn primary block" id="noteNew">\ue010 새 필기</button>`}
 function viewNotes(){return `${notesHead()}<p class="hint" style="margin:8px 0 10px">손가락이나 애플 펜슬로 써. 펜을 쓰면 손바닥은 자동으로 무시해. 단어 화면의 ‘필기’로 단어마다 노트를 붙일 수도 있어.</p>${noteListHTML(null)}`}
-function viewNotesWide(){let n=noteById(S.noteId);if(!n){n=notesAll().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];S.noteId=n?n.id:null}
+function viewNotesWide(){let n=noteById(S.noteId);if(n&&n.ann)n=null;if(!n){n=notesAll().filter(x=>!x.ann).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];S.noteId=n?n.id:null}
   return splitHTML(`${notesHead()}<div style="height:10px"></div>${noteListHTML(S.noteId)}`,n?noteEditorHTML(n,true):`<div class="empty-pane"><p class="hint">왼쪽에서 ‘새 필기’를 눌러 줘.</p></div>`,"n-split")}
-function viewNote(){const n=noteById(S.noteId);if(!n){S.view="notes";return viewNotes()}return noteEditorHTML(n,false)}
-function ntoolsHTML(){const pr=b=>`aria-pressed="${b?"true":"false"}"`;const h=NP.hist[S.noteId]||{undo:[],redo:[]};
+function viewNote(){const n=noteById(S.noteId);if(!n||n.ann){S.view="notes";return viewNotes()}return noteEditorHTML(n,false)}
+function ntoolsHTML(){const pr=b=>`aria-pressed="${b?"true":"false"}"`;const h=NP.hist[S.view==="grammar"&&AN.on?NP.hk:S.noteId]||{undo:[],redo:[]};
   return `<div class="ntools" id="ntools" role="toolbar" aria-label="필기 도구">
     <div class="ngrp"><button type="button" class="nt ${NP.tool==="pen"?"on":""}" data-ntool="pen" ${pr(NP.tool==="pen")}><span class="ic">\ue002</span>펜</button>
       <button type="button" class="nt ${NP.tool==="eraser"?"on":""}" data-ntool="eraser" ${pr(NP.tool==="eraser")}><span class="ic">\ue011</span>지우개</button></div>
@@ -2392,7 +2447,7 @@ function noteEditorHTML(n,wide){const w=noteWord(n);
     ${ntoolsHTML()}
     <div class="npaper" id="npaper"><canvas id="noteCv" class="ncv" aria-label="필기 공간 (그리기)"></canvas></div>
     <p class="hint nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"}</p></div>`}
-function refreshTools(){const t=document.getElementById("ntools");if(t)t.outerHTML=ntoolsHTML();const st=document.getElementById("nstat");if(st)st.textContent=(NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려")+(st.closest(".nstage")?" · 두 손가락: 확대/이동":"")}
+function refreshTools(){const t=document.getElementById("ntools");if(t)t.outerHTML=ntoolsHTML();const st=document.getElementById("nstat");if(st)st.textContent=(NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려")+(st.closest(".nstage")?" · 두 손가락: 확대/이동":"")+(st.closest(".annvp")&&!NP.fingerOk?" · 한 손가락: 이동":"")}
 function refreshThumb(n){const b=document.querySelector(`[data-nopen="${CSS.escape(n.id)}"]`);if(!b)return;const im=b.querySelector(".nthumb");if(im){const u=noteThumb(n);im.innerHTML=u?`<img src="${u}" alt="">`:""}
   const h=b.querySelector(".nmeta .hint");if(h)h.textContent=h.textContent.replace(/\d+획/,(n.strokes||[]).length+"획")}
 function mountPad(){const cv=document.getElementById("noteCv");if(!cv||!window.NOTES)return;const n=noteById(S.noteId);if(!n)return;
@@ -2403,10 +2458,10 @@ function mountPad(){const cv=document.getElementById("noteCv");if(!cv||!window.N
   /* 기록 안의 획이 동기화로 새 객체가 됐으면 이어지게 */
   [...h.undo,...h.redo].forEach(op=>{if(op.t==="add"&&!n.strokes.includes(op.st)){const f=n.strokes.find(x=>x.d===op.st.d&&x.c===op.st.c&&x.s===op.st.s&&x.e===op.st.e);if(f)op.st=f}})}
 function unmountPad(){if(PAD){PAD.destroy();PAD=null}}
-window.addEventListener("resize",()=>{if(PAD&&document.body.contains(PAD.cv)){clearTimeout(unmountPad._r);unmountPad._r=setTimeout(()=>PAD&&PAD.resize(),120)}});
+window.addEventListener("resize",()=>{if(PAD&&document.body.contains(PAD.cv)){clearTimeout(unmountPad._r);unmountPad._r=setTimeout(()=>{annPlace();PAD&&PAD.resize()},120)}});
 /* 그리는 중엔 핀치 확대·스크롤 막기 (iOS Safari) */
-["gesturestart","gesturechange"].forEach(t=>document.addEventListener(t,e=>{const v=S.view;if((v==="note"||v==="notes")&&document.getElementById("noteCv"))e.preventDefault()},{passive:false}));
-function openNote(id){S.noteId=id;NP.delArm=null;if(layoutMode()==="mid")NP.drawer=false;S.view=layoutMode()!=="phone"?"notes":"note";render()}
+["gesturestart","gesturechange"].forEach(t=>document.addEventListener(t,e=>{const v=S.view;if(((v==="note"||v==="notes")&&document.getElementById("noteCv"))||(v==="grammar"&&document.getElementById("annws")))e.preventDefault()},{passive:false}));
+function openNote(id){const an=noteById(id);if(an&&an.ann){closeSheet();openConcept(an.ann);return}S.noteId=id;NP.delArm=null;if(layoutMode()==="mid")NP.drawer=false;S.view=layoutMode()!=="phone"?"notes":"note";render()}
 function openWordNote(wid){const w=words().find(x=>x.id===wid)||Object.values(S.words).flat().find(x=>x&&x.id===wid);if(!w)return;
   let n=noteOfWord(wid);if(!n){let lang=S.cur;for(const k in S.words)if((S.words[k]||[]).includes(w))lang=k;n=newNote({wordId:wid,lang})}
   closeSheet();openNote(n.id)}
@@ -2425,7 +2480,7 @@ function noteClick(e){const T=e.target;
   if(T.closest("#nZoomOut")){PAD&&PAD.zoomBy(0.8);return true}
   if(T.closest("#nZoomReset")){PAD&&PAD.resetView();return true}
   if(!T.closest("#ntools")&&!T.closest("#nDel"))return false;
-  const n=noteById(S.noteId);if(!n||!PAD)return true;
+  const n=PAD?PAD.note:null;if(!n)return true;
   const tl=T.closest("[data-ntool]");if(tl){NP.tool=PAD.tool=tl.dataset.ntool;refreshTools();return true}
   const c=T.closest("[data-ncol]");if(c){NP.color=PAD.color=c.dataset.ncol;NP.tool=PAD.tool="pen";refreshTools();return true}
   const wd=T.closest("[data-nw]");if(wd){NP.width=PAD.width=+wd.dataset.nw;if(NP.tool==="eraser")NP.tool=PAD.tool="pen";refreshTools();return true}
@@ -2437,6 +2492,7 @@ function noteClick(e){const T=e.target;
     NP.delArm=null;S.notes=notesAll().filter(x=>x!==n);delete NP.hist[n.id];NP.fresh.delete(n.id);S.noteId=null;S.view="notes";save();render();toast("필기를 지웠어");return true}
   return true}
 /* v18: 문법 분류를 접으면 기억 (검색·분류 고른 상태에선 기억 안 함) */
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.matches&&d.matches("details.gsec")&&d.id&&d.id.startsWith("g-")){const id=d.id.slice(2);if(d.open){S.gOpen=id;paintReads(d)}else if(S.gOpen===id&&!AN.on)S.gOpen="";return}},true);
 document.addEventListener("toggle",e=>{const d=e.target;if(!d||!d.matches||!d.matches("details.gcat"))return;if((S.gq||"").trim()||S.gCat)return;S.gShut=S.gShut||{};S.gShut[d.dataset.gcatbox]=!d.open},true);
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="noteTitle"){const n=noteById(S.noteId);if(!n)return;n.title=e.target.value.slice(0,60);NP.fresh.delete(n.id);clearTimeout(noteClick._s);noteClick._s=setTimeout(()=>{save();const b=document.querySelector(`[data-nopen="${CSS.escape(n.id)}"] .nmeta b`);if(b)b.textContent=noteTitle(n)},500)}});
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="noteTitle")save()});
@@ -2540,7 +2596,7 @@ function lswClick(e){const T=e.target;
    목록은 접는 서랍(가로: 왼쪽 좁은 칸 / 세로: 위에 덮는 서랍), 도구는 한 줄 막대, 나머지는 전부 캔버스.
    두 손가락으로 확대(50%~500%)·이동, 한 손가락/펜은 그리기. 집중 모드는 옆 레일·하단 탭·제목줄 숨김. */
 function studioDrawerOpen(){return NP.drawer==null?layoutMode()==="wide":!!NP.drawer}
-function viewNotesStudio(){let n=noteById(S.noteId);if(!n){n=notesAll().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];S.noteId=n?n.id:null}
+function viewNotesStudio(){let n=noteById(S.noteId);if(n&&n.ann)n=null;if(!n){n=notesAll().filter(x=>!x.ann).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];S.noteId=n?n.id:null}
   const dr=studioDrawerOpen()&&!NP.focus;
   return `<div class="nstudio ${dr?"dopen":""}" id="nstudio">
     <aside class="ndrawer" id="ndrawer" aria-label="필기 목록">${layoutMode()==="mid"?`<button type="button" class="x ndx" id="nDrawerX" aria-label="목록 닫기">✕</button>`:""}${notesHead()}<div style="height:10px"></div>${noteListHTML(S.noteId)}</aside>
@@ -2570,11 +2626,11 @@ function studioView(id,v){NP.views[id]={z:v.z,px:v.px,py:v.py};const pg=document
 /* ---- v21: 문법 개념 필기 ----
    노트에 cid(개념 id, 예: fr-impf) + clang(문법 언어) 를 붙여 둠. 개념 id 는 버전이 바뀌어도 그대로라 동기화·다른 기기에서도 같은 개념에 붙음.
    예전 버전(v20)은 이 필드를 몰라도 그냥 일반 노트로 보여 주고 그대로 보존해 (노트 통째로 동기화). */
-function noteConcept(n){if(!n||!n.cid||!window.GRAMMAR)return null;const f=GRAMMAR.find(n.cid);return f?{lang:f.lang,sec:f.sec}:null}
+function noteConcept(n){if(!n||!(n.cid||n.ann)||!window.GRAMMAR)return null;const f=GRAMMAR.find(n.cid||n.ann);return f?{lang:f.lang,sec:f.sec}:null}
 function noteOfConcept(cid,lg){const ms=notesAll().filter(n=>n.cid===cid&&(n.clang||"")===lg);return ms.sort((a,b)=>(b.strokes||[]).length-(a.strokes||[]).length||(b.updatedAt||0)-(a.updatedAt||0))[0]||null}
 const GLNAME={fr:"프랑스어",ru:"러시아어",tr:"터키어"};
-function noteCptLabel(n){const c=noteConcept(n);const lg=n.clang||(c&&c.lang)||"";const fl=S.langs.find(l=>wikiLangId(l)===lg);return `${fl?flagOf(fl)+" ":""}문법 · ${esc(c?c.sec.title:n.cid)}`}
-function gNoteMark(cid,lg){const n=noteOfConcept(cid,lg);return n&&(n.strokes||[]).length?` <span class="gnmark" title="필기 있음" aria-label="필기 있음">\ue010</span>`:""}
+function noteCptLabel(n){const c=noteConcept(n);const lg=n.clang||(c&&c.lang)||"";const fl=S.langs.find(l=>wikiLangId(l)===lg);return `${fl?flagOf(fl)+" ":""}문법 · ${esc(c?c.sec.title:(n.cid||n.ann))}`}
+function gNoteMark(cid,lg){const n=noteOfConcept(cid,lg),a=annNoteOf(cid,lg);return ((n&&(n.strokes||[]).length)||(a&&(a.strokes||[]).length)?` <span class="gnmark" title="필기 있음" aria-label="필기 있음">\ue010</span>`:"")+qMark("g",cid,lg)}
 function gNoteBtn(cid,lg){const n=noteOfConcept(cid,lg);const has=n&&(n.strokes||[]).length;return `<div class="gnrow"><button type="button" class="btn ghost gnbtn" data-gnote="${esc(cid)}" data-glg="${esc(lg)}">\ue010 ${has?"필기 열기":"이 개념 필기"}${has?` <span class="nmark">${n.strokes.length}획</span>`:""}</button></div>`}
 function openConceptNote(cid,lg){if(!window.GRAMMAR)return;const f=GRAMMAR.find(cid);if(!f)return;lg=lg||f.lang;let n=noteOfConcept(cid,lg);
   if(!n)n=newNote({cid,clang:lg});if(layoutMode()==="wide")NP.drawer=false;NP.cpt=true;closeSheet();openNote(n.id)}
@@ -2583,6 +2639,149 @@ function noteCptPane(n){const c=noteConcept(n);if(!c)return"";
   return `<aside class="ncpt" id="ncpt" aria-label="문법 개념 내용"><div class="ncpt-h"><button type="button" class="btn ghost ncpt-back" data-gback="${esc(n.cid)}">← 문법</button><span class="gcatl">${esc(gCatName(c.sec.cat))}</span></div><h3 class="gat">${esc(c.sec.title)}</h3>${noteCptBody(n)}</aside>`}
 function noteCptPhone(n){const c=noteConcept(n);if(!c)return `<div class="nword hint">문법 · (없는 개념: ${esc(n.cid)})</div>`;
   return `<details class="ncptd"><summary>문법 · <b>${esc(c.sec.title)}</b> <span class="hint">(눌러서 내용 보기)</span></summary>${noteCptBody(n)}</details>`}
+
+/* ---- v22: 문법 설명 위 필기 (주석 층) ----
+   노트 {ann:개념 id, clang, pw(종이 폭)} — 설명 글을 폭이 고정된 종이(pw)에 깔고 그 위 좌표로 획을 저장.
+   그래서 아이패드 회전·창 크기·기기가 바뀌어도 글 줄바꿈이 같고 잉크가 글자에 붙어 있어. 오른쪽(20%)·아래는 빈 여백.
+   v21 개념 필기장(cid)은 그대로 '따로 필기장'으로 남겨 둠. 예전 버전은 ann 을 몰라도 제목 붙은 일반 노트로 보존(통째 동기화). */
+const AN={on:false,cid:"",lg:"",draft:null,views:{}};
+const ANN_PW={phone:360,wide:560},ANN_FS={phone:14,wide:15};/* 만들 때 기기 따라 종이 폭·글자 크기를 정해서 노트에 저장 (그 뒤론 고정) */
+function annFs(n){return n.fs||(n.pw&&n.pw<500?ANN_FS.phone:ANN_FS.wide)}
+function annKey(cid,lg){return "a:"+lg+":"+cid}
+function annNoteOf(cid,lg){const ms=notesAll().filter(n=>n.ann===cid&&(n.clang||"")===lg);return ms.sort((a,b)=>(b.strokes||[]).length-(a.strokes||[]).length||(b.updatedAt||0)-(a.updatedAt||0))[0]||null}
+function annNoteFor(cid,lg){const n=annNoteOf(cid,lg);if(n)return n;
+  if(AN.draft&&AN.draft.ann===cid&&AN.draft.clang===lg)return AN.draft;const f=window.GRAMMAR&&GRAMMAR.find(cid);
+  AN.draft={id:"n"+uid(),ann:cid,clang:lg,pw:layoutMode()==="phone"?ANN_PW.phone:ANN_PW.wide,fs:layoutMode()==="phone"?ANN_FS.phone:ANN_FS.wide,title:(f?f.sec.title+" · ":"")+"설명 위 필기",created:new Date().toISOString(),updatedAt:0,strokes:[]};return AN.draft}
+function annTW(pw){return pw-Math.round(pw*0.2)}
+function annPageHTML(sec,lg,pw,id,fs){return `<div class="annpage" ${id?`id="${id}"`:""} style="width:${pw}px"><div class="anntext gbody" lang="${esc(lg)}" style="width:${annTW(pw)}px;font-size:${fs||16}px">${sec.body}</div></div>`}
+function annMaxY(n){let m=0;(n.strokes||[]).forEach(st=>{try{NOTES.decode(st.d).forEach(p=>{if(p[1]>m)m=p[1]})}catch(e){}});return m}
+function annPH(n,pg){const t=pg&&pg.querySelector(".anntext");const th=t?t.offsetHeight:600;return Math.ceil(Math.max(th+560,annMaxY(n)+320,(n.pw||ANN_PW.wide)*1.2))}
+/* 읽기 모드: 잉크 있는 개념은 같은 종이 배치로 보여 주고 잉크를 겹쳐 그림 (스크롤은 평소처럼) */
+function annReadHTML(x,lg){const n=annNoteOf(x.id,lg);if(!n||!(n.strokes||[]).length)return"";
+  return `<div class="annread" data-annread="${esc(x.id)}" data-annlg="${esc(lg)}"><div class="annsz">${annPageHTML(x,lg,n.pw||ANN_PW.wide,"",annFs(n))}</div></div>`}
+function paintReads(root){if(!window.NOTES)return;(root||document).querySelectorAll(".annread").forEach(el=>{const W=el.clientWidth;if(!W)return;const n=annNoteOf(el.dataset.annread,el.dataset.annlg);if(!n)return;
+  const pw=n.pw||ANN_PW.wide,tw=annTW(pw);/* 글 칸이 화면 폭에 맞게 (여백은 옆으로 밀어서 봄) */const k=Math.min(1.15,Math.max(W/pw,Math.min(1,W/(tw+16))));const sz=el.querySelector(".annsz");const pg=el.querySelector(".annpage"),tx=el.querySelector(".anntext");if(!pg||!tx)return;
+  let cv=pg.querySelector(".annink");if(!cv){cv=document.createElement("canvas");cv.className="annink";cv.setAttribute("aria-hidden","true");pg.appendChild(cv)}
+  const ph=Math.ceil(Math.max(tx.offsetHeight+8,annMaxY(n)+16));pg.style.transform=`scale(${k})`;pg.style.height=ph+"px";if(sz){sz.style.width=Math.ceil(pw*k)+"px";sz.style.height=Math.ceil(ph*k)+"px"}
+  const d=Math.min(3,window.devicePixelRatio||1);cv.style.width=pw+"px";cv.style.height=ph+"px";cv.width=Math.round(pw*k*d);cv.height=Math.round(ph*k*d);
+  const c=cv.getContext("2d");c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);c.setTransform(k*d,0,0,k*d,0,0);(n.strokes||[]).forEach(st=>{try{NOTES.drawStroke(c,st,1)}catch(e){}})})}
+function gConceptHTML(x,lg,ws,mineN){return `${gToolsHTML(x.id,lg)}${annReadHTML(x,lg)||`<div class="gbody" lang="${lg}">${x.body}</div>`}${qaHTML("g",x.id,lg)}${gMineHTML(x,lg,ws,mineN)}`}
+function gToolsHTML(cid,lg){const a=annNoteOf(cid,lg),an=a?(a.strokes||[]).length:0;const n=noteOfConcept(cid,lg);const has=n&&(n.strokes||[]).length;
+  return `<div class="gnrow"><button type="button" class="btn ghost gnbtn gabtn" data-annon="${esc(cid)}" data-glg="${esc(lg)}" aria-pressed="false">\ue002 설명 위에 필기${an?` <span class="nmark">${an}획</span>`:""}</button><button type="button" class="btn ghost gnbtn" data-gnote="${esc(cid)}" data-glg="${esc(lg)}">\ue010 ${has?"필기장 열기":"따로 필기장"}${has?` <span class="nmark">${n.strokes.length}획</span>`:""}</button></div>`}
+function annWsHTML(){const f=window.GRAMMAR&&GRAMMAR.find(AN.cid);if(!f)return"";const n=annNoteFor(AN.cid,AN.lg);const key=annKey(AN.cid,AN.lg);NP.hk=key;const v=AN.views[key];const z=v?v.z:1;
+  return `<div class="annws" id="annws" role="region" aria-label="문법 설명 위 필기">
+    <div class="nbar annbar" id="nbar">
+      <button type="button" class="nt on" id="annOff" aria-pressed="true" aria-label="설명 위 필기 끄기 (잉크는 남아)"><span class="ic">\ue002</span>필기 끄기</button>
+      <b class="annttl">${esc(f.sec.title)}</b>
+      ${ntoolsHTML()}
+      <div class="ngrp nzg" role="group" aria-label="확대"><button type="button" class="nt" id="nZoomOut" aria-label="축소">−</button><button type="button" class="nt nzpct" id="nZoomReset" aria-label="폭 맞춤 (지금 ${Math.round(z*100)}%)">${Math.round(z*100)}%</button><button type="button" class="nt" id="nZoomIn" aria-label="확대">+</button></div>
+    </div>
+    <div class="nstage annvp" id="annvp">${annPageHTML(f.sec,AN.lg,n.pw||ANN_PW.wide,"annpage",annFs(n))}<canvas id="noteCv" class="ncv" aria-label="설명 위 필기 공간 (그리기, 두 손가락으로 확대·이동)"></canvas>
+      <div class="nzhud" id="nzhud" aria-hidden="true">${Math.round(z*100)}%</div>
+      <p class="nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"} · 두 손가락: 확대/이동${NP.penSeen&&!NP.fingerOk?" · 한 손가락: 이동":""}</p></div></div>`}
+function annPlace(){const ws=document.getElementById("annws");if(!ws)return;const m=layoutMode();const nav=document.getElementById("nav");let left=0;
+  if(m==="wide"&&nav&&getComputedStyle(nav).display!=="none"){left=Math.max(0,Math.round(nav.getBoundingClientRect().right))}/* 가로: 옆 레일만 남기고 넓게 */
+  const nh=m!=="wide"&&nav&&getComputedStyle(nav).display!=="none"?nav.getBoundingClientRect().height:0;ws.style.left=left+"px";ws.style.bottom=nh+"px";ws.style.borderLeftWidth=left?"2px":"0"}
+function annView(key,v){AN.views[key]={z:v.z,px:v.px,py:v.py};const pg=document.getElementById("annpage");if(pg)pg.style.transform=`translate(${v.tx}px,${v.ty}px) scale(${v.s})`;
+  const pct=Math.round(v.z*100)+"%";const b=document.getElementById("nZoomReset");if(b){b.textContent=pct;b.setAttribute("aria-label","폭 맞춤 (지금 "+pct+")")}const h=document.getElementById("nzhud");if(h)h.textContent=pct}
+function annMount(){paintReads();const ws=document.getElementById("annws");if(!ws||!window.NOTES)return;annPlace();
+  const cv=document.getElementById("noteCv"),pg=document.getElementById("annpage");const key=annKey(AN.cid,AN.lg);const n=annNoteFor(AN.cid,AN.lg);const pw=n.pw||ANN_PW.wide;
+  const ph=annPH(n,pg);pg.style.height=ph+"px";const h=NP.hist[key]||(NP.hist[key]={undo:[],redo:[]});NP.hk=key;
+  if(!AN.views[key]){const vw=cv.clientWidth||600;AN.views[key]={z:Math.min(1,1.2*pw/vw),px:0,py:0}}/* 처음엔 글이 너무 커지지 않게 (최대 120%) */
+  PAD=new NOTES.Pad(cv,n,{zoom:true,pw,ph,panFinger:true,initView:AN.views[key],onView:v=>annView(key,v),onGesture:on=>{const z=document.getElementById("nzhud");if(z)z.classList.toggle("on",on)},
+    penSeen:NP.penSeen,onPen:()=>{NP.penSeen=true;NP.fingerOk=false;refreshTools()},
+    onChange:()=>{if(!notesAll().includes(n)){notesAll().unshift(n);if(AN.draft===n)AN.draft=null}save();refreshTools();const p2=annPH(n,pg);if(PAD&&p2>PAD.PH){pg.style.height=p2+"px";PAD.setPage(p2)}}});
+  PAD.fingerOk=NP.fingerOk;PAD.undo=h.undo;PAD.redo=h.redo;PAD.tool=NP.tool;PAD.color=NP.color;PAD.width=NP.width;
+  [...h.undo,...h.redo].forEach(op=>{if(op.t==="add"&&!n.strokes.includes(op.st)){const f=n.strokes.find(x=>x.d===op.st.d&&x.c===op.st.c&&x.s===op.st.s&&x.e===op.st.e);if(f)op.st=f}})}
+function annRefit(){const pg=document.getElementById("annpage");if(PAD&&pg&&AN.on){const ph=annPH(PAD.note,pg);pg.style.height=ph+"px";PAD.setPage(ph)}paintReads()}
+if(document.fonts){if(document.fonts.ready)document.fonts.ready.then(annRefit);if(document.fonts.addEventListener)document.fonts.addEventListener("loadingdone",()=>{clearTimeout(annRefit._t);annRefit._t=setTimeout(annRefit,60)})}
+window.addEventListener("resize",()=>{clearTimeout(paintReads._t);paintReads._t=setTimeout(()=>paintReads(),150)});
+/* 획 없는 설명 필기는 버림 (지금 쓰는 중인 건 빼고) */
+function annPrune(){const keep=AN.on?annKey(AN.cid,AN.lg):null;const rm=notesAll().filter(n=>n.ann&&!(n.strokes||[]).length&&annKey(n.ann,n.clang||"")!==keep);
+  if(rm.length){S.notes=notesAll().filter(n=>!rm.includes(n));save()}if(!AN.on)AN.draft=null}
+function annStart(cid,lg){if(!window.GRAMMAR)return;const f=GRAMMAR.find(cid);if(!f)return;AN.on=true;AN.cid=cid;AN.lg=lg||f.lang;S.gLang=AN.lg;S.gOpen=cid;closeSheet();render()}
+function annStop(){const cid=AN.cid;AN.on=false;render();
+  if(layoutMode()!=="wide")setTimeout(()=>{const el=document.getElementById("g-"+cid);if(el){el.open=true;el.scrollIntoView({block:"start"});window.scrollBy(0,-8)}},30)}
+function annClick(e){const T=e.target;
+  const on=T.closest("[data-annon]");if(on){annStart(on.dataset.annon,on.dataset.glg);return true}
+  if(T.closest("#annOff")){annStop();return true}
+  return false}
+
+/* ---- v22: 궁금증 ----
+   S.qs=[{id,k:"g"(문법 개념)|"w"(단어),ref(개념 id/단어 id),lang,q(궁금한 거),a(해결 결과),st:"open"|"done",created,doneAt,updatedAt,ink?:[획]}]
+   항목마다 updatedAt + 지우면 묘비(stamps.tomb.q) 로 동기화. */
+const QP={pad:null,d:null,sheet:null,ret:null,delArm:false};
+function qsAll(){return S.qs||(S.qs=[])}
+function qsOf(k,ref,lg){return qsAll().filter(q=>q.k===k&&q.ref===ref&&(k==="w"||(q.lang||"")===(lg||"")))}
+function qOpenN(k,ref,lg){return qsOf(k,ref,lg).filter(q=>q.st!=="done").length}
+function qMark(k,ref,lg){const n=qOpenN(k,ref,lg);return n?` <span class="gqmark" title="미해결 궁금증 ${n}개" aria-label="미해결 궁금증 ${n}개">?${n}</span>`:""}
+function qInkURL(q){try{return NOTES.thumbURL({strokes:q.ink||[],pw:1000,ph:400},260)}catch(e){return""}}
+function qaItemHTML(q){const done=q.st==="done";const u=q.ink&&q.ink.length?qInkURL(q):"";
+  return `<li class="qi ${done?"done":"open"}" data-qid="${esc(q.id)}">
+    <div class="qrow"><button type="button" class="qst" data-qst="${esc(q.id)}" aria-pressed="${done}" aria-label="${done?"해결됨. 눌러서 다시 궁금으로":"궁금. 눌러서 해결로"}">${done?"✓ 해결":"? 궁금"}</button>
+      <div class="qtx">${q.q?`<p class="qq">${esc(q.q)}</p>`:""}${u?`<img class="qinkimg" src="${u}" alt="손글씨 궁금증">`:""}</div>
+      <button type="button" class="qed" data-qedit="${esc(q.id)}">고치기</button></div>
+    ${q.a?`<div class="qans"><span class="qal">해결 결과</span>${esc(q.a)}</div>`:done?`<div class="qans hint">해결 결과는 아직 안 적었어</div>`:""}
+    <div class="qmeta hint">적음 ${fmtDay(q.created)}${done&&q.doneAt?` · 해결 ${fmtDay(q.doneAt)}`:""}${q.updatedAt&&q.updatedAt-(q.doneAt||q.created||0)>60000?` · 고침 ${fmtDay(q.updatedAt)}`:""}</div></li>`}
+function qaHTML(k,ref,lg){const qs=qsOf(k,ref,lg).sort((a,b)=>(a.st==="done")-(b.st==="done")||(b.created||0)-(a.created||0));const op=qs.filter(q=>q.st!=="done").length;
+  return `<section class="qa" aria-label="궁금증"><div class="qa-h"><b class="qat">? 궁금증</b>${qs.length?`<span class="qcnt">${op?`미해결 ${op}`:"다 해결"}${qs.length-op?` · 해결 ${qs.length-op}`:""}</span>`:`<span class="hint">아직 없어</span>`}<button type="button" class="btn ghost qadd" data-qadd="${k}" data-qref="${esc(ref)}" data-qlg="${esc(lg||"")}">+ 궁금증</button></div>${qs.length?`<ul class="qlist">${qs.map(qaItemHTML).join("")}</ul>`:""}</section>`}
+function qCtx(d){if(d.k==="g"){const f=window.GRAMMAR&&GRAMMAR.find(d.ref);return "문법 · "+esc(f?f.sec.title:d.ref)}
+  const w=Object.values(S.words).flat().find(x=>x&&x.id===d.ref);return "단어 · "+esc(w?w.word:"(지운 단어)")}
+function qEdit(id,o){o=o||{};const q=id?qsAll().find(x=>x.id===id):null;if(id&&!q)return;qDestroyPad();QP.delArm=false;
+  QP.d={id:q?q.id:null,k:q?q.k:o.k,ref:q?q.ref:o.ref,lg:q?(q.lang||""):(o.lg||""),st:o.st||(q?(q.st||"open"):"open"),ink:{strokes:(q&&q.ink?q.ink:[]).slice(),pw:1000,ph:400},inkOn:!!(q&&q.ink&&q.ink.length),hist:{undo:[],redo:[]}};
+  const d=QP.d;
+  openSheet(`<div class="grab"></div><h3>${q?"궁금증 고치기":"궁금증 적기"} <button class="x" data-qclose aria-label="닫기">✕</button></h3>
+    <p class="hint qctx">${qCtx(d)}</p>
+    <div class="field"><label for="qQ">궁금한 거</label><textarea id="qQ" maxlength="1000" rows="3" ${q?"":"data-autofocus"} placeholder="예: 여기선 왜 이 형태를 써?">${esc(q?q.q||"":"")}</textarea></div>
+    <div class="qinkwrap"><button type="button" class="btn ghost qinkbtn" id="qInkTog" aria-pressed="${d.inkOn}">\ue002 ${d.inkOn?"손글씨 숨기기":"손글씨로도 적기"}</button>
+      <div class="qink" id="qInk" ${d.inkOn?"":"hidden"}><div class="qinktools" role="toolbar" aria-label="손글씨 도구"><button type="button" data-qtool="pen" class="on" aria-pressed="true">펜</button><button type="button" data-qtool="eraser" aria-pressed="false">지우개</button><button type="button" id="qUndo" aria-label="되돌리기">\ue012</button><button type="button" id="qClear" aria-label="손글씨 다 지우기">\ue014</button></div><canvas id="qCv" class="ncv qcv" aria-label="궁금증 손글씨 칸"></canvas></div></div>
+    <div class="field"><span class="flabel">상태</span><div class="picks qstp" role="radiogroup" aria-label="상태"><button type="button" class="chip ${d.st!=="done"?"on":""}" data-qset="open" role="radio" aria-checked="${d.st!=="done"}">? 궁금</button><button type="button" class="chip ${d.st==="done"?"on":""}" data-qset="done" role="radio" aria-checked="${d.st==="done"}">✓ 해결</button></div></div>
+    <div class="field"><label for="qA">해결 결과</label><textarea id="qA" maxlength="2000" rows="3" placeholder="알아낸 답, 어디서 찾았는지, 예문…">${esc(q?q.a||"":"")}</textarea></div>
+    <button type="button" class="btn primary block" id="qSave">저장</button>
+    ${q?`<button type="button" class="btn no block" id="qDel" style="margin-top:8px">삭제</button>`:""}`);
+  if(d.inkOn)qMountPad();if(o.focusA)setTimeout(()=>document.getElementById("qA")?.focus(),30)}
+function qMountPad(){const cv=document.getElementById("qCv");if(!cv||!window.NOTES||!QP.d)return;qDestroyPad();
+  QP.pad=new NOTES.Pad(cv,QP.d.ink,{pw:1000,ph:400,penSeen:NP.penSeen,onPen:()=>{NP.penSeen=true;NP.fingerOk=false},onChange:()=>{}});QP.pad.fingerOk=NP.fingerOk||!NP.penSeen;QP.pad.undo=QP.d.hist.undo;QP.pad.redo=QP.d.hist.redo;QP.pad.color="#ffffff";QP.pad.width=6}
+function qDestroyPad(){if(QP.pad){QP.pad.destroy();QP.pad=null}}
+function qRefresh(){if(QP.sheet&&document.getElementById("ov")&&document.querySelector("#ov .qa")){QP.sheet();return}
+  const y=window.scrollY,pl=document.querySelector(".pane-l"),py=pl?pl.scrollTop:0;render();window.scrollTo(0,y);const p2=document.querySelector(".pane-l");if(p2)p2.scrollTop=py}
+function qClose(){qDestroyPad();closeSheet();const r=QP.ret;QP.ret=null;QP.d=null;if(r)r();else qRefresh()}
+function qSave(){const d=QP.d;if(!d)return;const tq=nfc(document.getElementById("qQ").value).trim(),ta=nfc(document.getElementById("qA").value).trim();const ink=(d.ink.strokes||[]).slice();
+  if(!tq&&!ink.length){toast("궁금한 걸 적어 줘 (글이나 손글씨)");return}const now=Date.now();
+  let q=d.id?qsAll().find(x=>x.id===d.id):null;const wasDone=q&&q.st==="done";
+  if(!q){q={id:"q"+uid(),k:d.k,ref:d.ref,lang:d.lg,created:now,updatedAt:0};qsAll().unshift(q)}
+  q.q=tq;q.a=ta;q.st=d.st==="done"?"done":"open";if(ink.length)q.ink=ink;else delete q.ink;
+  if(q.st==="done"&&!wasDone)q.doneAt=now;if(q.st!=="done")delete q.doneAt;
+  save();const msg=q.st==="done"&&!wasDone?"해결! 기록해 뒀어":"궁금증 저장했어";qClose();toast(msg)}
+function openWordQa(wid){const w=Object.values(S.words).flat().find(x=>x&&x.id===wid);if(!w)return;QP.sheet=()=>openWordQa(wid);
+  openSheet(`<div class="grab"></div><h3>궁금증 · <span lang="${esc(wikiLangId()||"")}">${esc(w.word)}</span> <button class="x" data-close aria-label="닫기">✕</button></h3>
+    <button type="button" class="btn ghost" data-qback="${esc(wid)}" style="min-height:40px;margin-bottom:6px">← 단어로</button>${qaHTML("w",wid,S.cur)}`)}
+function gQfHTML(lg){const qs=qsAll().filter(q=>q.k==="g"&&(q.lang||"")===lg);const f=S.gQf||"";if(!qs.length&&!f)return"";
+  const open=qs.filter(q=>q.st!=="done");const cs=new Set(qs.map(q=>q.ref)).size;
+  const sum=f==="open"&&open.length?`<ul class="gqsum" aria-label="미해결 궁금증">${open.slice(0,30).map(q=>{const x=GRAMMAR.find(q.ref);const t=(q.q||"(손글씨)");return `<li><button type="button" class="gqs" data-gqgo="${esc(q.ref)}">? ${esc(t.length>70?t.slice(0,70)+"…":t)} <span class="hint">— ${esc(x?x.sec.title:q.ref)}</span></button></li>`}).join("")}</ul>`:"";
+  return `<div class="picks hscroll gqf" role="group" aria-label="궁금증으로 거르기"><button type="button" class="chip ${!f?"on":""}" data-gqf="" aria-pressed="${!f}">모든 개념</button><button type="button" class="chip ${f==="open"?"on":""}" data-gqf="open" aria-pressed="${f==="open"}">? 미해결만<span class="c">${open.length}</span></button><button type="button" class="chip ${f==="any"?"on":""}" data-gqf="any" aria-pressed="${f==="any"}">궁금증 있는 개념<span class="c">${cs}</span></button></div>${sum}`}
+function qaClick(e){const T=e.target;
+  const ad=T.closest("[data-qadd]");if(ad){QP.ret=T.closest("#ov")?QP.sheet:null;qEdit(null,{k:ad.dataset.qadd,ref:ad.dataset.qref,lg:ad.dataset.qlg});return true}
+  const ed=T.closest("[data-qedit]");if(ed){QP.ret=T.closest("#ov")?QP.sheet:null;qEdit(ed.dataset.qedit);return true}
+  const st=T.closest("[data-qst]");if(st){const q=qsAll().find(x=>x.id===st.dataset.qst);if(!q)return true;
+    if(q.st==="done"){q.st="open";delete q.doneAt;save();qRefresh();toast("다시 궁금으로 돌렸어");return true}
+    if(!q.a){QP.ret=T.closest("#ov")?QP.sheet:null;qEdit(q.id,{st:"done",focusA:true});return true}
+    q.st="done";q.doneAt=Date.now();save();qRefresh();toast("해결! 기록해 뒀어");return true}
+  if(T.closest("[data-qclose]")){qClose();return true}
+  const wq=T.closest("[data-wqa]");if(wq){openWordQa(wq.dataset.wqa);return true}
+  const qb=T.closest("[data-qback]");if(qb){QP.sheet=null;openEdit(qb.dataset.qback);return true}
+  const gf=T.closest("[data-gqf]");if(gf){S.gQf=gf.dataset.gqf||"";render();return true}
+  const gg=T.closest("[data-gqgo]");if(gg){openConcept(gg.dataset.gqgo);return true}
+  if(!QP.d||!T.closest("#ov"))return false;
+  const sb=T.closest("[data-qset]");if(sb){QP.d.st=sb.dataset.qset;document.querySelectorAll("#ov [data-qset]").forEach(b=>{const on=b.dataset.qset===QP.d.st;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});if(QP.d.st==="done")document.getElementById("qA")?.focus();return true}
+  if(T.closest("#qInkTog")){const b=T.closest("#qInkTog"),box=document.getElementById("qInk");QP.d.inkOn=!QP.d.inkOn;box.hidden=!QP.d.inkOn;b.setAttribute("aria-pressed",String(QP.d.inkOn));b.textContent="\ue002 "+(QP.d.inkOn?"손글씨 숨기기":"손글씨로도 적기");if(QP.d.inkOn)qMountPad();else qDestroyPad();return true}
+  const tl=T.closest("[data-qtool]");if(tl){if(QP.pad)QP.pad.tool=tl.dataset.qtool;document.querySelectorAll("#ov [data-qtool]").forEach(b=>{const on=b===tl;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on))});return true}
+  if(T.closest("#qUndo")){QP.pad&&QP.pad.doUndo();return true}
+  if(T.closest("#qClear")){QP.pad&&QP.pad.clear();return true}
+  if(T.closest("#qSave")){qSave();return true}
+  if(T.closest("#qDel")){const b=T.closest("#qDel");if(!QP.delArm){QP.delArm=true;b.textContent="정말 지울까?";return true}
+    S.qs=qsAll().filter(x=>x.id!==QP.d.id);save();qClose();toast("궁금증을 지웠어");return true}
+  return false}
 
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;window._canInstall=true;if((S.view||"home")==="home")render()});
