@@ -6,7 +6,7 @@
 (function(G){
 "use strict";
 const GIST_DESC="vocab-cloud-sync",GIST_FILE="vocab-cloud.json",API="https://api.github.com";
-const SRS_KEYS=["ease","interval","reps","lapses","due","last"];
+const SRS_KEYS=["ease","interval","reps","lapses","due","last","lastGrade"];/* v18: lastGrade(앎/애매/모름)도 복습 기록이랑 같이 srsAt 로 합침 */
 const META_KEYS=new Set(["updatedAt","srsAt","conjSRS","declSRS",...SRS_KEYS]);
 const TOMB_TTL=400*864e5;
 
@@ -21,12 +21,14 @@ function keyEntry(e){if(!e||typeof e!=="object")return e;const o={...e};delete o
 function wordTs(w){let m=Math.max(w.updatedAt||0,w.srsAt||0);["conjSRS","declSRS"].forEach(f=>{const o=w[f];if(o)for(const k in o)if(o[k]&&o[k].t>m)m=o[k].t});return m}
 function dateMs(s){const t=s?Date.parse(s):NaN;return isNaN(t)?0:t}
 
-function ensureStamps(st){st.stamps=st.stamps||{};const S=st.stamps;S.l=S.l||{};S.tomb=S.tomb||{};S.tomb.w=S.tomb.w||{};S.tomb.l=S.tomb.l||{};S.prefs=S.prefs||0;return S}
+function ensureStamps(st){st.stamps=st.stamps||{};const S=st.stamps;S.l=S.l||{};S.tomb=S.tomb||{};S.tomb.w=S.tomb.w||{};S.tomb.l=S.tomb.l||{};S.tomb.n=S.tomb.n||{};S.prefs=S.prefs||0;return S}
 
 /* 지금 상태의 지문 (단어마다 내용/복습/연습칸 해시) */
 function wEntry(w,lid){const k={};["conjSRS","declSRS"].forEach(f=>{const o=w[f];if(o)for(const key in o)k[f+"|"+key]=JSON.stringify(keyEntry(o[key]))});
   return{c:hash(JSON.stringify(contentOf(w))),s:JSON.stringify(srsOf(w)),k,lang:lid}}
-function snapshot(st){const snap={w:{},l:{},prefs:hash(stable(st.prefs||{}))};
+function noteSig(n){const o={};for(const k in n)if(k!=="updatedAt")o[k]=n[k];return hash(JSON.stringify(o))}
+function snapshot(st){const snap={w:{},l:{},n:{},prefs:hash(stable(st.prefs||{}))};
+  (st.notes||[]).forEach(n=>{if(n&&n.id)snap.n[n.id]=noteSig(n)});
   Object.keys(st.words||{}).forEach(lid=>(st.words[lid]||[]).forEach(w=>{if(!w||!w.id)return;snap.w[w.id]=wEntry(w,lid)}));
   (st.langs||[]).forEach(l=>{snap.l[l.id]=hash(stable(l))});
   return snap}
@@ -36,6 +38,7 @@ function migrateStamps(st){ensureStamps(st);Object.values(st.words||{}).forEach(
   if(typeof w.updatedAt!=="number")w.updatedAt=dateMs(w.created);
   if(typeof w.srsAt!=="number")w.srsAt=w.last?Math.max(dateMs(w.last),w.updatedAt):w.updatedAt;
   ["conjSRS","declSRS"].forEach(f=>{const o=w[f];if(o)for(const k in o)if(o[k]&&typeof o[k]==="object"&&typeof o[k].t!=="number")o[k].t=dateMs(o[k].last)})}));
+  (st.notes||[]).forEach(n=>{if(n&&typeof n.updatedAt!=="number")n.updatedAt=dateMs(n.created)});
   return st}
 
 /* 저장할 때마다: 이전 지문과 비교해서 바뀐 곳에만 시각 찍기, 사라진 단어/언어는 묘비 */
@@ -51,15 +54,21 @@ function stamp(st,prev,now){now=now||Date.now();const S=ensureStamps(st);let cha
   for(const id in prev.w)if(!cur.w[id]){S.tomb.w[id]=now;changed=true}
   for(const id in cur.l)if(prev.l[id]!==cur.l[id]){S.l[id]=Math.max(now,(S.l[id]||0)+1);changed=true}
   for(const id in prev.l)if(!cur.l[id]){S.tomb.l[id]=now;changed=true}
+  /* v18: 필기 노트 — 노트마다 updatedAt, 지우면 묘비 */
+  (st.notes||[]).forEach(n=>{if(!n||!n.id)return;const a=prev.n&&prev.n[n.id];
+    if(a===undefined){if(typeof n.updatedAt!=="number"||!n.updatedAt)n.updatedAt=now;if(S.tomb.n[n.id]&&S.tomb.n[n.id]>=n.updatedAt)n.updatedAt=Math.max(now,S.tomb.n[n.id]+1);changed=true}
+    else if(a!==cur.n[n.id]){n.updatedAt=Math.max(now,(n.updatedAt||0)+1);changed=true}});
+  for(const id in (prev.n||{}))if(!cur.n[id]){S.tomb.n[id]=now;changed=true}
   if(prev.prefs!==cur.prefs){S.prefs=Math.max(now,(S.prefs||0)+1);changed=true}
   touched.forEach(([w,lid])=>{cur.w[w.id]=wEntry(w,lid)});/* 시각만 바뀐 단어 지문 다시 (srs 시각은 지문에 안 들어가지만 연습칸 t 는 빼고 계산하니 그대로) */
   return{snap:cur,changed}}
 
 /* 동기화할 부분만 (기기 전용: cur, lastPos 같은 건 뺌) */
-function payload(st){return{v:1,app:"vocab-cloud",langs:st.langs||[],words:st.words||{},customSub:st.customSub||{},seeded:st.seeded||{},prefs:st.prefs||{},stamps:ensureStamps(st)}}
+function payload(st){return{v:1,app:"vocab-cloud",langs:st.langs||[],words:st.words||{},customSub:st.customSub||{},seeded:st.seeded||{},prefs:st.prefs||{},notes:st.notes||[],stamps:ensureStamps(st)}}
 function canon(p){/* 순서 차이는 무시하고 비교 */if(!p)return"";const w={};Object.keys(p.words||{}).forEach(l=>{const a=(p.words[l]||[]).slice().sort((x,y)=>x.id<y.id?-1:x.id>y.id?1:0);if(a.length)w[l]=a});
   const cs={};Object.keys(p.customSub||{}).forEach(k=>{const a=(p.customSub[k]||[]).slice().sort();if(a.length)cs[k]=a});
-  return stable({langs:(p.langs||[]).slice().sort((a,b)=>a.id<b.id?-1:1),words:w,customSub:cs,seeded:p.seeded||{},prefs:p.prefs||{},stamps:p.stamps||{}})}
+  const notes=(p.notes||[]).slice().sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+  return stable({langs:(p.langs||[]).slice().sort((a,b)=>a.id<b.id?-1:1),words:w,customSub:cs,seeded:p.seeded||{},prefs:p.prefs||{},notes,stamps:p.stamps||{}})}
 
 function pickBy(a,b,ta,tb){if(ta>tb)return a;if(tb>ta)return b;return stable(a)>=stable(b)?a:b}
 function mergeKeyed(a,b){/* 변화표 연습 칸별 */if(!a&&!b)return undefined;const o={};const ks=new Set([...Object.keys(a||{}),...Object.keys(b||{})]);
@@ -77,8 +86,8 @@ const dupKey=(lid,w)=>lid+"\u0001"+nf(w.word)+"\u0001"+(w.pos||"")+"\u0001"+nf(w
 /* 합치기: 로컬 L + 원격 R → 새 payload. now 는 중복 정리 묘비용 */
 function merge(L,R,now){now=now||Date.now();L=L||payload({});R=R||payload({});
   const SL=L.stamps||{},SR=R.stamps||{};const tl=(SL.tomb||{}),tr=(SR.tomb||{});
-  const tomb={w:{},l:{}};["w","l"].forEach(k=>{[tl[k]||{},tr[k]||{}].forEach(o=>{for(const id in o)tomb[k][id]=Math.max(tomb[k][id]||0,o[id])})});
-  for(const k of["w","l"])for(const id in tomb[k])if(now-tomb[k][id]>TOMB_TTL)delete tomb[k][id];
+  const tomb={w:{},l:{},n:{}};["w","l","n"].forEach(k=>{[tl[k]||{},tr[k]||{}].forEach(o=>{for(const id in o)tomb[k][id]=Math.max(tomb[k][id]||0,o[id])})});
+  for(const k of["w","l","n"])for(const id in tomb[k])if(now-tomb[k][id]>TOMB_TTL)delete tomb[k][id];
   /* 언어 */
   const ls={},la={...(SR.l||{})};for(const id in SL.l||{})la[id]=Math.max(la[id]||0,SL.l[id]);
   const lmap=new Map();const order=[];
@@ -112,7 +121,10 @@ function merge(L,R,now){now=now||Date.now();L=L||payload({});R=R||payload({});
   const customSub=deepUnion(L.customSub||{},R.customSub||{});
   const seeded=deepUnion(L.seeded||{},R.seeded||{});
   const pL=SL.prefs||0,pR=SR.prefs||0;const prefs=pR>pL?(R.prefs||{}):(L.prefs||{});
-  return{v:1,app:"vocab-cloud",langs,words,customSub,seeded,prefs,stamps:{l:ls,prefs:Math.max(pL,pR),tomb}}}
+  /* 필기 노트: 노트 단위로 더 최근 것, 묘비가 더 새로우면 삭제 */
+  const nm=new Map();const nord=[];[[L.notes,"L"],[R.notes,"R"]].forEach(([arr])=>(arr||[]).forEach(n=>{if(!n||!n.id)return;if(!nm.has(n.id)){nm.set(n.id,n);nord.push(n.id)}else{const o=nm.get(n.id);nm.set(n.id,pickBy(o,n,o.updatedAt||0,n.updatedAt||0))}}));
+  const notes=[];nord.forEach(id=>{const n=nm.get(id);const t=tomb.n[id];if(t&&t>=(n.updatedAt||0))return;if(t)delete tomb.n[id];notes.push(n)});
+  return{v:1,app:"vocab-cloud",langs,words,customSub,seeded,prefs,notes,stamps:{l:ls,prefs:Math.max(pL,pR),tomb}}}
 
 /* ---------- GitHub Gist API ---------- */
 class SyncError extends Error{constructor(kind,msg,extra){super(msg);this.kind=kind;Object.assign(this,extra||{})}}

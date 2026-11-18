@@ -1,4 +1,4 @@
-const CACHE = "vocab-cloud-v17";
+const CACHE = "vocab-cloud-v18";
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,6 +14,7 @@ const ASSETS = [
   "./rules.js",
   "./grammar.js",
   "./sync.js",
+  "./notes.js",
   "./vocabpx.woff2"
 ];
 self.addEventListener("install", (e) => {

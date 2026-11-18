@@ -455,6 +455,57 @@ html.wide .wd-spk{position:static;margin-left:auto;font-size:1.3rem;min-width:52
 html.wide .btn,html.mid .btn{min-height:50px}
 html.wide .chip,html.mid .chip{min-height:44px}
 html.wide .sheet{max-width:620px}
+/* ---- v18: 문법 분류 ---- */
+.gcat{margin:0 0 10px;border:0}
+.gcat>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 2px;border-bottom:2px solid #fff;cursor:pointer;font-size:.95rem}
+.gcat>summary::-webkit-details-marker{display:none}
+.gcat>summary::before{content:"▶";font-size:.7rem;transition:none}
+.gcat[open]>summary::before{content:"▼"}
+.gcat>summary .c{margin-left:auto;font-size:.72rem;border:1px solid #fff;padding:0 6px}
+.gcat>.gsec,.gcat>.gix{margin-top:6px}
+.gcatl{font-size:.72rem;color:#999;margin:0 0 4px;letter-spacing:.06em}
+html.wide .gidx .gcat>summary{min-height:38px;font-size:.85rem}
+/* ---- v18: 아는 정도 · 정렬 ---- */
+.kd{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;border:1px solid currentColor}
+.kd.k-no{background:repeating-linear-gradient(45deg,currentColor 0 2px,transparent 2px 4px)}
+.kd.k-meh{background:linear-gradient(90deg,currentColor 50%,transparent 50%)}
+.kd.k-yes{background:currentColor}
+.kd.k-new{border-style:dashed}
+.chip.on .kd{border-color:#000}
+.kt{margin-left:10px;font-size:.7rem;color:#aaa;white-space:nowrap}
+.lsort{align-items:center;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+.lsort .chip{min-height:36px}
+.lquiz{margin-left:auto;flex:1 0 auto;white-space:nowrap;min-height:40px;padding:0 12px}
+/* v18 필기 */
+.nlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.nopen{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:8px;border:2px solid #fff;background:#000;color:#fff;font:inherit;border-radius:0}
+.nitem.sel .nopen{outline:3px dashed #fff;outline-offset:3px}
+.nitem.sel .nmeta b::before{content:"▶ "}
+.nthumb{flex:0 0 48px;height:62px;border:1px solid #fff;background:#000;display:block;overflow:hidden}
+.nthumb img{width:100%;height:100%;display:block}
+.nmeta{display:flex;flex-direction:column;gap:2px;min-width:0}
+.nmeta b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.nhead{gap:8px;align-items:center}
+.ntitle{flex:1;min-width:0;font:inherit;font-size:1rem;background:#000;color:#fff;border:2px solid #fff;border-radius:0;padding:8px 10px}
+.ndel{flex:0 0 auto;min-height:40px;padding:0 10px}
+.nword{margin:-4px 0 4px}
+.ntools{display:flex;flex-wrap:wrap;gap:6px 12px;margin:8px 0;align-items:center}
+.ngrp{display:flex;gap:4px;flex-wrap:wrap}
+.ntools button{min-width:40px;min-height:40px;border:2px solid #fff;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 6px;font:inherit;font-size:.75rem;border-radius:0}
+.ntools .ic{font-size:1.1rem;line-height:1}
+.ntools button.on{background:#fff;color:#000}
+.ntools button:disabled{opacity:.4;border-style:dashed}
+.nc i{width:14px;height:14px;border:1px solid #fff;display:block}
+.nc.on i{border:2px solid #000}
+.nw i{width:22px;background:currentColor;display:block}
+.npaper{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;border:2px solid #fff;background:#000 radial-gradient(#3a3a3a 1px,transparent 1.3px) 0 0/20px 20px;width:100%;max-width:max(240px,calc((100dvh - 250px) / 1.3));margin:0 auto;line-height:0}
+.ncv{display:block;width:100%;touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}
+html[data-view="note"],html[data-view="notes"]{overscroll-behavior:none}
+html[data-view="note"] body,html[data-view="notes"] body{overscroll-behavior:none}
+.nstat{text-align:center;margin:6px 0 0}
+.nmark{font-size:.7rem;border:1px solid currentColor;padding:0 3px;margin-left:2px}
+html.wide .n-split .npaper{max-width:max(280px,calc((100dvh - 190px) / 1.3))}
+html.wide .n-split .pane-l .empty{margin-top:12px}
 </style>
 </head>
 <body>
@@ -465,6 +516,7 @@ html.wide .sheet{max-width:620px}
 <script src="rules.js"></script>
 <script src="grammar.js"></script>
 <script src="sync.js"></script>
+<script src="notes.js"></script>
 <script>
 const KEY="vocab-cloud-v1";
 const PRESETS=[{id:"fr",name:"프랑스어",flag:"🇫🇷",tts:"fr-FR"},{id:"ru",name:"러시아어",flag:"🇷🇺",tts:"ru-RU"},{id:"tr",name:"터키어",flag:"🇹🇷",tts:"tr-TR"}];
@@ -512,6 +564,7 @@ function allSubs(pos){if(!pos)return[];const d=SUBS[pos]||["기타"],c=(S.custom
   words().forEach(w=>{if(w.pos===pos&&w.sub&&!d.includes(w.sub)&&!c.includes(w.sub)&&!extra.includes(w.sub))extra.push(w.sub)});
   return [...d,...c.filter(x=>!d.includes(x)),...extra]}
 function migrate(s){s.customSub=s.customSub||{n:[],adj:[],v:[],adv:[],other:[]};
+  s.notes=Array.isArray(s.notes)?s.notes.filter(n=>n&&n.id):[];s.notes.forEach(n=>{n.strokes=Array.isArray(n.strokes)?n.strokes:[];if(n.title==null)n.title=""});
   s.seeded=s.seeded||{};
   s.words=s.words||{};Object.values(s.words).forEach(arr=>(arr||[]).forEach(w=>{
     if(w.pos==null)w.pos="";if(w.sub==null)w.sub="";w.conj=w.conj||{};w.conjAuto=w.conjAuto||{};w.conjSRS=w.conjSRS||{};
@@ -526,7 +579,7 @@ let S=load();
 /* v17: 동기화용 시간표 — 저장할 때마다 바뀐 곳만 시각 찍기 (단어 updatedAt/srsAt, 지운 건 묘비) */
 if(window.SYNC)SYNC.migrateStamps(S);
 let SYNC_SNAP=window.SYNC?SYNC.snapshot(S):null;
-const saveRaw=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||"",prefs:S.prefs||{},stamps:S.stamps||{}}));
+const saveRaw=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||"",prefs:S.prefs||{},notes:S.notes||[],stamps:S.stamps||{}}));
 const save=()=>{let ch=false;if(window.SYNC){try{const r=SYNC.stamp(S,SYNC_SNAP);SYNC_SNAP=r.snap;ch=r.changed}catch(e){console.warn("stamp",e&&e.message)}}
   saveRaw();if(ch&&typeof syncDirty==="function")syncDirty()};
 save();
@@ -535,7 +588,22 @@ const L=()=>S.langs.find(l=>l.id===S.cur)||S.langs[0]||NOLANG;
 const words=()=>S.words[S.cur]||(S.words[S.cur]=[]);
 const setWords=arr=>{S.words[S.cur]=arr;save()};
 const dueWords=()=>{const t=today();return words().filter(w=>!w.due||w.due<=t)};
+/* v18: 아는 정도 (마지막 앎/애매/모름 표시) */
+const KNOW=[["no","모름"],["meh","애매"],["yes","앎"],["new","안 해봄"]];
+function gradeMark(q){return q<3?"no":q===3?"meh":"yes"}
+function knowOf(w){if(!w)return"new";if(w.lastGrade==="no"||w.lastGrade==="meh"||w.lastGrade==="yes")return w.lastGrade;
+  /* 예전 단어: 복습 기록으로 추정 — 한 번도 안 했으면 안 해봄, 마지막에 틀려서 reps가 0이면 모름, 쉬움 지수가 기본(2.5)보다 낮으면 애매 */
+  if(!w.last&&!(w.reps>0))return"new";if(!(w.reps>0))return"no";return(w.ease||2.5)<2.5?"meh":"yes"}
+function knowChips(cur,list,attr){const n=k=>list.filter(w=>knowOf(w)===k).length;
+  return `<div class="picks hscroll kchips" role="group" aria-label="아는 정도"><button type="button" class="chip ${!cur?"on":""}" ${attr}="">전체<span class="c">${list.length}</span></button>${KNOW.map(([k,nm])=>`<button type="button" class="chip k-${k} ${cur===k?"on":""}" ${attr}="${k}"><i class="kd k-${k}" aria-hidden="true"></i>${nm}<span class="c">${n(k)}</span></button>`).join("")}</div>`}
+/* v18: 알파벳순 (언어별 정렬 규칙, 강세 무시, 프랑스어 관사 무시) */
+const COLL={};function collator(){const l=L();const lid=wikiLangId(l)||String(l.tts||"").slice(0,2).toLowerCase()||"und";
+  if(!COLL[lid]){try{COLL[lid]=new Intl.Collator(lid,{sensitivity:"base",numeric:true,ignorePunctuation:false})}catch(e){COLL[lid]=new Intl.Collator(undefined,{sensitivity:"base"})}}return COLL[lid]}
+function sortKey(w){let s=nfc(String(w.word||"")).normalize("NFD").replace(/[\u0301\u0300]/g,"").normalize("NFC").trim();
+  if(isFr())s=s.replace(/^(les|le|la|un|une|des)\s+/i,"").replace(/^l['’]/i,"");return s}
+function sortAlpha(arr){const c=collator();return arr.map(w=>[sortKey(w),w]).sort((a,b)=>c.compare(a[0],b[0])||a[1].word.localeCompare(b[1].word)).map(x=>x[1])}
 function byFilter(list,f){f=f||{};return list.filter(w=>{
+  if(f.know&&knowOf(w)!==f.know)return false;
   if(f.pos==="__none__")return !w.pos;
   if(f.pos&&w.pos!==f.pos)return false;
   if(f.sub==="__none__")return w.pos===(f.pos||w.pos)&&!w.sub;
@@ -647,6 +715,7 @@ function syncApply(m){const byId=new Map();Object.values(S.words||{}).forEach(a=
   const words={};Object.keys(m.words||{}).forEach(lid=>{words[lid]=(m.words[lid]||[]).map(w=>{const o=byId.get(w.id);if(o){if(o!==w){Object.keys(o).forEach(k=>{if(!(k in w))delete o[k]});Object.assign(o,JSON.parse(JSON.stringify(w)))}return o}return JSON.parse(JSON.stringify(w))})});
   S.langs=JSON.parse(JSON.stringify(m.langs||[]));S.words=words;S.customSub=JSON.parse(JSON.stringify(m.customSub||{}));["n","adj","v","adv","other"].forEach(k=>{S.customSub[k]=S.customSub[k]||[]});
   S.seeded=JSON.parse(JSON.stringify(m.seeded||{}));S.prefs=JSON.parse(JSON.stringify(m.prefs||{}));S.stamps=JSON.parse(JSON.stringify(m.stamps||{}));
+  {const loc=new Map((S.notes||[]).map(n=>[n.id,n]));S.notes=(m.notes||[]).map(n=>{const o=loc.get(n.id);return o&&o.updatedAt===n.updatedAt&&JSON.stringify(o)===JSON.stringify(n)?o:JSON.parse(JSON.stringify(n))})}
   if(!S.langs.some(l=>l.id===S.cur))S.cur=S.langs[0]?S.langs[0].id:"";
   migrate(S);SYNC_SNAP=SYNC.snapshot(S);saveRaw()}
 const SYNC_BUSY_VIEWS=["quizrun","prac","dprac","cards"];
@@ -662,7 +731,7 @@ async function syncNow(reason){if(!window.SYNC||!syncOn())return;if(SY.busy){SY.
       const now=SYNC.canon(SYNC.payload(S));if(now!==before){SY.again=true}else syncApply(r.merged)}
     syncSetCfg({gistId:r.gistId,last:Date.now(),err:undefined,blockUntil:undefined});
     syncMsg(r.created?"새 비공개 Gist 만들었어. 다른 기기에도 같은 토큰 넣어 줘":changed?"다른 기기 변경 합쳤어":"맞춰졌어","ok");
-    if(changed){const busyView=SYNC_BUSY_VIEWS.includes(S.view)||(document.getElementById("ov")&&!document.getElementById("syncBox"));if(!busyView)render();else SY.needRender=true}
+    if(changed){const busyView=SYNC_BUSY_VIEWS.includes(S.view)||(window.PAD&&PAD.pid!==null)||(document.getElementById("ov")&&!document.getElementById("syncBox"));if(!busyView)render();else SY.needRender=true}
   }catch(e){const k=e&&e.kind;
     if(k==="offline"){syncMsg("인터넷이 안 돼서 못 했어. 다시 연결되면 할게","offline");SY.pending=true}
     else if(k==="auth"){syncSetCfg({err:"토큰이 안 먹혀 (만료됐거나 gist 권한이 없어). 끄고 다시 넣어 줘",on:false});syncMsg("토큰이 안 먹혀 (만료됐거나 gist 권한이 없어). 끄고 다시 넣어 줘","err")}
@@ -1391,13 +1460,15 @@ async function bulkAutoFill(){const ta=document.querySelector("#bulkForm textare
   toast(BR.ok?BR.ok+"개 뜻 채웠어!"+(miss?" "+miss+"개는 못 찾았어. 직접 적어 줘":" 확인하고 넣어 줘"):(net?"인터넷 연결이 안 되는 것 같아 ㅠ":"하나도 못 찾았어 ㅠ 철자 한 번 봐 줘"))}
 
 function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac","decl","declrev","declprac"].includes(v);
-  const nav=document.getElementById("nav");nav.style.display=hide?"none":"";document.documentElement.classList.toggle("nonav",hide);
+  const hideAll=hide||(v==="note"&&!isWide());
+  const nav=document.getElementById("nav");nav.style.display=hideAll?"none":"";document.documentElement.classList.toggle("nonav",hideAll);
   nav.innerHTML=`<div class="bar">
     <button data-go="home" class="${v==="home"?"on":""}"><span class="ic"></span>홈</button>
     <button data-go="cards" class="${v==="cards"?"on":""}"><span class="ic"></span>카드</button>
     <button data-go="quiz" class="${(v==="quiz"||v==="quizrun"||v==="conjprac"||v==="declprac")?"on":""}"><span class="ic"></span>퀴즈</button>
     <button data-go="list" class="${(v==="list"||v==="conj"||v==="conjrev"||v==="decl"||v==="declrev")?"on":""}"><span class="ic"></span>목록</button>
     <button data-go="grammar" class="${v==="grammar"?"on":""}"><span class="ic"></span>문법</button>
+    <button data-go="notes" class="${(v==="notes"||v==="note")?"on":""}"><span class="ic">\ue010</span>필기</button>
   </div>`}
 function langBar(){return `<div class="langs"><button class="chip add" id="addLang">＋</button>${S.langs.map(l=>`<button class="chip ${l.id===S.cur?"on":""}" data-lang="${l.id}">${flagOf(l)} ${esc(l.name)}</button>`).join("")}</div>`}
 function installChip(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);const stand=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
@@ -1425,22 +1496,18 @@ function wordDetail(w){if(!w)return `<div class="wd empty-pane"><p class="hint">
     <div class="lvl" aria-label="익힘 ${m}/5"><span class="lbar ${m>=5?"ok":""}"><i style="width:${m*20}%"></i></span><span class="lt">익힘 ${m}/5</span></div>
     <dl class="wd-srs"><dt>다음 복습</dt><dd>${esc(w.due||"-")}</dd><dt>맞힌 횟수</dt><dd>${w.reps||0}</dd><dt>틀린 횟수</dt><dd>${w.lapses||0}</dd></dl>
     <div class="row wd-act"><button type="button" class="btn primary" data-wedit="${w.id}">\ue002 편집</button>
-    ${w.pos==="v"?`<button type="button" class="btn ghost" data-conj="${w.id}">동사 변화표</button>`:declOn(w)?`<button type="button" class="btn ghost" data-decl="${w.id}">격변화표</button>`:""}</div></article>`}
+    ${w.pos==="v"?`<button type="button" class="btn ghost" data-conj="${w.id}">동사 변화표</button>`:declOn(w)?`<button type="button" class="btn ghost" data-decl="${w.id}">격변화표</button>`:""}
+    <button type="button" class="btn ghost" data-wnote="${w.id}">\ue010 필기${noteOfWord(w.id)?` <span class="nmark">있음</span>`:""}</button></div></article>`}
 function splitHTML(left,right,cls){return `<div class="split ${cls||""}"><aside class="pane-l" aria-label="목록">${left}</aside><section class="pane-r">${right}</section></div>`}
 function viewGrammarWide(){if(!window.GRAMMAR)return viewGrammar();
-  const lg=gLang();const L0=GRAMMAR.LANGS[lg];const ws=langWordsFor(lg);const q=fold(S.gq||"");
-  const secs=L0.list.filter(x=>!q||fold(x.title+" "+(x.tags||"")+" "+x.body.replace(/<[^>]+>/g," ")).includes(q));
+  const lg=gLang();const ws=langWordsFor(lg);const {all,secs}=gSecs(lg);
   let sel=secs.find(x=>x.id===S.gOpen)||secs[0];
-  const left=`<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>문법</h2></div>
-    <div class="picks hscroll">${Object.entries(GRAMMAR.LANGS).map(([k,v])=>`<button type="button" class="chip ${k===lg?"on":""}" data-glang="${k}">${flagOf(PRESETS.find(p=>p.id===k)||{})} ${esc(v.name)}</button>`).join("")}</div>
-    <input class="search" id="gSearch" type="search" placeholder="개념 찾기 (예: 반과거, 조격, 모음조화)" value="${esc(S.gq||"")}">
-    <nav class="gidx">${secs.map(x=>`<button type="button" class="gix ${sel&&x.id===sel.id?"on":""}" data-gsel="${esc(x.id)}" aria-current="${sel&&x.id===sel.id?"true":"false"}">${esc(x.title)}</button>`).join("")||`<p class="hint">찾는 개념이 없어.</p>`}</nav>`;
+  const left=`${gHead(lg)}${gCatChips(lg,all)}<nav class="gidx">${gGroups(secs,x=>`<button type="button" class="gix ${sel&&x.id===sel.id?"on":""}" data-gsel="${esc(x.id)}" aria-current="${sel&&x.id===sel.id?"true":"false"}">${esc(x.title)}</button>`)||`<p class="hint">찾는 개념이 없어.</p>`}</nav>`;
   let right=`<p class="hint">왼쪽에서 개념을 골라 줘.</p>`;
-  if(sel){let mine=[];try{mine=sel.mine?sel.mine(ws).slice(0,40):[]}catch(e){}
-    right=`<article class="gsec gart" id="g-${sel.id}"><h3 class="gat">${esc(sel.title)}</h3><div class="gbody" lang="${lg}">${sel.body}</div>
-      ${sel.mine?`<div class="gmine"><div class="gml">내 단어 (${mine.length})</div>${mine.length?`<div class="gwl">${mine.map(m=>`<button type="button" class="gw" data-gw="${esc(m.w.id)}" data-glid="${lg}">${esc(m.w.word)}${m.note?` <span class="gn">${esc(m.note)}</span>`:""}</button>`).join("")}</div>`:`<p class="hint" style="margin:0">아직 해당하는 단어가 없어.</p>`}</div>`:""}</article>`}
+  if(sel)right=`<article class="gsec gart" id="g-${sel.id}"><div class="gcatl">${esc(gCatName(sel.cat))}</div><h3 class="gat">${esc(sel.title)}</h3><div class="gbody" lang="${lg}">${sel.body}</div>${gMineHTML(sel,lg,ws,40)}</article>`;
   return splitHTML(left,right,"g-split")}
-function render(){applyLayout();const a=document.getElementById("app");if(!S.langs.length){document.getElementById("nav").style.display="none";a.innerHTML=viewNoLang();return}
+function render(){applyLayout();const a=document.getElementById("app");unmountPad();if(!S.langs.length){document.getElementById("nav").style.display="none";a.innerHTML=viewNoLang();return}
+  if(S.view==="note"&&isWide())S.view="notes";pruneFresh();
   maybeSeedOpen();navHTML();const v=S.view||"home";
   if(v==="home")a.innerHTML=viewHome();
   else if(v==="cards")a.innerHTML=viewCards();
@@ -1454,6 +1521,8 @@ function render(){applyLayout();const a=document.getElementById("app");if(!S.lan
   else if(v==="declrev")a.innerHTML=viewDeclReveal();
   else if(v==="declprac")a.innerHTML=viewDeclPrac();
   else if(v==="grammar")a.innerHTML=viewGrammar();
+  else if(v==="notes")a.innerHTML=isWide()?viewNotesWide():viewNotes();
+  else if(v==="note")a.innerHTML=viewNote();
   /* v17: 넓은 화면이면 두 칸 */
   if(isWide()){
     if(v==="list"){wideSel();const left=a.innerHTML;a.innerHTML=splitHTML(left,wordDetail(wideSel()));markSel()}
@@ -1461,23 +1530,35 @@ function render(){applyLayout();const a=document.getElementById("app");if(!S.lan
     else if(v==="grammar")a.innerHTML=viewGrammarWide();
   }
   document.documentElement.dataset.view=v;
+  if(v==="note"||v==="notes")mountPad();
 }
 function markSel(){document.querySelectorAll(".pane-l [data-edit]").forEach(b=>{const on=b.dataset.edit===S.selWord;b.closest(".item")?.classList.toggle("sel",on);b.setAttribute("aria-current",on?"true":"false")});
   const el=document.querySelector(".pane-l .item.sel");if(el&&el.scrollIntoView&&!markSel._busy){const pl=el.closest(".pane-l");if(pl){const r=el.getBoundingClientRect(),pr=pl.getBoundingClientRect();if(r.top<pr.top||r.bottom>pr.bottom)el.scrollIntoView({block:"nearest"})}}}
 /* ---- v15: 문법 탭 ---- */
 function gLang(){const g=S.gLang;if(g&&window.GRAMMAR&&GRAMMAR.LANGS[g])return g;const c=wikiLangId();return c&&window.GRAMMAR&&GRAMMAR.LANGS[c]?c:"fr"}
 function langWordsFor(lid){const l=S.langs.find(x=>wikiLangId(x)===lid);return l?(S.words[l.id]||[]):[]}
-function viewGrammar(){if(!window.GRAMMAR)return `<div class="head"><h2>문법</h2></div><p class="hint">문법 자료를 못 불러왔어.</p>`;
-  const lg=gLang();const L0=GRAMMAR.LANGS[lg];const ws=langWordsFor(lg);const open=S.gOpen||"";const q=fold(S.gq||"");
-  const secs=L0.list.filter(x=>!q||fold(x.title+" "+(x.tags||"")+" "+x.body.replace(/<[^>]+>/g," ")).includes(q));
-  return `<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>문법</h2></div>
+/* v18: 문법 — 분류 칩 + 분류별 접기 + 검색 */
+function gCats(){return(window.GRAMMAR&&GRAMMAR.CATS)||[]}
+function gCatName(c){const f=gCats().find(x=>x[0]===c);return f?f[1]:"기타"}
+function gSecs(lg){const L0=GRAMMAR.LANGS[lg];const q=fold(S.gq||"");const cat=S.gCat||"";
+  const hit=L0.list.filter(x=>!q||fold(x.title+" "+(x.tags||"")+" "+gCatName(x.cat)+" "+x.body.replace(/<[^>]+>/g," ")).includes(q));
+  return{all:hit,secs:hit.filter(x=>!cat||x.cat===cat)}}
+function gCatChips(lg,hits){const L0=GRAMMAR.LANGS[lg];const has=gCats().filter(c=>L0.list.some(x=>x.cat===c[0]));const cnt=c=>hits.filter(x=>x.cat===c).length;
+  return `<div class="picks hscroll gcats" role="group" aria-label="문법 분류"><button type="button" class="chip ${!S.gCat?"on":""}" data-gcat="">전체<span class="c">${hits.length}</span></button>${has.map(([id,nm])=>`<button type="button" class="chip ${S.gCat===id?"on":""}" data-gcat="${id}">${esc(nm)}<span class="c">${cnt(id)}</span></button>`).join("")}</div>`}
+function gHead(lg){return `<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>문법</h2></div>
     <div class="picks hscroll">${Object.entries(GRAMMAR.LANGS).map(([k,v])=>`<button type="button" class="chip ${k===lg?"on":""}" data-glang="${k}">${flagOf(PRESETS.find(p=>p.id===k)||{})} ${esc(v.name)}</button>`).join("")}</div>
-    <input class="search" id="gSearch" type="search" placeholder="개념 찾기 (예: 반과거, 조격, 모음조화)" value="${esc(S.gq||"")}">
+    <input class="search" id="gSearch" type="search" placeholder="개념 찾기 (예: 반과거, 조격, 모음조화, 관사)" value="${esc(S.gq||"")}">`}
+function gMineHTML(x,lg,ws,n){if(!x.mine)return"";let mine=[];try{mine=x.mine(ws).slice(0,n||24)}catch(e){console.warn(e)}
+  return `<div class="gmine"><div class="gml">내 단어 (${mine.length})</div>${mine.length?`<div class="gwl">${mine.map(m=>`<button type="button" class="gw" data-gw="${esc(m.w.id)}" data-glid="${lg}">${esc(m.w.word)}${m.note?` <span class="gn">${esc(m.note)}</span>`:""}</button>`).join("")}</div>`:`<p class="hint" style="margin:0">아직 해당하는 단어가 없어.</p>`}</div>`}
+function gGroups(secs,fn){const out=[];secs.forEach(x=>{let g=out.find(o=>o.cat===x.cat);if(!g){g={cat:x.cat,items:[]};out.push(g)}g.items.push(x)});
+  const q=!!(S.gq||"").trim();S.gShut=S.gShut||{};
+  return out.map(g=>`<details class="gcat" data-gcatbox="${g.cat}" ${q||S.gCat||!S.gShut[g.cat]||g.items.some(x=>x.id===S.gOpen)?"open":""}><summary><span class="gct">${esc(gCatName(g.cat))}</span><span class="c">${g.items.length}</span></summary>${g.items.map(fn).join("")}</details>`).join("")}
+function viewGrammar(){if(!window.GRAMMAR)return `<div class="head"><h2>문법</h2></div><p class="hint">문법 자료를 못 불러왔어.</p>`;
+  const lg=gLang();const ws=langWordsFor(lg);const open=S.gOpen||"";const {all,secs}=gSecs(lg);
+  return `${gHead(lg)}${gCatChips(lg,all)}
     <p class="hint" style="margin:0 0 10px">어형이 바뀌는 규칙 모음. 칸의 ? 설명이나 틀린 답 아래 ‘개념 보기’에서도 여기로 와. 각 항목 아래엔 내 단어 중 그 규칙에 해당하는 것들이 떠.</p>
-    ${secs.map(x=>{let mine=[];try{mine=x.mine?x.mine(ws).slice(0,24):[]}catch(e){console.warn(e)}
-      return `<details class="gsec" id="g-${x.id}" ${open===x.id?"open":""}><summary>${esc(x.title)}</summary><div class="gbody" lang="${lg}">${x.body}</div>
-      ${x.mine?`<div class="gmine"><div class="gml">내 단어 (${mine.length})</div>${mine.length?`<div class="gwl">${mine.map(m=>`<button type="button" class="gw" data-gw="${esc(m.w.id)}" data-glid="${lg}">${esc(m.w.word)}${m.note?` <span class="gn">${esc(m.note)}</span>`:""}</button>`).join("")}</div>`:`<p class="hint" style="margin:0">아직 해당하는 단어가 없어.</p>`}</div>`:""}</details>`}).join("")||`<div class="empty">찾는 개념이 없어.</div>`}`}
-function openConcept(id){if(!window.GRAMMAR)return;const f=GRAMMAR.find(id);if(!f)return;S.gLang=f.lang;S.gOpen=id;S.gq="";closeRulePop();S.view="grammar";render();
+    ${gGroups(secs,x=>`<details class="gsec" id="g-${x.id}" ${open===x.id?"open":""}><summary>${esc(x.title)}</summary><div class="gbody" lang="${lg}">${x.body}</div>${gMineHTML(x,lg,ws)}</details>`)||`<div class="empty">찾는 개념이 없어.</div>`}`}
+function openConcept(id){if(!window.GRAMMAR)return;const f=GRAMMAR.find(id);if(!f)return;S.gLang=f.lang;S.gOpen=id;S.gq="";S.gCat="";closeRulePop();S.view="grammar";render();
   setTimeout(()=>{const el=document.getElementById("g-"+id);if(el){el.open=true;el.scrollIntoView({block:"start"});window.scrollBy(0,-8)}},30)}
 function go(v){S.view=v;if(v==="cards")startCards();if(v==="quiz")S.quiz=null;render()}
 
@@ -1534,6 +1615,7 @@ function filterBar(){const f=S.filter||{};const ws=words();
     ${POS.map(p=>`<button type="button" class="chip ${f.pos===p.id?"on":""}" data-fpos="${p.id}">${p.name}<span class="c">${pc(p.id)}</span></button>`).join("")}
     ${none?`<button type="button" class="chip ${f.pos==="__none__"?"on":""}" data-fpos="__none__">미분류<span class="c">${none}</span></button>`:""}
   </div>`;
+  html+=`<div class="lbl">아는 정도</div>`+knowChips(f.know||"",byFilter(ws,{pos:f.pos,sub:f.sub}),"data-fknow");
   if(f.pos&&f.pos!=="__none__"){const subs=allSubs(f.pos);const sc=s=>byFilter(ws,{pos:f.pos,sub:s}).length;
     const empty=byFilter(ws,{pos:f.pos,sub:"__none__"}).length;
     html+=`<div class="picks hscroll">
@@ -1544,7 +1626,7 @@ function filterBar(){const f=S.filter||{};const ws=words();
   return html}
 function setFilter(key,val){S.filter=S.filter||{};if(key==="pos"){S.filter.pos=val;S.filter.sub=""}else S.filter.sub=val;
   if(S.view==="cards")startCards();if(S.view==="quiz")S.quiz=null;render()}
-function pool(){const f=S.filter||{};const due=byFilter(dueWords(),f);const all=byFilter(words(),f);return due.length?due:all}
+function pool(){const f=S.filter||{};const all=byFilter(words(),f);if(f.know)return all;/* 아는 정도로 고르면 복습일 상관없이 전부 */const due=byFilter(dueWords(),f);return due.length?due:all}
 
 function startCards(){const list=pool();S.sess={queue:shuffle(list.slice()),done:[],extra:{},flipped:false}}
 function viewCards(){
@@ -1678,9 +1760,12 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
   const ws=words();
   const pc=id=>ws.filter(w=>id==="__none__"?!w.pos:w.pos===id).length;
   const none=pc("__none__");
-  let arr=ws.slice().sort((a,b)=>(b.created||"").localeCompare(a.created||""));
+  const recent=(S.prefs||{}).listSort==="recent";
+  let arr=recent?ws.slice().sort((a,b)=>(b.created||"").localeCompare(a.created||"")):sortAlpha(ws);
+  const kn=S.listKnow||"";
   if(q){const fq=fold(q);arr=arr.filter(w=>fold(w.word+" "+w.meaning+" "+(w.ex||"")+" "+posName(w.pos)+" "+(w.sub||"")).includes(fq))}
   else arr=byFilter(arr,{pos:lp||undefined,sub:ls||undefined,gender:genderEnabled()?(S.listGender||undefined):undefined});
+  const base=arr;if(kn)arr=byFilter(arr,{know:kn});
   const subBar=(!q&&lp&&lp!=="__none__")?(()=>{const empty=byFilter(ws,{pos:lp,sub:"__none__"}).length;
     return `<div class="picks hscroll">
       <button type="button" class="chip ${!ls?"on":""}" data-lsub="">전체<span class="c">${pc(lp)}</span></button>
@@ -1702,13 +1787,16 @@ function viewList(){const q=(S.q||"").trim().toLowerCase();
       <button type="button" class="chip ${S.listGender==="m"?"on":""}" data-lgen="m">남성 m.</button>
       <button type="button" class="chip ${S.listGender==="f"?"on":""}" data-lgen="f">여성 f.</button>
     </div>`:""}
+    ${knowChips(kn,base,"data-lknow")}
+    <div class="lsort row"><span class="lbl" style="margin:0">정렬</span><button type="button" class="chip ${recent?"":"on"}" data-lsort="alpha">가나다 · ABC</button><button type="button" class="chip ${recent?"on":""}" data-lsort="recent">최근 추가</button>
+      <button type="button" class="btn ghost lquiz" id="listQuiz" ${arr.length?"":"disabled"}>이 ${arr.length}개로 퀴즈 →</button></div>
     ${!q&&(lp==="n"||lp==="adj")&&wikiLangId()==="ru"?`<button class="btn ghost block" id="declPracList" style="margin:0 0 10px" ${ws.some(w=>w.pos===lp)?"":"disabled"}>이 범위 격변화 연습</button>`:""}
     ${!q&&lp==="v"?`<button class="btn ghost block" id="conjPracStart" style="margin:0 0 10px" ${ws.some(w=>w.pos==="v")?"":"disabled"}>이 범위 동사 변화 연습</button>`:""}
     ${arr.length?arr.map(w=>{const m=mastery(w);return `<div class="item">
       <button class="meta" data-edit="${w.id}" style="background:none;box-shadow:none;padding:0;min-height:44px;display:block;width:100%;text-align:left">
         <div class="w">${esc(w.word)}${genderBadge(w)}</div>${phonHTML(w.word)}<div class="m">${esc(w.meaning)}</div>
         <div class="tag">${posName(w.pos)}${w.sub?" · "+esc(w.sub):(!w.pos?"":"")} ${w.src==="topic"?`<span class="ab" title="${esc(w.srcNote||"")}">자동 추가</span>`:""}</div>
-        <div class="lvl" aria-label="익힘 ${m}/5"><span class="lbar ${m>=5?"ok":""}"><i style="width:${m*20}%"></i></span><span class="lt">익힘 ${m}/5</span></div>
+        <div class="lvl" aria-label="익힘 ${m}/5"><span class="lbar ${m>=5?"ok":""}"><i style="width:${m*20}%"></i></span><span class="lt">익힘 ${m}/5</span><span class="kt k-${knowOf(w)}"><i class="kd k-${knowOf(w)}" aria-hidden="true"></i>${KNOW.find(k=>k[0]===knowOf(w))[1]}</span></div>
       </button>
       ${w.pos==="v"?`<button class="go" data-conj="${w.id}">변화</button>`:declOn(w)?`<button class="go" data-decl="${w.id}">격</button>`:""}
     </div>`}).join(""):`<div class="empty">${q?"찾는 단어가 없어.":"이 칸은 아직 비어 있어."}</div>`}`}
@@ -1813,6 +1901,7 @@ document.addEventListener("pointerdown",e=>{const c=e.target.closest("[data-lang
 document.addEventListener("pointermove",e=>{if(_lpXY&&Math.hypot(e.clientX-_lpXY[0],e.clientY-_lpXY[1])>10)clearTimeout(_lpT)});
 document.addEventListener("contextmenu",e=>{const c=e.target.closest("[data-lang]");if(c){e.preventDefault();clearTimeout(_lpT);_lpFired=false;openLangManage(c.dataset.lang)}});
 document.addEventListener("click",e=>{
+  if(noteClick(e))return;
   const t=e.target.closest("[data-go]");if(t){go(t.dataset.go);return}
   const lg=e.target.closest("[data-lang]");if(lg){if(_lpFired){_lpFired=false;return}S.cur=lg.dataset.lang;S._af=null;save();render();return}
   if(e.target.closest("#langManage")){openLangList();return}
@@ -1843,6 +1932,10 @@ document.addEventListener("click",e=>{
   const fs=e.target.closest("[data-fsub]");if(fs){setFilter("sub",fs.dataset.fsub);return}
   const lp=e.target.closest("[data-lpos]");if(lp){S.listPos=lp.dataset.lpos;S.listSub="";render();return}
   const lgen=e.target.closest("[data-lgen]");if(lgen){S.listGender=lgen.dataset.lgen||"";render();return}
+  const lkn=e.target.closest("[data-lknow]");if(lkn){S.listKnow=lkn.dataset.lknow||"";render();return}
+  const fkn=e.target.closest("[data-fknow]");if(fkn){S.filter=S.filter||{};S.filter.know=fkn.dataset.fknow||"";if(S.view==="cards")startCards();render();return}
+  const lso=e.target.closest("[data-lsort]");if(lso){S.prefs=S.prefs||{};S.prefs.listSort=lso.dataset.lsort==="recent"?"recent":"alpha";save();render();return}
+  if(e.target.closest("#listQuiz")){S.filter={pos:(S.q||"").trim()?"":(S.listPos||""),sub:(S.q||"").trim()?"":(S.listSub||""),know:S.listKnow||""};if(S.listGender&&S.listPos==="n")S.filter.gender=S.listGender;S.quiz=null;S.view="quiz";render();toast("목록에서 고른 범위로 퀴즈");return}
   const ls=e.target.closest("[data-lsub]");if(ls){S.listSub=ls.dataset.lsub;render();return}
   const as=e.target.closest("[data-addsub]");if(as){openAddSub(as.dataset.addsub);return}
   if(e.target.closest("#addLang")){openAddLang();return}
@@ -1863,7 +1956,8 @@ document.addEventListener("click",e=>{
     setPracSel(pp.kind,all.every(x=>sel.includes(x))?(pp.kind==="conj"&&isFr()?FR_T_DEFAULT.slice():[all[0]]):all);paintPracPick()}return}
   if(e.target.closest("#ppGo")){const pp=S._pp;closeSheet();S._pp=null;if(pp)(pp.kind==="decl"?startDeclPrac(pp.onlyId,pp.scope):startConjPrac(pp.onlyId));return}
   const cl=e.target.closest("[data-concept]");if(cl){closeSheet();openConcept(cl.dataset.concept);return}
-  const gl=e.target.closest("[data-glang]");if(gl){S.gLang=gl.dataset.glang;S.gOpen="";render();return}
+  const gl=e.target.closest("[data-glang]");if(gl){S.gLang=gl.dataset.glang;S.gOpen="";S.gCat="";render();return}
+  const gc=e.target.closest("[data-gcat]");if(gc){S.gCat=gc.dataset.gcat;S.gOpen="";render();return}
   const gw=e.target.closest("[data-gw]");if(gw){const l=S.langs.find(x=>wikiLangId(x)===gw.dataset.glid);if(l&&S.cur!==l.id){S.cur=l.id;save()}const w=words().find(x=>x.id===gw.dataset.gw);if(!w)return;
     if(w.pos==="v")openConj(w.id);else if(declOn(w))openDecl(w.id);else{render();openEdit(w.id)}return}
   if(e.target.closest("#pracAgain")){startConjPrac(S.prac?.onlyId||null);return}
@@ -1952,7 +2046,7 @@ document.addEventListener("focusout",e=>{const id=e.target&&e.target.id;if(id!==
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 
 function rateCard(q){const sess=S.sess,w=sess.queue[0];if(!w)return;
-  grade(w,q);const arr=words();const i=arr.findIndex(x=>x.id===w.id);if(i>=0)arr[i]=w;save();
+  grade(w,q);w.lastGrade=gradeMark(q);const arr=words();const i=arr.findIndex(x=>x.id===w.id);if(i>=0)arr[i]=w;save();
   sess.queue.shift();sess.done.push({id:w.id,q});
   if(q<3){sess.extra[w.id]=(sess.extra[w.id]||0)+1;if(sess.extra[w.id]<2)sess.queue.push(w)}
   sess.flipped=false;render()}
@@ -1960,7 +2054,7 @@ function pickMC(id){const Q=S.quiz;if(!Q||Q.wait)return;const w=Q.queue[0];finis
 function checkType(){const Q=S.quiz;if(!Q||Q.wait)return;const w=Q.queue[0];const val=document.getElementById("qIn").value;Q.lastIn=val;finishQ(sameAns(val,w.word),w)}
 function finishQ(ok,w,picked){const Q=S.quiz;Q.wait=true;
   if(Q.mode==="gender"){if(ok)Q.correct++;else{Q.wrong++;Q.retry.push(w)}}
-  else{if(ok){Q.correct++;grade(w,5)}else{Q.wrong++;grade(w,1);Q.retry.push(w)}
+  else{if(ok){Q.correct++;grade(w,5);w.lastGrade="yes"}else{Q.wrong++;grade(w,1);w.lastGrade="no";Q.retry.push(w)}
     const arr=words();const i=arr.findIndex(x=>x.id===w.id);if(i>=0)arr[i]=w;save()}
   render();const el=document.getElementById("fb");if(el){
     el.innerHTML=(ok?"맞아! "+(Q.mode==="gender"?"":"「"+esc(w.word)+"」"):esc(Q.mode==="gender"?`정답은 ${w.gender==="m"?"le":"la"} · ${w.word}`:"정답은 「"+w.word+"」"))+phonHTML(w.word);
@@ -2099,6 +2193,7 @@ function openEdit(id,keep){const w=words().find(x=>x.id===id);if(!w)return;S._ed
       ${frAdjPanel(w)}
       ${w.pos==="v"?`<button class="btn ghost block" type="button" data-conj="${w.id}" style="margin-bottom:8px">동사 변화 표</button>`:""}
       ${declOn(w)?`<button class="btn ghost block" type="button" data-decl="${w.id}" style="margin-bottom:8px">격변화 표</button>`:""}
+      <button class="btn ghost block" type="button" data-wnote="${w.id}" style="margin-bottom:8px">\ue010 이 단어 필기${noteOfWord(w.id)?" (있음)":""}</button>
       <button class="btn primary block" type="submit">저장</button>
       <button class="btn no block" type="button" id="delWord" style="margin-top:8px">삭제</button>
     </form>`);
@@ -2134,7 +2229,7 @@ function openBackup(){openSheet(`<div class="grab"></div><h3>백업 · 가져오
   <button class="btn primary block" id="exportBtn" type="button">내보내기</button>
   <button class="btn block" id="importBtn" type="button" style="margin-top:8px">가져오기</button>
   <input id="importFile" type="file" accept="application/json,.json" hidden>`)}
-function doExport(){const blob=new Blob([JSON.stringify({v:2,exported:new Date().toISOString(),cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{}},null,2)],{type:"application/json"});
+function doExport(){const blob=new Blob([JSON.stringify({v:2,exported:new Date().toISOString(),cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},notes:S.notes||[]},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="단어구름-백업-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("파일을 저장했어")}
 function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{
     const o=JSON.parse(r.result);if(!o||typeof o!=="object"||!o.words)throw new Error("형식");
@@ -2147,8 +2242,96 @@ function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{t
         w.word=nfc(w.word);w.meaning=nfc(w.meaning);if(w.ex)w.ex=nfc(w.ex);
         if(!w.gender){const d=detectGender(w.word);w.word=d.word;w.gender=d.gender||""}
         S.words[k].push(w);ids.add(w.id);add++})});
-    migrate(S);save();closeSheet();render();toast(add?add+"개 가져왔어":"새 단어가 없었어");
+    let nAdd=0;if(Array.isArray(o.notes)){S.notes=S.notes||[];o.notes.forEach(n=>{if(!n||!n.id||!Array.isArray(n.strokes))return;const i=S.notes.findIndex(x=>x.id===n.id);
+      if(i<0){S.notes.push(n);nAdd++}else if((n.updatedAt||0)>(S.notes[i].updatedAt||0)){S.notes[i]=n;nAdd++}})}
+    migrate(S);save();closeSheet();render();toast(add?add+"개 가져왔어"+(nAdd?" · 필기 "+nAdd+"개":""):nAdd?"필기 "+nAdd+"개 가져왔어":"새 단어가 없었어");
   }catch(err){toast("파일을 읽지 못했어")}};r.readAsText(file)}
+
+/* ---- v18: 필기 (그림판) ----
+   S.notes=[{id,title,wordId,lang,created,updatedAt,strokes:[{c,s,e,d}]}]  (좌표는 1000×1300 종이 기준, d=압축한 점들)
+   펜(애플 펜슬)을 쓰면 손 터치는 무시 → 손바닥 올려도 안 그려짐. "손가락도" 켜면 다시 손으로 그려짐. */
+const NP={tool:"pen",color:"#ffffff",width:6,penSeen:false,fingerOk:true,hist:{},fresh:new Set(),thumbs:new Map(),delArm:null};
+window.PAD=null;
+function notesAll(){return S.notes||(S.notes=[])}
+function noteById(id){return notesAll().find(n=>n.id===id)}
+function noteOfWord(wid){return notesAll().find(n=>n.wordId===wid)}
+function noteWord(n){if(!n||!n.wordId)return null;const arr=S.words[n.lang]||[];return arr.find(w=>w.id===n.wordId)||null}
+function noteTitle(n){if(n.title&&n.title.trim())return n.title;const w=noteWord(n);return w?w.word:"제목 없는 필기"}
+function noteThumb(n){const k=n.id+":"+(n.updatedAt||0)+":"+(n.strokes||[]).length;const c=NP.thumbs.get(n.id);if(c&&c.k===k)return c.u;let u="";try{u=NOTES.thumbURL(n,96)}catch(e){}NP.thumbs.set(n.id,{k,u});return u}
+function fmtDay(t){if(!t)return"";const d=new Date(t);return (d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function newNote(o){const n={id:"n"+uid(),title:"",created:new Date().toISOString(),updatedAt:0,strokes:[],...(o||{})};notesAll().unshift(n);NP.fresh.add(n.id);return n}
+/* 단어에서 "필기" 눌러 만들었는데 아무것도 안 그리고 나가면 조용히 버림 */
+function pruneFresh(){if(!NP.fresh.size)return;const keep=(S.view==="note"||(S.view==="notes"&&isWide()))?S.noteId:null;let ch=false;
+  [...NP.fresh].forEach(id=>{if(id===keep)return;NP.fresh.delete(id);const n=noteById(id);if(n&&!(n.strokes||[]).length&&!(n.title||"").trim()){S.notes=notesAll().filter(x=>x!==n);ch=true}});
+  if(ch)save()}
+function noteListHTML(sel){const ns=notesAll().slice().sort((a,b)=>(b.updatedAt||Date.parse(b.created)||0)-(a.updatedAt||Date.parse(a.created)||0));
+  if(!ns.length)return `<div class="empty">아직 필기가 없어.<br>‘새 필기’를 눌러 시작해.</div>`;
+  return `<ul class="nlist">${ns.map(n=>{const w=noteWord(n);const lg=S.langs.find(l=>l.id===n.lang);const u=noteThumb(n);
+    return `<li class="nitem ${n.id===sel?"sel":""}"><button type="button" class="nopen" data-nopen="${esc(n.id)}" aria-current="${n.id===sel?"true":"false"}">
+      <span class="nthumb">${u?`<img src="${u}" alt="">`:""}</span><span class="nmeta"><b>${esc(noteTitle(n))}</b>
+      <span class="hint">${w?`${lg?flagOf(lg)+" ":""}단어 · ${esc(w.word)} · `:n.wordId?"(지운 단어) · ":""}${(n.strokes||[]).length}획 · ${fmtDay(n.updatedAt||Date.parse(n.created))}</span></span></button></li>`}).join("")}</ul>`}
+function notesHead(){return `<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>필기</h2><span class="duepill">${notesAll().length}</span></div>
+  <button type="button" class="btn primary block" id="noteNew">\ue010 새 필기</button>`}
+function viewNotes(){return `${notesHead()}<p class="hint" style="margin:8px 0 10px">손가락이나 애플 펜슬로 써. 펜을 쓰면 손바닥은 자동으로 무시해. 단어 화면의 ‘필기’로 단어마다 노트를 붙일 수도 있어.</p>${noteListHTML(null)}`}
+function viewNotesWide(){let n=noteById(S.noteId);if(!n){n=notesAll().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];S.noteId=n?n.id:null}
+  return splitHTML(`${notesHead()}<div style="height:10px"></div>${noteListHTML(S.noteId)}`,n?noteEditorHTML(n,true):`<div class="empty-pane"><p class="hint">왼쪽에서 ‘새 필기’를 눌러 줘.</p></div>`,"n-split")}
+function viewNote(){const n=noteById(S.noteId);if(!n){S.view="notes";return viewNotes()}return noteEditorHTML(n,false)}
+function ntoolsHTML(){const pr=b=>`aria-pressed="${b?"true":"false"}"`;const h=NP.hist[S.noteId]||{undo:[],redo:[]};
+  return `<div class="ntools" id="ntools" role="toolbar" aria-label="필기 도구">
+    <div class="ngrp"><button type="button" class="nt ${NP.tool==="pen"?"on":""}" data-ntool="pen" ${pr(NP.tool==="pen")}><span class="ic">\ue002</span>펜</button>
+      <button type="button" class="nt ${NP.tool==="eraser"?"on":""}" data-ntool="eraser" ${pr(NP.tool==="eraser")}><span class="ic">\ue011</span>지우개</button></div>
+    <div class="ngrp" role="group" aria-label="색">${NOTES.COLORS.map(([c,l])=>`<button type="button" class="nc ${NP.color===c&&NP.tool==="pen"?"on":""}" data-ncol="${c}" ${pr(NP.color===c)} aria-label="${l}색"><i style="background:${c}"></i><span>${l}</span></button>`).join("")}</div>
+    <div class="ngrp" role="group" aria-label="굵기">${NOTES.WIDTHS.map(([w,l])=>`<button type="button" class="nw ${NP.width===w?"on":""}" data-nw="${w}" ${pr(NP.width===w)} aria-label="${l}"><i style="height:${Math.max(2,Math.round(w/2))}px"></i></button>`).join("")}</div>
+    <div class="ngrp"><button type="button" class="nt" id="nUndo" ${h.undo.length?"":"disabled"} aria-label="되돌리기"><span class="ic">\ue012</span></button>
+      <button type="button" class="nt" id="nRedo" ${h.redo.length?"":"disabled"} aria-label="다시 하기"><span class="ic">\ue013</span></button>
+      <button type="button" class="nt" id="nClear" aria-label="전부 지우기"><span class="ic">\ue014</span></button>
+      <button type="button" class="nt nfing ${NP.fingerOk?"on":""}" id="nFinger" ${pr(NP.fingerOk)} title="펜을 쓰면 꺼져서 손바닥을 무시해">손가락${NP.fingerOk?" ✓":" ✗"}</button></div>
+  </div>`}
+function noteEditorHTML(n,wide){const w=noteWord(n);
+  return `<div class="nedit" data-note="${esc(n.id)}">
+    <div class="head nhead">${wide?"":`<button class="back" data-go="notes" aria-label="필기 목록">←</button>`}<input class="ntitle" id="noteTitle" maxlength="60" placeholder="${esc(w?w.word:"제목")}" value="${esc(n.title||"")}" aria-label="필기 제목">
+      <button type="button" class="btn ghost ndel" id="nDel">${NP.delArm===n.id?"정말 지울까?":"삭제"}</button></div>
+    ${w?`<div class="nword hint">단어 · <b lang="${esc(wikiLangId(S.langs.find(l=>l.id===n.lang))||"")}">${esc(w.word)}</b> — ${esc(w.meaning||"")}</div>`:""}
+    ${ntoolsHTML()}
+    <div class="npaper" id="npaper"><canvas id="noteCv" class="ncv" aria-label="필기 공간 (그리기)"></canvas></div>
+    <p class="hint nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"}</p></div>`}
+function refreshTools(){const t=document.getElementById("ntools");if(t)t.outerHTML=ntoolsHTML();const st=document.getElementById("nstat");if(st)st.textContent=NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"}
+function refreshThumb(n){const b=document.querySelector(`[data-nopen="${CSS.escape(n.id)}"]`);if(!b)return;const im=b.querySelector(".nthumb");if(im){const u=noteThumb(n);im.innerHTML=u?`<img src="${u}" alt="">`:""}
+  const h=b.querySelector(".nmeta .hint");if(h)h.textContent=h.textContent.replace(/\d+획/,(n.strokes||[]).length+"획")}
+function mountPad(){const cv=document.getElementById("noteCv");if(!cv||!window.NOTES)return;const n=noteById(S.noteId);if(!n)return;
+  const h=NP.hist[n.id]||(NP.hist[n.id]={undo:[],redo:[]});
+  PAD=new NOTES.Pad(cv,n,{penSeen:NP.penSeen,onPen:()=>{NP.penSeen=true;NP.fingerOk=false;refreshTools()},onChange:()=>{NP.fresh.delete(n.id);save();refreshTools();clearTimeout(mountPad._t);mountPad._t=setTimeout(()=>refreshThumb(n),300)}});
+  PAD.fingerOk=NP.fingerOk;PAD.undo=h.undo;PAD.redo=h.redo;PAD.tool=NP.tool;PAD.color=NP.color;PAD.width=NP.width;
+  /* 기록 안의 획이 동기화로 새 객체가 됐으면 이어지게 */
+  [...h.undo,...h.redo].forEach(op=>{if(op.t==="add"&&!n.strokes.includes(op.st)){const f=n.strokes.find(x=>x.d===op.st.d&&x.c===op.st.c&&x.s===op.st.s&&x.e===op.st.e);if(f)op.st=f}})}
+function unmountPad(){if(PAD){PAD.destroy();PAD=null}}
+window.addEventListener("resize",()=>{if(PAD&&document.body.contains(PAD.cv)){clearTimeout(unmountPad._r);unmountPad._r=setTimeout(()=>PAD&&PAD.resize(),120)}});
+/* 그리는 중엔 핀치 확대·스크롤 막기 (iOS Safari) */
+["gesturestart","gesturechange"].forEach(t=>document.addEventListener(t,e=>{const v=S.view;if((v==="note"||v==="notes")&&document.getElementById("noteCv"))e.preventDefault()},{passive:false}));
+function openNote(id){S.noteId=id;NP.delArm=null;S.view=isWide()?"notes":"note";render()}
+function openWordNote(wid){const w=words().find(x=>x.id===wid)||Object.values(S.words).flat().find(x=>x&&x.id===wid);if(!w)return;
+  let n=noteOfWord(wid);if(!n){let lang=S.cur;for(const k in S.words)if((S.words[k]||[]).includes(w))lang=k;n=newNote({wordId:wid,lang})}
+  closeSheet();openNote(n.id)}
+function noteClick(e){const T=e.target;
+  if(T.closest("#noteNew")){const n=newNote();openNote(n.id);return true}
+  const o=T.closest("[data-nopen]");if(o){openNote(o.dataset.nopen);return true}
+  const wn=T.closest("[data-wnote]");if(wn){openWordNote(wn.dataset.wnote);return true}
+  if(!T.closest("#ntools")&&!T.closest("#nDel"))return false;
+  const n=noteById(S.noteId);if(!n||!PAD)return true;
+  const tl=T.closest("[data-ntool]");if(tl){NP.tool=PAD.tool=tl.dataset.ntool;refreshTools();return true}
+  const c=T.closest("[data-ncol]");if(c){NP.color=PAD.color=c.dataset.ncol;NP.tool=PAD.tool="pen";refreshTools();return true}
+  const wd=T.closest("[data-nw]");if(wd){NP.width=PAD.width=+wd.dataset.nw;if(NP.tool==="eraser")NP.tool=PAD.tool="pen";refreshTools();return true}
+  if(T.closest("#nUndo")){PAD.doUndo();return true}
+  if(T.closest("#nRedo")){PAD.doRedo();return true}
+  if(T.closest("#nClear")){if(PAD.clear())toast("다 지웠어. 되돌리기로 살릴 수 있어");return true}
+  if(T.closest("#nFinger")){NP.fingerOk=!NP.fingerOk;PAD.fingerOk=NP.fingerOk;refreshTools();return true}
+  if(T.closest("#nDel")){if(NP.delArm!==n.id){NP.delArm=n.id;T.closest("#nDel").textContent="정말 지울까?";clearTimeout(noteClick._t);noteClick._t=setTimeout(()=>{NP.delArm=null;const b=document.getElementById("nDel");if(b)b.textContent="삭제"},3500);return true}
+    NP.delArm=null;S.notes=notesAll().filter(x=>x!==n);delete NP.hist[n.id];NP.fresh.delete(n.id);S.noteId=null;S.view="notes";save();render();toast("필기를 지웠어");return true}
+  return true}
+/* v18: 문법 분류를 접으면 기억 (검색·분류 고른 상태에선 기억 안 함) */
+document.addEventListener("toggle",e=>{const d=e.target;if(!d||!d.matches||!d.matches("details.gcat"))return;if((S.gq||"").trim()||S.gCat)return;S.gShut=S.gShut||{};S.gShut[d.dataset.gcatbox]=!d.open},true);
+document.addEventListener("input",e=>{if(e.target&&e.target.id==="noteTitle"){const n=noteById(S.noteId);if(!n)return;n.title=e.target.value.slice(0,60);NP.fresh.delete(n.id);clearTimeout(noteClick._s);noteClick._s=setTimeout(()=>{save();const b=document.querySelector(`[data-nopen="${CSS.escape(n.id)}"] .nmeta b`);if(b)b.textContent=noteTitle(n)},500)}});
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="noteTitle")save()});
 
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;window._canInstall=true;if((S.view||"home")==="home")render()});

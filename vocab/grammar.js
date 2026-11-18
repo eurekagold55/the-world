@@ -1,4 +1,4 @@
-/* 단어 구름 · 문법 개념 페이지 (v15)
+/* 단어 구름 · 문법 개념 페이지 (v15, v18: 분류 + 항목 추가)
    설명은 한국어, 예시는 사전에 나오는 표준형만. 각 항목의 mine()은 저장된 단어 중 이 규칙에 해당하는 것. */
 (function(G){"use strict";
 const T=(head,rows,cls)=>`<div class="gscroll"><table class="gtbl ${cls||""}"><thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>i?`<td>${c}</td>`:`<th>${c}</th>`).join("")}</tr>`).join("")}</tbody></table></div>`;
@@ -182,6 +182,230 @@ const TR=[
   mine:ws=>verbs(ws).map(w=>({w,note:(w.conj||{})["simdi.ben"]||""}))}
 ];
 
+/* ---------- v18: 개념 더하기 + 분류 ---------- */
+const CATS=[["noun","명사·관사"],["adj","형용사·부사"],["pron","대명사"],["verb","동사·시제"],["case","격"],["phon","음운·발음"],["syn","문장 구조"]];
+const nouns=ws=>ws.filter(w=>w.pos==="n");
+const adjs=ws=>ws.filter(w=>w.pos==="adj");
+const advs=ws=>ws.filter(w=>w.pos==="adv");
+FR.push(
+ {id:"fr-articles",cat:"noun",title:"관사 (정관사 · 부정관사 · 부분관사)",tags:"le la les un une des du de la article partitif au aux",body:
+  P("프랑스어 명사는 거의 늘 관사랑 같이 나와. 관사가 성(남/여)과 수(단/복)를 보여 줘.")+
+  T(["","남성 단수","여성 단수","복수"],[["정관사 (그 ~)","le (l')","la (l')","les"],["부정관사 (어떤 ~)","un","une","des"],["부분관사 (약간의 ~)","du (de l')","de la (de l')","des"]])+
+  P("모음·무음 h 앞에선 le/la → <b>l'</b> (l'ami, l'école, l'homme). 셀 수 없는 것(물, 빵, 용기)은 부분관사: du pain, de la confiance, de l'eau.")+
+  P("<b>축약</b>: à + le → au, à + les → aux, de + le → du, de + les → des. (à la, à l', de la, de l'는 그대로)")+
+  EX("Je vais au cinéma. (à + le)","Je parle aux enfants. (à + les)","le livre du professeur (de + le)")+
+  P("<b>부정문</b>에선 부정·부분관사 un/une/des/du/de la → <b>de (d')</b>: Je n'ai pas de voiture. Il ne boit pas d'eau. 단 être 뒤는 그대로: Ce n'est pas un chat. 정관사는 안 바뀜: Je n'aime pas le café."),
+  mine:ws=>nouns(ws).filter(w=>/^(le|la|les|l['’]|un|une)\s?/i.test(w.word)).map(w=>({w,note:(w.word.match(/^(le|la|les|l['’]|un|une)/i)||[""])[0]}))},
+ {id:"fr-adj-pos",cat:"adj",title:"형용사 위치 (앞 / 뒤)",tags:"BAGS beau grand petit position",body:
+  P("형용사는 보통 <b>명사 뒤</b>: un livre intéressant, une voiture rouge.")+
+  P("짧고 자주 쓰는 몇 개는 <b>앞</b>. 외우기: 아름다움·나이·좋고나쁨·크기 (영어로 BAGS): beau, joli, jeune, vieux, nouveau, bon, mauvais, grand, petit, gros, long, haut.")+
+  EX("une jolie maison","un petit chat","une nouvelle voiture","un bon restaurant")+
+  P("위치에 따라 뜻이 바뀌는 것:")+
+  T(["형용사","앞","뒤"],[["grand","un grand homme (위대한)","un homme grand (키 큰)"],["ancien","mon ancien appartement (예전의)","un meuble ancien (오래된, 골동)"],["cher","mon cher ami (소중한)","un repas cher (비싼)"],["propre","ma propre chambre (내 자신의)","une chambre propre (깨끗한)"],["seul","un seul enfant (단 하나의)","un enfant seul (혼자인)"]])+
+  P("복수 형용사가 명사 앞에 오면 des → <b>de</b>: de belles fleurs (글말에서 지켜)."),
+  mine:ws=>adjs(ws).filter(w=>/^(beau|belle|joli|jolie|jeune|vieux|vieille|nouveau|nouvelle|bon|bonne|mauvais|mauvaise|grand|grande|petit|petite|gros|grosse|long|longue|haut|haute)$/i.test(w.word.trim())).map(w=>({w,note:"명사 앞"}))},
+ {id:"fr-compar",cat:"adj",title:"비교급 · 최상급",tags:"plus moins aussi que meilleur mieux pire",body:
+  T(["","형용사","부사"],[["더 ~","plus grand que","plus vite que"],["덜 ~","moins grand que","moins vite que"],["만큼 ~","aussi grand que","aussi vite que"],["가장 ~","le/la/les plus grand(e)(s)","le plus vite"]])+
+  P("최상급은 관사가 형용사 성·수를 따라가: la plus belle ville, les plus grands pays. 뒤에 붙는 형용사면 관사 두 번: la ville <b>la plus</b> intéressante.")+
+  T(["원급","비교급","최상급"],[["bon (좋은)","meilleur","le meilleur"],["bien (잘)","mieux","le mieux"],["mauvais (나쁜)","plus mauvais / pire","le plus mauvais / le pire"]])+
+  EX("Ce gâteau est meilleur que l'autre.","Elle chante mieux que moi.")+P("plus bon, plus bien은 안 써.")},
+ {id:"fr-adv",cat:"adj",title:"부사 만들기 (-ment)",tags:"부사 adverbe ment",body:
+  P("대부분 <b>형용사 여성형 + -ment</b>.")+
+  T(["형용사","부사","규칙"],[["lent → lente","lentement","여성형 + ment"],["heureux → heureuse","heureusement","여성형 + ment"],["vrai","vraiment","모음으로 끝나면 남성형 + ment"],["poli","poliment","모음으로 끝나면 남성형 + ment"],["constant","constamment","-ant → -amment"],["prudent","prudemment","-ent → -emment (소리는 [amɑ̃])"]])+
+  P("외워 둘 것: gentil → gentiment, bref → brièvement, précis → précisément, énorme → énormément, profond → profondément. bon → bien, mauvais → mal은 따로 생긴 부사."),
+  mine:ws=>advs(ws).filter(w=>/ment$/i.test(w.word.trim())).map(w=>({w,note:"-ment"}))},
+ {id:"fr-pron-subj",cat:"pron",title:"주어 대명사 · 강세형",tags:"je tu il moi toi lui eux pronom tonique",body:
+  T(["주어","강세형","예"],[["je","moi","Moi, je reste."],["tu","toi","C'est toi ?"],["il","lui","avec lui"],["elle","elle","pour elle"],["on","soi","chacun pour soi"],["nous","nous","chez nous"],["vous","vous","après vous"],["ils","eux","sans eux"],["elles","elles","comme elles"]])+
+  P("강세형은 <b>전치사 뒤</b> (avec moi, chez lui), <b>c'est 뒤</b> (c'est moi), <b>강조</b> (Moi, j'aime le thé), <b>비교 que 뒤</b> (plus grand que toi), 혼자 쓸 때 (Qui ? — Moi.).")+
+  P("on은 3인칭 단수 동사를 쓰지만 말에선 ‘우리’ 뜻으로 아주 많이 써: On y va ? vous는 여러 명 또는 한 명 존댓말.")},
+ {id:"fr-pron-obj",cat:"pron",title:"목적 대명사 (le, lui, y, en) · 순서",tags:"COD COI le la les lui leur y en ordre",body:
+  T(["","직접목적 (~을)","간접목적 (à ~에게)"],[["나","me (m')","me (m')"],["너","te (t')","te (t')"],["그/그녀/그것","le / la (l')","lui"],["우리","nous","nous"],["너희/당신","vous","vous"],["그들","les","leur"]])+
+  P("위치: 활용된 동사 <b>바로 앞</b>. 복합과거면 조동사 앞: Je l'ai vu. 동사+원형이면 원형 앞: Je vais le faire.")+
+  P("둘 이상이면 순서: <b>me/te/se/nous/vous → le/la/les → lui/leur → y → en</b>.")+
+  EX("Il me le donne.","Je le lui donne.","Il y en a.")+
+  P("<b>y</b> = à + 사물/장소 (J'y vais. Tu penses à l'examen ? — Oui, j'y pense.) · <b>en</b> = de + 명사, 수량 (Tu as du pain ? — Oui, j'en ai. J'en ai deux.)")+
+  P("긍정 명령문만 동사 뒤 + 하이픈, me/te → moi/toi: Donne-le-moi ! 부정 명령은 원래 순서: Ne me le donne pas.")+
+  P("직접목적 대명사가 복합과거 앞에 오면 과거분사가 그 대명사에 일치: Ces fleurs, je les ai achetées.")},
+ {id:"fr-poss",cat:"pron",title:"소유형용사 · 지시형용사",tags:"mon ma mes son sa ce cet cette ces",body:
+  T(["","남성 단수","여성 단수","복수"],[["나의","mon","ma","mes"],["너의","ton","ta","tes"],["그/그녀의","son","sa","ses"],["우리의","notre","notre","nos"],["너희/당신의","votre","votre","vos"],["그들의","leur","leur","leurs"]])+
+  P("성은 <b>가진 사람이 아니라 가진 물건</b>을 따라가: sa voiture는 ‘그의 차’도 ‘그녀의 차’도 돼.")+
+  P("모음·무음 h로 시작하는 여성 명사 앞에선 ma/ta/sa → <b>mon/ton/son</b>: mon amie, son école, ton histoire.")+
+  T(["지시형용사","예"],[["ce (남성)","ce livre"],["cet (남성, 모음·무음 h 앞)","cet homme, cet ami"],["cette (여성)","cette maison"],["ces (복수)","ces livres"]])+
+  P("이것/저것 구분은 -ci / -là: ce livre-ci, ce livre-là. 대명사는 celui, celle, ceux, celles (celui de Paul).")},
+ {id:"fr-relative",cat:"pron",title:"관계대명사 qui · que · où · dont",tags:"qui que où dont ce qui ce que relatif",body:
+  T(["관계대명사","역할","예"],[["qui","관계절의 주어","l'homme qui parle"],["que (qu')","관계절의 직접목적","le livre que je lis"],["où","장소·시간","la ville où j'habite, le jour où il est venu"],["dont","de + 명사 대신","le livre dont je parle (parler de)"]])+
+  P("구별 요령: 뒤에 바로 동사가 오면 대개 qui, 주어+동사가 오면 que. que는 모음 앞에서 qu'가 되지만 qui는 절대 안 줄어.")+
+  P("앞에 명사가 없으면 ce qui / ce que / ce dont: Je sais ce qui est important. Fais ce que tu veux.")},
+ {id:"fr-pronominal",cat:"verb",title:"대명동사 (se laver, s'appeler)",tags:"se pronominal réfléchi",body:
+  P("주어와 같은 사람을 가리키는 재귀대명사가 붙는 동사. 재귀대명사는 주어를 따라 바뀌어.")+
+  T(["","se laver (씻다)"],[["je","me lave"],["tu","te laves"],["il/elle","se lave"],["nous","nous lavons"],["vous","vous lavez"],["ils/elles","se lavent"]])+
+  P("모음 앞 me/te/se → m'/t'/s': je m'appelle, il s'habille. 복합시제는 늘 <b>être</b>: je me suis levé(e).")+
+  P("과거분사 일치: 재귀대명사가 직접목적이면 일치 (elle s'est lavée), 뒤에 직접목적이 따로 있으면 일치 안 함 (elle s'est lavé les mains).")+
+  P("명령문: Lève-toi ! / Ne te lève pas !"),
+  mine:ws=>verbs(ws).filter(w=>/^(se |s'|s’)/i.test(nfc(w.word))).map(w=>({w,note:"être"}))},
+ {id:"fr-periph",cat:"verb",title:"가까운 미래 · 가까운 과거 · 진행",tags:"futur proche passé récent aller venir de en train de",body:
+  T(["형태","뜻","예"],[["aller + 원형","곧 ~할 거야 (futur proche)","Je vais manger."],["venir de + 원형","방금 ~했어 (passé récent)","Je viens de manger."],["être en train de + 원형","~하는 중이야","Je suis en train de manger."]])+
+  P("aller, venir, être만 활용하고 뒤 동사는 원형 그대로. 말에선 futur simple보다 aller + 원형을 더 많이 써.")},
+ {id:"fr-si",cat:"syn",title:"si 조건문 (만약 ~라면)",tags:"si hypothèse condition conditionnel",body:
+  T(["si 절","주절","뜻"],[["présent","futur / présent / 명령","실제로 있을 수 있는 조건"],["imparfait","conditionnel présent","지금 사실과 반대 · 가정"],["plus-que-parfait","conditionnel passé","과거 사실과 반대"]])+
+  EX("S'il pleut, je resterai à la maison.","Si j'avais de l'argent, j'achèterais une maison.","Si j'avais su, je serais venu.")+
+  P("‘만약’ 뜻의 si 바로 뒤에는 futur나 conditionnel을 쓰지 않아. si + il/ils → s'il/s'ils (si elle은 그대로).")},
+ {id:"fr-neg",cat:"syn",title:"부정문 (ne ... pas 외)",tags:"ne pas jamais plus rien personne que négation",body:
+  P("활용된 동사를 <b>ne ... pas</b>로 감싸. 모음 앞 ne → n'.")+
+  T(["형태","뜻","예"],[["ne ... pas","~ 안 해","Je ne mange pas."],["ne ... jamais","절대/한 번도 ~ 안 해","Il ne ment jamais."],["ne ... plus","더 이상 ~ 안 해","Elle n'habite plus ici."],["ne ... rien","아무것도 ~ 안 해","Je ne vois rien."],["ne ... personne","아무도 ~ 안 해","Je ne connais personne."],["ne ... que","~만 해 (부정 아님)","Je n'ai que dix euros."]])+
+  P("복합과거: ne + 조동사 + pas + 과거분사 → Je n'ai pas mangé. 단 personne는 과거분사 뒤: Je n'ai vu personne.")+
+  P("원형을 부정할 땐 둘 다 앞에: Il préfère ne pas venir. 말에서는 ne를 자주 빼먹어 (J'sais pas), 글에선 꼭 써.")},
+ {id:"fr-question",cat:"syn",title:"의문문 만드는 세 가지",tags:"est-ce que inversion question",body:
+  T(["방법","예","느낌"],[["억양만 올리기","Tu viens ?","편한 말"],["Est-ce que + 평서문","Est-ce que tu viens ?","무난"],["주어-동사 도치","Viens-tu ?","격식, 글"]])+
+  P("도치할 때 동사가 모음으로 끝나고 주어가 il/elle/on이면 <b>-t-</b>를 넣어: Parle-t-il français ? A-t-elle fini ?")+
+  P("의문사: qui (누구), que / qu'est-ce que (무엇), où (어디), quand (언제), comment (어떻게), pourquoi (왜), combien (얼마나), quel/quelle/quels/quelles (어떤, 명사에 일치).")+
+  EX("Où est-ce que tu habites ?","Quelle heure est-il ?")},
+ {id:"fr-elision",cat:"phon",title:"모음 생략 (élision) · 연음 (liaison)",tags:"élision liaison h muet h aspiré",body:
+  P("<b>élision</b>: le, la, je, me, te, se, ne, de, que가 모음·무음 h 앞에서 모음을 떨궈: l'ami, j'aime, il n'a pas, qu'il. si는 il/ils 앞에서만 s'il.")+
+  P("<b>liaison</b>: 평소 안 읽는 끝 자음을 다음 단어 모음과 이어 읽어.")+
+  T(["","예"],[["꼭 하는 곳","관사·한정사 + 명사 (les‿amis, un‿enfant), 대명사 + 동사 (nous‿avons, ils‿ont), 짧은 전치사·부사 뒤 (en‿avance, très‿utile)"],["하면 안 되는 곳","et 뒤 (et | un), 유음 h 앞 (les | héros, les | haricots), 단수 명사 뒤 (un enfant | intelligent)"]])+
+  P("이어 읽을 때 소리: s, x → [z] (les‿amis [lezami]), d → [t] (quand‿il), f → [v] (neuf‿heures).")+
+  P("h는 늘 묵음. ‘무음 h’는 모음처럼 취급 (l'homme), ‘유음 h’는 자음처럼 취급 (le héros, la hache) — 사전에 *h, ’h로 표시돼.")},
+ {id:"fr-accents",cat:"phon",title:"악상 기호와 발음",tags:"accent aigu grave circonflexe cédille tréma é è ê ç ë",body:
+  T(["기호","예","역할"],[["é (aigu)","été, café","닫힌 [e]"],["è (grave)","père, très","열린 [ɛ]"],["à ù (grave)","à, où","소리는 그대로, 다른 단어와 구별 (a / à, ou / où, la / là)"],["ê â î ô û (circonflexe)","fête, forêt, hôpital","옛날 s가 빠진 자리인 경우가 많아 (forest → forêt), ê는 [ɛ]"],["ç (cédille)","français, garçon, reçu","a, o, u 앞에서 c를 [s]로"],["ë ï ü (tréma)","Noël, naïf","앞 모음과 따로 읽어"]])+
+  P("이 앱에선 악상도 철자라서 빠지면 틀린 걸로 쳐. 대문자에도 악상을 붙이는 게 표준 (État, À bientôt).")},
+ {id:"fr-nasal",cat:"phon",title:"비모음 (an, in, on, un)",tags:"nasale voyelle nasale",body:
+  T(["철자","소리","예"],[["an, am, en, em","[ɑ̃]","enfant, temps, chambre"],["in, im, ain, ein, yn","[ɛ̃]","vin, important, pain, plein"],["un, um","[œ̃] (요즘은 대개 [ɛ̃])","un, parfum"],["on, om","[ɔ̃]","bon, nom"]])+
+  P("뒤에 <b>모음</b>이 오거나 <b>n/m이 겹치면</b> 비모음이 아니야: bon [bɔ̃] ↔ bonne [bɔn], plein ↔ pleine, an ↔ année. m, b, p 앞에선 n 대신 m을 써 (temps, important).")}
+);
+RU.push(
+ {id:"ru-gender",cat:"noun",title:"명사의 성 (어미로 알아보기)",tags:"남성 여성 중성 род",body:
+  T(["어미","성","예"],[["자음, -й","남성","стол, музей"],["-а, -я","여성","мама, неделя"],["-о, -е, -ё","중성","окно, море"],["-мя","중성 (10개 정도)","время, имя"],["-ь","남성 또는 여성 — 외워야 해","день (남), ночь (여)"]])+
+  P("-ь 힌트: -ость, -есть, -чь, -шь, -щь, -жь는 여성 (радость, ночь, мышь), -тель은 남성 (учитель).")+
+  P("-а/-я로 끝나도 <b>남자</b>면 남성: папа, дядя, мужчина, дедушка. 형용사·과거형은 남성으로 맞춰 (мой папа пришёл)."),
+  mine:ws=>nouns(ws).map(w=>({w,note:w.gender||(w.declInfo&&w.declInfo.g)||""})).filter(x=>x.note)},
+ {id:"ru-plural",cat:"noun",title:"주격 복수",tags:"복수 множественное",body:
+  T(["단수","복수 어미","예"],[["남성 자음, 여성 -а","-ы","стол → столы, мама → мамы"],["-й, -ь, -я, 또는 г к х ж ш ч щ 뒤","-и","музей → музеи, книга → книги, нож → ножи"],["중성 -о","-а","окно → окна"],["중성 -е","-я","море → моря"]])+
+  P("철자 규칙 때문에 г к х ж ш ч щ 뒤에선 ы 대신 и.")+
+  P("자주 쓰는 불규칙: 강세 -а 복수 дом → дома, город → города, глаз → глаза, учитель → учителя · -ья 복수 брат → братья, стул → стулья, друг → друзья, сын → сыновья · 완전 불규칙 человек → люди, ребёнок → дети · мать → матери, дочь → дочери · имя → имена, время → времена.")},
+ {id:"ru-genpl",cat:"case",title:"생격 복수 (제일 헷갈리는 칸)",tags:"생격 복수 родительный множественное",body:
+  T(["단수","생격 복수","예"],[["남성 단단한 자음","-ов","стол → столов"],["남성 -й, 강세 없는 -ц","-ев","музей → музеев, месяц → месяцев"],["남성 ж ш ч щ, 그리고 남·여 -ь","-ей","врач → врачей, день → дней, ночь → ночей"],["여성 -а, 중성 -о","어미 없음 (∅)","книга → книг, место → мест"],["여성 -я (자음 뒤)","-ь","неделя → недель"],["-ия, -ие","-ий","линия → линий, здание → зданий"],["중성 -е (-ие 말고)","-ей","море → морей, поле → полей"]])+
+  P("어미가 없어지면 자음이 겹치는 자리에 <b>출몰모음</b>이 들어오는 경우가 많아: окно → окон, ручка → ручек, сестра → сестёр, девушка → девушек.")+
+  P("불규칙: человек → людей (5 человек도 써), ребёнок → детей, год → лет (5 лет), раз → раз, глаз → глаз, солдат → солдат.")},
+ {id:"ru-numbers",cat:"case",title:"숫자 뒤 명사 (1 · 2-4 · 5+)",tags:"숫자 수사 один два пять",body:
+  T(["수","명사 꼴","예"],[["1, 21, 31 …","주격 단수","один стол, двадцать один стол"],["2-4, 22-24 …","생격 단수","два стола, три книги"],["5-20, 25-30 …, 0","생격 복수","пять столов, одиннадцать книг"]])+
+  P("끝자리만 봐. 단 11-14는 무조건 생격 복수 (одиннадцать, двенадцать столов).")+
+  P("один은 성을 따라가 (один стол, одна книга, одно окно), два도 여성 앞에선 две (две книги). много, мало, сколько, несколько 뒤도 생격 (много книг, мало времени).")},
+ {id:"ru-prep",cat:"case",title:"전치사별 격",tags:"전치사 предлоги в на у из с к",body:
+  T(["격","전치사","예"],[["생격","у, из, от, до, без, для, после, около, с (~에서 내려/부터)","у брата, из Москвы, без сахара"],["여격","к, по","к врачу, по улице"],["대격","в / на (방향, 어디로), через, про, за / под (방향)","в школу, на работу, через год"],["조격","с (~와 함께), за / под (위치), над, перед, между","с другом, под столом"],["전치격","в / на (위치, 어디에서), о / об (~에 대해), при","в школе, на работе, о книге"]])+
+  P("в / на: куда? (어디로) → 대격, где? (어디에서) → 전치격. 같은 전치사도 격에 따라 뜻이 달라: за дом (집 뒤로) / за домом (집 뒤에).")+
+  P("на을 쓰는 장소는 외워: на работе, на почте, на улице, на концерте, на востоке.")},
+ {id:"ru-pron",cat:"pron",title:"인칭대명사 변화",tags:"я ты он она мы вы они местоимения",body:
+  T(["주격","생격","여격","대격","조격","전치격"],[["я","меня","мне","меня","мной","(обо) мне"],["ты","тебя","тебе","тебя","тобой","тебе"],["он / оно","его","ему","его","им","нём"],["она","её","ей","её","ей (ею)","ней"],["мы","нас","нам","нас","нами","нас"],["вы","вас","вам","вас","вами","вас"],["они","их","им","их","ими","них"]])+
+  P("3인칭 (он, она, оно, они)은 <b>전치사 뒤에서 н-</b>이 붙어: у него, к ней, с ним, о них. его / её / их가 ‘그의 / 그녀의 / 그들의’(소유)일 땐 н- 안 붙어: у его брата.")+
+  P("Вы를 대문자로 쓰면 한 사람에게 존댓말 (편지 등).")},
+ {id:"ru-poss",cat:"pron",title:"소유대명사 · свой · 지시대명사",tags:"мой твой наш ваш свой этот тот",body:
+  T(["","남성","여성","중성","복수"],[["나의","мой","моя","моё","мои"],["너의","твой","твоя","твоё","твои"],["우리의","наш","наша","наше","наши"],["너희/당신의","ваш","ваша","ваше","ваши"],["이","этот","эта","это","эти"],["그/저","тот","та","то","те"]])+
+  P("его (그의), её (그녀의), их (그들의)는 <b>안 변해</b>: его книга, его книги, о его книге.")+
+  P("<b>свой</b>: 소유자가 그 문장의 주어일 때. Он любит свою жену. (자기 아내) ↔ Он любит его жену. (다른 남자의 아내)")+
+  P("Это книга. (이건 책이야)의 это는 안 변하는 ‘이것’. Эта книга … (이 책은 …)의 эта는 형용사처럼 변해.")},
+ {id:"ru-comp",cat:"adj",title:"비교급 · 최상급",tags:"сравнительная степень лучше больше самый",body:
+  P("단순 비교급: 어간 + <b>-ее</b> (말로는 -ей도): новый → новее, интересный → интереснее, тёплый → теплее. 성·수로 안 변해.")+
+  T(["원급","비교급"],[["хороший / хорошо","лучше"],["плохой / плохо","хуже"],["большой / много","больше"],["маленький / мало","меньше"],["дорогой","дороже"],["дешёвый","дешевле"],["высокий","выше"],["молодой","моложе (나이는 младше)"],["старый","старше (나이) / старее (물건)"],["простой","проще"],["громкий","громче"]])+
+  P("비교 대상: <b>чем</b> + 주격 또는 그냥 <b>생격</b>: Он старше, чем я. = Он старше меня.")+
+  P("복합형: более / менее + 형용사 (более интересная книга). 최상급: самый + 형용사 (самый интересный фильм).")},
+ {id:"ru-future",cat:"verb",title:"미래형 (буду + 원형 / 완료상)",tags:"будущее буду",body:
+  T(["","быть 미래","불완료상 미래","완료상 미래"],[["я","буду","буду читать","прочитаю"],["ты","будешь","будешь читать","прочитаешь"],["он/она","будет","будет читать","прочитает"],["мы","будем","будем читать","прочитаем"],["вы","будете","будете читать","прочитаете"],["они","будут","будут читать","прочитают"]])+
+  P("<b>불완료상</b>: буду + 원형 (과정·반복: 읽고 있을 거야). <b>완료상</b>: 현재형처럼 활용하면 그게 미래 (다 읽을 거야). 완료상엔 현재형이 없어.")+
+  P("완료상 동사에 буду를 붙이면 틀려 (× буду прочитать).")},
+ {id:"ru-imper",cat:"verb",title:"명령형",tags:"повелительное наклонение императив",body:
+  P("3인칭 복수(они) 현재형에서 어미 -ют/-ут/-ят/-ат를 떼고:")+
+  T(["어간 끝","붙이는 것","예"],[["모음","-й","читают → читай, играют → играй"],["자음 + 1인칭 단수 강세가 어미에","-и","пишу́ → пиши, говорю́ → говори"],["자음 + 어간에 강세","-ь","отве́тят → ответь, гото́вят → готовь"],["자음 두 개","-и","по́мнят → помни"]])+
+  P("여럿 또는 존댓말이면 <b>-те</b>: читайте, пишите, ответьте. 재귀동사는 -ся/-сь: мойся, мойтесь.")+
+  P("외울 것: дать → дай, пить → пей, есть → ешь, быть → будь, лечь → ляг, ехать → поезжай.")},
+ {id:"ru-motion",cat:"verb",title:"이동 동사 (идти / ходить)",tags:"глаголы движения идти ходить ехать ездить",body:
+  T(["한 방향 · 지금 가는 중","여러 방향 · 왕복 · 습관","뜻"],[["идти","ходить","걸어가다"],["ехать","ездить","타고 가다"],["бежать","бегать","뛰다"],["лететь","летать","날다"],["плыть","плавать","헤엄치다, 항해하다"],["нести","носить","들고 가다"],["вести","водить","데리고 가다"],["везти","возить","싣고 가다"]])+
+  EX("Я иду в школу. (지금 가는 중)","Я хожу в школу. (다녀, 습관)","Вчера я ходил в кино. (갔다 왔어)")+
+  P("접두사 по-를 붙이면 ‘출발하다’ 완료상: пойти, поехать. 그 밖에 при- (도착), у- (떠남), в- (들어감), вы- (나감)이 붙으면 상의 짝이 바뀌어: прийти / приходить.")},
+ {id:"ru-cond",cat:"syn",title:"가정법 (бы)",tags:"сослагательное наклонение бы если",body:
+  P("<b>бы + 과거형</b>. 시제 구분 없이 지금·과거의 가정 둘 다.")+
+  EX("Я бы купил машину. (차를 살 텐데)","Если бы у меня были деньги, я бы купил машину.","Я хотел бы … (~하고 싶은데요, 공손)")+
+  P("실제로 가능한 조건은 бы 없이 если + 미래: Если будет время, я приду.")},
+ {id:"ru-neg",cat:"syn",title:"부정 · 이중 부정 · нет + 생격",tags:"не нет никто ничего никогда",body:
+  P("не는 부정하는 말 바로 앞: Я не знаю. Не я это сделал.")+
+  P("<b>이중 부정이 정상</b>: никто, ничего, никогда, нигде, никуда를 쓰면 동사 앞에 не도 같이: Я никого не видел. Он никогда не опаздывает.")+
+  P("‘없다’는 <b>нет + 생격</b>: У меня нет брата. Здесь нет воды. 과거 не было, 미래 не будет (주어 성과 상관없이 중성): Вчера не было урока.")},
+ {id:"ru-order",cat:"syn",title:"어순 · 의문문",tags:"порядок слов вопрос ли",body:
+  P("격 어미가 역할을 보여 줘서 어순이 꽤 자유로워. 기본은 주어-동사-목적어, <b>새로운 정보·강조는 문장 끝</b>.")+
+  EX("Мама читает книгу. (엄마가 뭘 해? → 책 읽어)","Книгу читает мама. (책은 누가 읽어? → 엄마가)")+
+  P("예/아니오 의문문은 어순 그대로 <b>억양</b>만 바꿔 (묻는 말에 높은 억양): Ты была в Москве? 글말에선 ли: Знаешь ли ты …? 간접의문 ‘~인지’도 ли: Я не знаю, придёт ли он.")},
+ {id:"ru-hardsoft",cat:"phon",title:"단단한 / 부드러운 자음",tags:"твёрдый мягкий ь ъ",body:
+  T(["단단한 모음 글자","а","у","ы","э","о"],[["부드러운 모음 글자","я","ю","и","е","ё"]])+
+  P("자음 뒤 모음 글자가 앞 자음의 단단함/부드러움을 정해: мат (단단한 м) ↔ мять (부드러운 м). <b>ь</b>는 앞 자음을 부드럽게, 소리는 없어: брат ↔ брать.")+
+  P("<b>ъ</b>는 접두사 뒤에서 자음과 я/е/ё/ю를 끊어 읽게 해: подъезд, объяснить.")+
+  P("ж, ш, ц는 늘 단단하고 ч, щ, й는 늘 부드러워. 그래서 жи, ши는 [жы], [шы]처럼 읽어.")}
+);
+TR.push(
+ {id:"tr-plural",cat:"noun",title:"복수 -lar / -ler",tags:"çoğul lar ler",body:
+  P("마지막 모음이 a ı o u면 <b>-lar</b>, e i ö ü면 <b>-ler</b>: kitaplar, evler, okullar, gözler.")+
+  P("<b>숫자 뒤엔 복수 안 써</b>: iki kitap, beş elma. birkaç, çok 뒤도 보통 단수: çok kitap.")+
+  P("동사 3인칭 복수 -lar는 사람 주어일 때만 붙고, 주어가 따로 있으면 자주 빠져: Çocuklar oynuyor."),
+  mine:ws=>nouns(ws).map(w=>{const v=(w.word.match(/[aeıioöuü](?=[^aeıioöuü]*$)/i)||[""])[0].toLowerCase();return v?{w,note:"-"+("aıou".includes(v)?"lar":"ler")}:null}).filter(Boolean)},
+ {id:"tr-possess",cat:"noun",title:"소유 어미 (evim, arabası)",tags:"iyelik eki possessive",body:
+  T(["","자음 끝 (ev)","모음 끝 (araba)"],[["benim (나의)","evim","arabam"],["senin (너의)","evin","araban"],["onun (그의)","evi","arabası"],["bizim (우리의)","evimiz","arabamız"],["sizin (너희의)","eviniz","arabanız"],["onların (그들의)","evleri","arabaları"]])+
+  P("모음은 4가지 모음조화 (ı i u ü). 3인칭 단수는 모음 뒤에서 -sı/-si/-su/-sü.")+
+  P("소유 어미 뒤에 격 어미가 오면 3인칭 뒤에 <b>n</b>이 끼어: evinde (그의 집에서), arabasını (그의 차를).")+
+  P("‘A의 B’는 <b>A-(n)ın + B-(s)ı</b>: Ali'nin kitabı, okulun bahçesi. 소유 없이 이름처럼 붙는 경우: Türk kahvesi, okul müdürü.")},
+ {id:"tr-adj",cat:"adj",title:"형용사 · 비교 · 부사",tags:"sıfat daha en karşılaştırma zarf",body:
+  P("형용사는 명사 <b>앞</b>에 오고 안 변해: güzel ev, güzel evler, güzel evde.")+
+  T(["","형태","예"],[["비교급","(탈격 +) daha + 형용사","Ali Ayşe'den daha uzun."],["최상급","en + 형용사","en güzel şehir"],["~만큼","kadar","Ali kadar uzun"]])+
+  P("비교 대상에 탈격 -dan/-den이 붙으면 daha는 빼도 돼: Ali Ayşe'den uzun.")+
+  P("많은 형용사는 그대로 부사로도 써: İyi konuşuyor. 부사 어미 -ca/-ce/-ça/-çe: yavaşça, güzelce.")+
+  P("강조 반복 (첫 음절 + m/p/s/r): bembeyaz, simsiyah, kıpkırmızı, masmavi, yemyeşil, tertemiz.")},
+ {id:"tr-pron",cat:"pron",title:"인칭대명사 변화",tags:"zamir ben sen o biz siz onlar",body:
+  T(["주격","대격 (~을)","여격 (~에게)","위치격 (~에)","탈격 (~에서)","속격 (~의)"],[["ben","beni","bana","bende","benden","benim"],["sen","seni","sana","sende","senden","senin"],["o","onu","ona","onda","ondan","onun"],["biz","bizi","bize","bizde","bizden","bizim"],["siz","sizi","size","sizde","sizden","sizin"],["onlar","onları","onlara","onlarda","onlardan","onların"]])+
+  P("bana, sana는 불규칙 (× bene, × sene). o는 격 어미 앞에서 n이 끼어 (onu, ona, onun).")+
+  P("동사에 인칭 어미가 있어서 주어 대명사는 강조할 때 말곤 자주 빼: Geliyorum. (= Ben geliyorum.) siz는 존댓말 한 명에도 써.")},
+ {id:"tr-demo",cat:"pron",title:"지시어 bu · şu · o · burada",tags:"işaret bu şu o burası",body:
+  T(["","이 (가까이)","그 / 저 (가리키며)","저 (멀리, 안 보임)"],[["지시","bu","şu","o"],["장소","burası, burada","şurası, şurada","orası, orada"],["~로","buraya","şuraya","oraya"],["~에서부터","buradan","şuradan","oradan"]])+
+  P("대명사로 격이 붙을 땐 n이 끼어: bunu, şuna, ondan. 형용사처럼 명사 앞에선 안 변해: bu kitap, bu kitabı.")},
+ {id:"tr-copula",cat:"verb",title:"명사문 (~이다) 인칭 어미",tags:"ek fiil -im -sin -dir",body:
+  T(["","öğretmen (교사)","hasta (아픈)","과거 (-dı)"],[["ben","öğretmenim","hastayım","öğretmendim"],["sen","öğretmensin","hastasın","öğretmendin"],["o","öğretmen(dir)","hasta(dır)","öğretmendi"],["biz","öğretmeniz","hastayız","öğretmendik"],["siz","öğretmensiniz","hastasınız","öğretmendiniz"],["onlar","öğretmen(ler)(dir)","hasta(lar)(dır)","öğretmendiler"]])+
+  P("모음 뒤 -ım, -ız에는 매개 자음 <b>y</b>: hastayım. 과거 -dı는 모음 뒤에서 -ydı: hastaydım. 3인칭 -dır는 말에선 보통 빼고, 일반적 사실·추측에 써.")+
+  P("부정은 <b>değil</b> + 인칭: öğretmen değilim, hasta değilsin.")},
+ {id:"tr-neg",cat:"verb",title:"부정 -ma / -me",tags:"olumsuz ma me değil",body:
+  P("어간 바로 뒤에 <b>-ma/-me</b>: gelmek → gel-me-, yapmak → yap-ma-.")+
+  T(["","긍정","부정"],[["현재 진행","geliyorum","gelmiyorum"],["과거","geldim","gelmedim"],["미래","geleceğim","gelmeyeceğim"],["geniş","gelirim","gelmem"]])+
+  P("-iyor 앞에선 -me의 e가 i/ı/u/ü로 (gelmiyorum, yapmıyorum, okumuyorum).")+
+  T(["geniş 부정",""],[["ben","gelmem"],["sen","gelmezsin"],["o","gelmez"],["biz","gelmeyiz"],["siz","gelmezsiniz"],["onlar","gelmezler"]])+
+  P("명사문 부정은 değil, ‘없다’는 <b>yok</b> (‘있다’ var): Param yok. Evde kimse yok.")},
+ {id:"tr-future",cat:"verb",title:"미래 -acak / -ecek",tags:"gelecek zaman acak ecek",body:
+  T(["","gelmek","yapmak"],[["ben","geleceğim","yapacağım"],["sen","geleceksin","yapacaksın"],["o","gelecek","yapacak"],["biz","geleceğiz","yapacağız"],["siz","geleceksiniz","yapacaksınız"],["onlar","gelecekler","yapacaklar"]])+
+  P("모음으로 시작하는 인칭 어미 앞에서 k → <b>ğ</b> (geleceğim, yapacağız). 모음 어간은 y가 끼어: okumak → okuyacak.")+
+  P("gitmek, etmek은 t → d: gideceğim, edeceğim.")},
+ {id:"tr-mis",cat:"verb",title:"전해 들은 과거 -mış",tags:"duyulan geçmiş miş öğrenilen",body:
+  P("<b>-mış / -miş / -muş / -müş</b>: 직접 보지 않고 들었거나 나중에 알게 된 과거, 놀람.")+
+  EX("Ali gelmiş. (알리가 왔대 / 와 있네)","Ali geldi. (알리가 왔어 — 직접 봄)","Çok güzelmiş! (진짜 예쁘네!)")+
+  T(["","gelmek"],[["ben","gelmişim"],["sen","gelmişsin"],["o","gelmiş"],["biz","gelmişiz"],["siz","gelmişsiniz"],["onlar","gelmişler"]])},
+ {id:"tr-question",cat:"syn",title:"의문 조사 mı / mi / mu / mü",tags:"soru eki mi mı",body:
+  P("<b>띄어 쓰는</b> 별도 낱말. 바로 앞 단어 모음으로 4가지 조화: Ev mi? Okul mu? Güzel mi? Kitap mı?")+
+  P("인칭 어미는 mı 쪽에 붙어: Geliyor musun? Öğrenci misiniz? 과거 -dı는 동사에 붙고 mı는 뒤에: Geldin mi?")+
+  P("강조하고 싶은 말 바로 뒤에 놓아: Ali mi geldi? (알리가 온 거야?) / Ali geldi mi? (알리 왔어?)")+
+  P("의문사가 있으면 mı 안 써: Ne yapıyorsun? Nerede?")},
+ {id:"tr-order",cat:"syn",title:"어순 SOV · 후치사",tags:"söz dizimi edat için ile gibi",body:
+  P("기본 <b>주어 - 목적어 - 동사</b>, 꾸미는 말은 늘 앞 (한국어랑 비슷). 강조하는 말은 동사 바로 앞.")+
+  EX("Ben her gün kahve içerim.","Ahmet bu kitabı dün okudu.")+
+  T(["후치사","뜻","예"],[["için","~를 위해","senin için"],["ile (-la/-le)","~와, ~로","arkadaşımla, otobüsle"],["gibi","~처럼","kuş gibi"],["kadar","~만큼, ~까지","akşama kadar"],["sonra (탈격 +)","~ 후에","dersten sonra"],["önce (탈격 +)","~ 전에","yemekten önce"]])+
+  P("대명사 뒤 için, gibi, ile는 속격: benim için, onun gibi, (bu → bunun için).")},
+ {id:"tr-ki",cat:"syn",title:"-ki (~에 있는, ~의 것)",tags:"ki aitlik",body:
+  P("위치격·시간 뒤에 -ki를 붙이면 형용사처럼 ‘~에 있는’: evdeki kitap (집에 있는 책), masadaki bardak, yarınki toplantı, bugünkü gazete.")+
+  P("모음조화 거의 안 따라 (늘 -ki). 예외: bugünkü, dünkü, öbürkü.")+
+  P("속격 뒤에선 ‘~의 것’: benimki (내 거), Ali'ninki (알리 거).")+
+  P("띄어 쓰는 접속사 ki (‘~라는 것을’)와는 다른 거야: Biliyorum ki …")}
+);
+/* 기존 항목 분류 */
+const CAT_OF={"fr-groups":"verb","fr-pres":"verb","fr-pc":"verb","fr-impf":"verb","fr-pqp":"verb","fr-fut":"verb","fr-fa":"verb","fr-cond":"verb","fr-condp":"verb","fr-subj":"verb","fr-subjp":"verb","fr-impr":"verb","fr-ps":"verb","fr-aux":"verb","fr-spell":"verb","fr-gender":"noun","fr-adj":"adj","fr-bel":"adj","fr-plural":"noun",
+ "ru-cases":"case","ru-n1":"case","ru-n2":"case","ru-n3":"case","ru-spell":"phon","ru-fleet":"phon","ru-anim":"case","ru-adj":"adj","ru-short":"adj","ru-conj":"verb","ru-alt":"verb","ru-aspect":"verb","ru-past":"verb","ru-sja":"verb","ru-phon":"phon",
+ "tr-harmony":"phon","tr-soft":"phon","tr-buffer":"phon","tr-cases":"case","tr-verbs":"verb"};
+[FR,RU,TR].forEach(L=>L.forEach(s=>{if(!s.cat)s.cat=CAT_OF[s.id]||"syn"}));
+/* 분류 순서대로 정렬 (같은 분류 안에선 원래 순서) */
+[FR,RU,TR].forEach(L=>{const ord=CATS.map(c=>c[0]);const idx=new Map(L.map((s,i)=>[s,i]));L.sort((a,b)=>ord.indexOf(a.cat)-ord.indexOf(b.cat)||idx.get(a)-idx.get(b))});
+
 const LANGS={fr:{name:"프랑스어",list:FR},ru:{name:"러시아어",list:RU},tr:{name:"터키어",list:TR}};
 function find(id){for(const k in LANGS){const s=LANGS[k].list.find(x=>x.id===id);if(s)return{lang:k,sec:s}}return null}
 /* 칸/오답 → 개념 항목 */
@@ -197,6 +421,6 @@ function conceptFor(lang,kind,key,w){key=String(key||"");const t=key.split(".")[
     const s=low(w&&w.word||"");if(/[ая]$/.test(s))return"ru-n1";if(/ь$/.test(s)&&w.declInfo&&w.declInfo.g==="f")return"ru-n3";return"ru-n2"}
   if(lang==="tr"&&kind==="conj")return"tr-verbs";
   return""}
-G.GRAMMAR={LANGS,find,conceptFor};
-if(typeof module!=="undefined")module.exports={LANGS,find,conceptFor};
+G.GRAMMAR={LANGS,CATS,find,conceptFor};
+if(typeof module!=="undefined")module.exports={LANGS,CATS,find,conceptFor};
 })(typeof window!=="undefined"?window:globalThis);
