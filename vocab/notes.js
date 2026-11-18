@@ -38,34 +38,84 @@ function drawAll(ctx,note,k,wpx,hpx){ctx.clearRect(0,0,wpx,hpx);(note.strokes||[
 function thumbURL(note,w){if(typeof document==="undefined")return"";w=w||120;const h=Math.round(w*PAGE_H/PAGE_W);const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");
   const ink=document.createElement("canvas");ink.width=w;ink.height=h;drawAll(ink.getContext("2d"),note,w/PAGE_W,w,h);x.fillStyle="#000";x.fillRect(0,0,w,h);x.drawImage(ink,0,0);return c.toDataURL("image/png")}
 
+/* ---- v20: 보기 변환 (확대·이동) ----
+   화면 좌표 = 종이 좌표 × s + (tx,ty).  s0 = 종이 너비를 화면 너비에 맞춘 배율(100%).
+   저장 좌표는 항상 종이(1000×1300) 기준이라 예전 노트·동기화와 그대로 호환. */
+const ZMIN=0.5,ZMAX=5;
+function fitView(vw,vh){const s=vw/PAGE_W;return{s,s0:s,tx:0,ty:0}}
+function clampScale(s,s0){return Math.max(s0*ZMIN,Math.min(s0*ZMAX,s))}
+function toPage(v,x,y){return[(x-v.tx)/v.s,(y-v.ty)/v.s]}
+function toScreen(v,px,py){return[px*v.s+v.tx,py*v.s+v.ty]}
+/* 두 손가락: 시작 (a0,b0) → 지금 (a1,b1). 시작 중점 아래 있던 종이 점이 지금 중점 아래로 오게 (확대 + 이동 동시에) */
+function pinchView(v0,a0,b0,a1,b1){const m0=[(a0[0]+b0[0])/2,(a0[1]+b0[1])/2],m1=[(a1[0]+b1[0])/2,(a1[1]+b1[1])/2];
+  const d0=Math.hypot(a0[0]-b0[0],a0[1]-b0[1])||1,d1=Math.hypot(a1[0]-b1[0],a1[1]-b1[1])||1;
+  const s=clampScale(v0.s*d1/d0,v0.s0);const P=toPage(v0,m0[0],m0[1]);return{s,s0:v0.s0,tx:m1[0]-P[0]*s,ty:m1[1]-P[1]*s}}
+function zoomAt(v,f,x,y){const s=clampScale(v.s*f,v.s0);const P=toPage(v,x,y);return{s,s0:v.s0,tx:x-P[0]*s,ty:y-P[1]*s}}
+/* 종이가 화면 밖으로 다 나가지 않게: 화면보다 작으면 가운데, 크면 가장자리 48px 여유까지만 */
+function clampView(v,vw,vh){const s=clampScale(v.s,v.s0),M=48;const ax=(t,size,view)=>size<=view?(view-size)/2:Math.min(M,Math.max(view-size-M,t));
+  return{s,s0:v.s0,tx:ax(v.tx,PAGE_W*s,vw),ty:ax(v.ty,PAGE_H*s,vh)}}
+const PTS=typeof WeakMap!=="undefined"?new WeakMap():null;
+function ptsOf(st){if(!PTS)return decode(st.d);let c=PTS.get(st);if(!c||c.d!==st.d){c={d:st.d,v:decode(st.d)};PTS.set(st,c)}return c.v}
+
 /* ---- 캔버스 편집기 ---- */
 class Pad{
   constructor(canvas,note,opt){this.cv=canvas;this.note=note;this.opt=opt||{};this.tool="pen";this.color=COLORS[0][0];this.width=WIDTHS[1][0];
-    this.undo=[];this.redo=[];this.cur=null;this.pid=null;this.penSeen=!!(opt&&opt.penSeen);this.fingerOk=!this.penSeen;
+    this.undo=[];this.redo=[];this.cur=null;this.pid=null;this.curType="";this.penSeen=!!(opt&&opt.penSeen);this.fingerOk=!this.penSeen;
+    this.zoomable=!!(opt&&opt.zoom);this.touches=new Map();this.gest=null;this.lock=false;this.view=null;
     this.ctx=canvas.getContext("2d");this._bind();this.resize()}
-  resize(){const r=this.cv.getBoundingClientRect();const dpr=Math.min(3,(typeof devicePixelRatio!=="undefined"?devicePixelRatio:1)||1);
-    this.cssW=r.width||PAGE_W/2;this.k=this.cssW/PAGE_W;this.cv.width=Math.round(this.cssW*dpr);this.cv.height=Math.round(this.cssW*PAGE_H/PAGE_W*dpr);
-    this.ctx.setTransform(dpr,0,0,dpr,0,0);this.redraw()}
-  redraw(){drawAll(this.ctx,this.note,this.k,this.cv.width,this.cv.height);if(this.cur)drawStroke(this.ctx,this.cur.st,this.k,this.cur.pts)}
-  pt(e){const r=this.cv.getBoundingClientRect();const x=(e.clientX-r.left)/this.k,y=(e.clientY-r.top)/this.k;
+  resize(){const dpr=Math.min(3,(typeof devicePixelRatio!=="undefined"?devicePixelRatio:1)||1);this.dpr=dpr;let w,h;
+    if(this.zoomable){w=this.cv.clientWidth||500;h=this.cv.clientHeight||650}else{const r=this.cv.getBoundingClientRect();w=r.width||PAGE_W/2;h=w*PAGE_H/PAGE_W}
+    this.vw=w;this.vh=h;this.cv.width=Math.round(w*dpr);this.cv.height=Math.round(h*dpr);const f=fitView(w,h);
+    if(!this.zoomable)this.view=f;
+    else if(this.view){/* 회전·창 크기 바뀌어도 배율(%)과 왼쪽 위 종이 점 유지 */const z=this.view.s/this.view.s0,P=toPage(this.view,0,0);const s=f.s0*z;this.view=clampView({s,s0:f.s0,tx:-P[0]*s,ty:-P[1]*s},w,h)}
+    else if(this.opt.initView&&this.opt.initView.z){const iv=this.opt.initView,s=f.s0*iv.z;this.view=clampView({s,s0:f.s0,tx:-iv.px*s,ty:-iv.py*s},w,h)}
+    else this.view=clampView(f,w,h);
+    this.k=this.view.s;this.redraw();this._emit()}
+  zoom(){return this.view?this.view.s/this.view.s0:1}
+  setView(v){if(!this.zoomable)return;this.view=clampView(v,this.vw,this.vh);this.k=this.view.s;this._sched();this._emit()}
+  resetView(){this.setView(fitView(this.vw,this.vh))}
+  zoomBy(f){this.setView(zoomAt(this.view,f,this.vw/2,this.vh/2))}
+  _emit(){const v=this.view;this.opt.onView&&this.opt.onView({...v,z:v.s/v.s0,px:-v.tx/v.s,py:-v.ty/v.s})}
+  _sched(){if(this._raf)return;const f=typeof requestAnimationFrame!=="undefined"?requestAnimationFrame:(c=>setTimeout(c,16));this._raf=f(()=>{this._raf=0;this.redraw()})}
+  _T(){const v=this.view,d=this.dpr;this.ctx.setTransform(d*v.s,0,0,d*v.s,d*v.tx,d*v.ty)}
+  redraw(){const c=this.ctx;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,this.cv.width,this.cv.height);this._T();
+    (this.note.strokes||[]).forEach(st=>{try{drawStroke(c,st,1,ptsOf(st))}catch(e){}});if(this.cur)drawStroke(c,this.cur.st,1,this.cur.pts)}
+  _xy(e){const r=this.cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
+  pt(e){const [sx,sy]=this._xy(e);const [x,y]=toPage(this.view,sx,sy);
     let pr=0.5;if(e.pointerType==="pen"&&e.pressure>0)pr=e.pressure;return[Math.max(0,Math.min(PAGE_W,x)),Math.max(0,Math.min(PAGE_H,y)),pr*15]}
   accept(e){if(e.pointerType==="pen"){if(!this.penSeen){this.penSeen=true;this.fingerOk=false;this.opt.onPen&&this.opt.onPen()}return true}
     if(e.pointerType==="touch")return this.fingerOk;/* 펜을 쓰고 있으면 손바닥·손가락 무시 */return true}
+  cancelStroke(){if(!this.cur)return;const id=this.pid;this.cur=null;this.pid=null;this.curType="";try{this.cv.releasePointerCapture(id)}catch(_){}this.redraw();this.opt.onCancel&&this.opt.onCancel()}
+  _startGesture(){const ids=[...this.touches.keys()].slice(0,2);this.gest={a:ids[0],b:ids[1],a0:this.touches.get(ids[0]),b0:this.touches.get(ids[1]),v0:{...this.view}};this.opt.onGesture&&this.opt.onGesture(true)}
+  _beginStroke(e){try{this.cv.setPointerCapture(e.pointerId)}catch(_){}this.pid=e.pointerId;this.curType=e.pointerType;const er=this.tool==="eraser";
+    this.cur={st:{c:er?"":this.color,s:this.width,e:er?1:0},pts:[this.pt(e)]};this._last=this.cur.pts[0];this._T();drawStroke(this.ctx,this.cur.st,1,this.cur.pts)}
   _bind(){const cv=this.cv;
-    this._down=e=>{if(this.pid!==null){return}if(!this.accept(e))return;if(e.button>0)return;e.preventDefault();
-      try{cv.setPointerCapture(e.pointerId)}catch(_){}this.pid=e.pointerId;const er=this.tool==="eraser";
-      this.cur={st:{c:er?"":this.color,s:this.width,e:er?1:0},pts:[this.pt(e)]};this._last=this.cur.pts[0];this.redraw()};
-    this._move=e=>{if(e.pointerId!==this.pid||!this.cur)return;e.preventDefault();const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];(evs.length?evs:[e]).forEach(ev=>{const p=this.pt(ev);const l=this._last;if(l&&Math.abs(p[0]-l[0])<0.4&&Math.abs(p[1]-l[1])<0.4)return;this.cur.pts.push(p);this._last=p});
-      const n=this.cur.pts.length;drawStroke(this.ctx,this.cur.st,this.k,this.cur.pts.slice(Math.max(0,n-3)))};
-    this._up=e=>{if(e.pointerId!==this.pid)return;e.preventDefault();this.pid=null;const c=this.cur;this.cur=null;if(!c)return;
+    this._down=e=>{if(e.button>0)return;
+      if(e.pointerType==="touch"){this.touches.set(e.pointerId,this._xy(e));
+        if(this.pid!==null&&this.curType==="pen")return;/* 펜으로 쓰는 중엔 손 터치 전부 무시 */
+        if(this.touches.size>=2){e.preventDefault();/* 두 번째 손가락 → 긋던 획 취소 (엉뚱한 선 안 남게) */if(this.cur&&this.curType==="touch")this.cancelStroke();
+          this.lock=true;if(this.zoomable&&!this.gest)this._startGesture();return}
+        if(this.lock||!this.accept(e)||this.pid!==null)return;e.preventDefault();this._beginStroke(e);return}
+      if(this.pid!==null){if(this.curType==="touch"&&e.pointerType==="pen")this.cancelStroke();else return}
+      if(!this.accept(e))return;e.preventDefault();this._beginStroke(e)};
+    this._move=e=>{if(e.pointerType==="touch"&&this.touches.has(e.pointerId)){this.touches.set(e.pointerId,this._xy(e));
+        if(this.gest){e.preventDefault();const a1=this.touches.get(this.gest.a),b1=this.touches.get(this.gest.b);if(a1&&b1)this.setView(pinchView(this.gest.v0,this.gest.a0,this.gest.b0,a1,b1));return}}
+      if(e.pointerId!==this.pid||!this.cur)return;e.preventDefault();const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];(evs.length?evs:[e]).forEach(ev=>{const p=this.pt(ev);const l=this._last;if(l&&Math.abs(p[0]-l[0])<0.4&&Math.abs(p[1]-l[1])<0.4)return;this.cur.pts.push(p);this._last=p});
+      const n=this.cur.pts.length;this._T();drawStroke(this.ctx,this.cur.st,1,this.cur.pts.slice(Math.max(0,n-3)))};
+    this._endTouch=e=>{if(e.pointerType!=="touch")return;this.touches.delete(e.pointerId);
+      if(this.gest&&(!this.touches.has(this.gest.a)||!this.touches.has(this.gest.b))){this.gest=null;this.opt.onGesture&&this.opt.onGesture(false)}
+      if(this.touches.size===0)this.lock=false};
+    this._up=e=>{this._endTouch(e);if(e.pointerId!==this.pid)return;e.preventDefault();this.pid=null;this.curType="";const c=this.cur;this.cur=null;if(!c)return;
       const st=mkStroke(c.pts,{c:c.st.c,s:c.st.s,e:c.st.e});this.note.strokes=this.note.strokes||[];this.note.strokes.push(st);this.undo.push({t:"add",st});this.redo.length=0;this.redraw();this.opt.onChange&&this.opt.onChange("add")};
-    this._cancel=e=>{if(e.pointerId!==this.pid)return;this.pid=null;this.cur=null;this.redraw()};
+    this._cancel=e=>{this._endTouch(e);if(e.pointerId!==this.pid)return;this.cancelStroke()};
     this._noTouch=e=>{if(e.cancelable)e.preventDefault()};
+    this._wheel=e=>{if(!this.zoomable)return;e.preventDefault();const [x,y]=this._xy(e);
+      if(e.ctrlKey||e.metaKey)this.setView(zoomAt(this.view,Math.exp(-e.deltaY*0.01),x,y));else this.setView({...this.view,tx:this.view.tx-e.deltaX,ty:this.view.ty-e.deltaY})};
     cv.addEventListener("pointerdown",this._down);cv.addEventListener("pointermove",this._move);cv.addEventListener("pointerup",this._up);cv.addEventListener("pointercancel",this._cancel);
     cv.addEventListener("touchstart",this._noTouch,{passive:false});cv.addEventListener("touchmove",this._noTouch,{passive:false});
-    cv.addEventListener("contextmenu",this._noTouch)}
+    cv.addEventListener("contextmenu",this._noTouch);cv.addEventListener("wheel",this._wheel,{passive:false})}
   destroy(){const cv=this.cv;cv.removeEventListener("pointerdown",this._down);cv.removeEventListener("pointermove",this._move);cv.removeEventListener("pointerup",this._up);cv.removeEventListener("pointercancel",this._cancel);
-    cv.removeEventListener("touchstart",this._noTouch);cv.removeEventListener("touchmove",this._noTouch);cv.removeEventListener("contextmenu",this._noTouch)}
+    cv.removeEventListener("touchstart",this._noTouch);cv.removeEventListener("touchmove",this._noTouch);cv.removeEventListener("contextmenu",this._noTouch);cv.removeEventListener("wheel",this._wheel)}
   doUndo(){const op=this.undo.pop();if(!op)return false;const S=this.note.strokes;
     if(op.t==="add"){const i=S.lastIndexOf(op.st);if(i>=0)S.splice(i,1)}else if(op.t==="clear"){this.note.strokes=op.prev.slice()}
     this.redo.push(op);this.redraw();this.opt.onChange&&this.opt.onChange("undo");return true}
@@ -73,6 +123,6 @@ class Pad{
     this.undo.push(op);this.redraw();this.opt.onChange&&this.opt.onChange("redo");return true}
   clear(){if(!(this.note.strokes||[]).length)return false;this.undo.push({t:"clear",prev:this.note.strokes.slice()});this.note.strokes=[];this.redo.length=0;this.redraw();this.opt.onChange&&this.opt.onChange("clear");return true}
 }
-const NOTES={PAGE_W,PAGE_H,COLORS,WIDTHS,ERASER_W,encode,decode,simplify,mkStroke,drawStroke,drawAll,thumbURL,Pad};
+const NOTES={PAGE_W,PAGE_H,COLORS,WIDTHS,ERASER_W,ZMIN,ZMAX,encode,decode,simplify,mkStroke,drawStroke,drawAll,thumbURL,fitView,clampScale,clampView,pinchView,zoomAt,toPage,toScreen,Pad};
 G.NOTES=NOTES;if(typeof module!=="undefined")module.exports=NOTES;
 })(typeof window!=="undefined"?window:globalThis);

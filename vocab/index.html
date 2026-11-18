@@ -540,6 +540,39 @@ html.wide .pane-l.fs-pad{padding-right:calc(8px + var(--fsw,0px))}
 .nav .nlang{display:none}
 html.wide .nav .nlang{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:76px;margin:0 0 10px;border:2px solid #fff;color:#fff;font-size:.72rem;padding:4px 2px}
 html.wide .nav .nlang .nln{max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* v20 아이패드 필기 작업대 */
+.nstudio{position:fixed;top:0;right:0;bottom:0;left:0;z-index:5;display:flex;background:#000;padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right)}
+html.wide .nstudio{left:calc(104px + env(safe-area-inset-left))}
+html.nfocus .nstudio{left:0!important;bottom:0!important;padding-left:env(safe-area-inset-left)}
+html.nfocus .nav{display:none!important}
+html[data-view="notes"]:not([data-layout="phone"]) body{overflow:hidden}
+.ndrawer{display:none;flex:0 0 260px;width:260px;overflow:auto;overscroll-behavior:contain;border-right:2px dashed #fff;padding:14px 12px;background:#000}
+.nstudio.dopen .ndrawer{display:block}
+html.mid .nstudio .ndrawer{position:absolute;left:0;top:0;bottom:0;z-index:4;width:300px;box-shadow:6px 0 0 #fff;border-right:2px solid #fff}
+.ndrawer .ndx{position:absolute;right:10px;top:12px;z-index:1}
+.ndrawer .nthumb{flex-basis:38px;height:50px}
+.ndrawer .lsw .nm{display:none}
+.ndrawer .lsw{padding:0 8px}
+html.mid .ndrawer .head{padding-right:48px}
+.nmain{flex:1;min-width:0;display:flex;flex-direction:column;padding:8px 10px 10px}
+.nedit-s{display:flex;flex-direction:column;flex:1;min-height:0}
+.nbar{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center}
+.nbar .ntools{display:contents}
+.nbar .ngrp{gap:3px}
+.nbar button.nt,.nbar .ntools button{min-height:40px;min-width:38px;padding:0 6px;border:2px solid #fff;background:#000;color:#fff;font:inherit;font-size:.75rem;border-radius:0;display:flex;align-items:center;justify-content:center;gap:3px}
+.nbar button.on,.nbar .ntools button.on{background:#fff;color:#000}
+.nbar button:disabled{opacity:.4;border-style:dashed}
+.nbar .ntitle{flex:0 1 170px;min-width:90px;padding:6px 8px;font-size:.9rem;min-height:40px}
+.nbar .nzpct{min-width:58px}
+.nbar .ndel{margin-left:auto}
+.nedit-s .nword{margin:6px 0 0}
+html.nfocus .nedit-s .nword,html.nfocus .nbar .ntitle,html.nfocus .nbar #nDrawer{display:none}
+.nstage{position:relative;flex:1;min-height:0;margin-top:8px;border:2px solid #fff;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:var(--chk,#111)}
+.npage{position:absolute;left:0;top:0;transform-origin:0 0;background:#000 radial-gradient(#3a3a3a 1px,transparent 1.3px) 0 0/20px 20px;box-shadow:0 0 0 2px #fff;pointer-events:none}
+.nstage .ncv{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.nzhud{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:4px 10px;background:#000;color:#fff;border:2px solid #fff;font-size:1rem;display:none;pointer-events:none}
+.nzhud.on{display:block}
+.nstage .nstat{position:absolute;left:8px;bottom:6px;margin:0;font-size:.7rem;color:#aaa;background:#000;padding:1px 4px;pointer-events:none}
 </style>
 </head>
 <body>
@@ -1494,7 +1527,7 @@ async function bulkAutoFill(){const ta=document.querySelector("#bulkForm textare
   toast(BR.ok?BR.ok+"개 뜻 채웠어!"+(miss?" "+miss+"개는 못 찾았어. 직접 적어 줘":" 확인하고 넣어 줘"):(net?"인터넷 연결이 안 되는 것 같아 ㅠ":"하나도 못 찾았어 ㅠ 철자 한 번 봐 줘"))}
 
 function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac","decl","declrev","declprac"].includes(v);
-  const hideAll=hide||(v==="note"&&!isWide());
+  const hideAll=hide||(v==="note"&&layoutMode()==="phone");
   const nav=document.getElementById("nav");nav.style.display=hideAll?"none":"";document.documentElement.classList.toggle("nonav",hideAll);
   nav.innerHTML=`${isWide()?`<button type="button" class="nlang" data-lsw aria-label="언어 바꾸기 (지금: ${esc(L().name)})"><span class="ic">${flagOf(L())}</span><span class="nln">${esc(L().name)}</span></button>`:""}<div class="bar">
     <button data-go="home" class="${v==="home"?"on":""}"><span class="ic"></span>홈</button>
@@ -1541,7 +1574,7 @@ function viewGrammarWide(){if(!window.GRAMMAR)return viewGrammar();
   if(sel)right=`<article class="gsec gart" id="g-${sel.id}"><div class="gcatl">${esc(gCatName(sel.cat))}</div><h3 class="gat">${esc(sel.title)}</h3><div class="gbody" lang="${lg}">${sel.body}</div>${gMineHTML(sel,lg,ws,40)}</article>`;
   return splitHTML(left,right,"g-split")}
 function render(){applyLayout();const a=document.getElementById("app");unmountPad();if(!S.langs.length){document.getElementById("nav").style.display="none";a.innerHTML=viewNoLang();return}
-  if(S.view==="note"&&isWide())S.view="notes";pruneFresh();
+  if(S.view==="note"&&layoutMode()!=="phone")S.view="notes";pruneFresh();
   maybeSeedOpen();navHTML();const v=S.view||"home";
   if(v==="home")a.innerHTML=viewHome();
   else if(v==="cards")a.innerHTML=viewCards();
@@ -1555,7 +1588,7 @@ function render(){applyLayout();const a=document.getElementById("app");unmountPa
   else if(v==="declrev")a.innerHTML=viewDeclReveal();
   else if(v==="declprac")a.innerHTML=viewDeclPrac();
   else if(v==="grammar")a.innerHTML=viewGrammar();
-  else if(v==="notes")a.innerHTML=isWide()?viewNotesWide():viewNotes();
+  else if(v==="notes")a.innerHTML=layoutMode()!=="phone"?viewNotesStudio():viewNotes();
   else if(v==="note")a.innerHTML=viewNote();
   /* v17: 넓은 화면이면 두 칸 */
   if(isWide()){
@@ -1564,6 +1597,7 @@ function render(){applyLayout();const a=document.getElementById("app");unmountPa
     else if(v==="grammar")a.innerHTML=viewGrammarWide();
   }
   document.documentElement.dataset.view=v;
+  document.documentElement.classList.toggle("nfocus",!!NP.focus&&v==="notes"&&layoutMode()!=="phone");
   if(v==="note"||v==="notes")mountPad();
   lswInject(v);fsMount(v);
 }
@@ -2286,7 +2320,7 @@ function doImport(file){if(!file)return;const r=new FileReader();r.onload=()=>{t
 /* ---- v18: 필기 (그림판) ----
    S.notes=[{id,title,wordId,lang,created,updatedAt,strokes:[{c,s,e,d}]}]  (좌표는 1000×1300 종이 기준, d=압축한 점들)
    펜(애플 펜슬)을 쓰면 손 터치는 무시 → 손바닥 올려도 안 그려짐. "손가락도" 켜면 다시 손으로 그려짐. */
-const NP={tool:"pen",color:"#ffffff",width:6,penSeen:false,fingerOk:true,hist:{},fresh:new Set(),thumbs:new Map(),delArm:null};
+const NP={views:{},drawer:null,focus:false,tool:"pen",color:"#ffffff",width:6,penSeen:false,fingerOk:true,hist:{},fresh:new Set(),thumbs:new Map(),delArm:null};
 window.PAD=null;
 function notesAll(){return S.notes||(S.notes=[])}
 function noteById(id){return notesAll().find(n=>n.id===id)}
@@ -2297,7 +2331,7 @@ function noteThumb(n){const k=n.id+":"+(n.updatedAt||0)+":"+(n.strokes||[]).leng
 function fmtDay(t){if(!t)return"";const d=new Date(t);return (d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
 function newNote(o){const n={id:"n"+uid(),title:"",created:new Date().toISOString(),updatedAt:0,strokes:[],...(o||{})};notesAll().unshift(n);NP.fresh.add(n.id);return n}
 /* 단어에서 "필기" 눌러 만들었는데 아무것도 안 그리고 나가면 조용히 버림 */
-function pruneFresh(){if(!NP.fresh.size)return;const keep=(S.view==="note"||(S.view==="notes"&&isWide()))?S.noteId:null;let ch=false;
+function pruneFresh(){if(!NP.fresh.size)return;const keep=(S.view==="note"||(S.view==="notes"&&layoutMode()!=="phone"))?S.noteId:null;let ch=false;
   [...NP.fresh].forEach(id=>{if(id===keep)return;NP.fresh.delete(id);const n=noteById(id);if(n&&!(n.strokes||[]).length&&!(n.title||"").trim()){S.notes=notesAll().filter(x=>x!==n);ch=true}});
   if(ch)save()}
 function noteListHTML(sel){const ns=notesAll().slice().sort((a,b)=>(b.updatedAt||Date.parse(b.created)||0)-(a.updatedAt||Date.parse(a.created)||0));
@@ -2331,12 +2365,13 @@ function noteEditorHTML(n,wide){const w=noteWord(n);
     ${ntoolsHTML()}
     <div class="npaper" id="npaper"><canvas id="noteCv" class="ncv" aria-label="필기 공간 (그리기)"></canvas></div>
     <p class="hint nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"}</p></div>`}
-function refreshTools(){const t=document.getElementById("ntools");if(t)t.outerHTML=ntoolsHTML();const st=document.getElementById("nstat");if(st)st.textContent=NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"}
+function refreshTools(){const t=document.getElementById("ntools");if(t)t.outerHTML=ntoolsHTML();const st=document.getElementById("nstat");if(st)st.textContent=(NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려")+(st.closest(".nstage")?" · 두 손가락: 확대/이동":"")}
 function refreshThumb(n){const b=document.querySelector(`[data-nopen="${CSS.escape(n.id)}"]`);if(!b)return;const im=b.querySelector(".nthumb");if(im){const u=noteThumb(n);im.innerHTML=u?`<img src="${u}" alt="">`:""}
   const h=b.querySelector(".nmeta .hint");if(h)h.textContent=h.textContent.replace(/\d+획/,(n.strokes||[]).length+"획")}
 function mountPad(){const cv=document.getElementById("noteCv");if(!cv||!window.NOTES)return;const n=noteById(S.noteId);if(!n)return;
   const h=NP.hist[n.id]||(NP.hist[n.id]={undo:[],redo:[]});
-  PAD=new NOTES.Pad(cv,n,{penSeen:NP.penSeen,onPen:()=>{NP.penSeen=true;NP.fingerOk=false;refreshTools()},onChange:()=>{NP.fresh.delete(n.id);save();refreshTools();clearTimeout(mountPad._t);mountPad._t=setTimeout(()=>refreshThumb(n),300)}});
+  const studio=!!document.getElementById("nstudio");if(studio)studioPlace();
+  PAD=new NOTES.Pad(cv,n,{zoom:studio,initView:NP.views[n.id],onView:v=>studioView(n.id,v),onGesture:on=>{const h=document.getElementById("nzhud");if(h)h.classList.toggle("on",on)},penSeen:NP.penSeen,onPen:()=>{NP.penSeen=true;NP.fingerOk=false;refreshTools()},onChange:()=>{NP.fresh.delete(n.id);save();refreshTools();clearTimeout(mountPad._t);mountPad._t=setTimeout(()=>refreshThumb(n),300)}});
   PAD.fingerOk=NP.fingerOk;PAD.undo=h.undo;PAD.redo=h.redo;PAD.tool=NP.tool;PAD.color=NP.color;PAD.width=NP.width;
   /* 기록 안의 획이 동기화로 새 객체가 됐으면 이어지게 */
   [...h.undo,...h.redo].forEach(op=>{if(op.t==="add"&&!n.strokes.includes(op.st)){const f=n.strokes.find(x=>x.d===op.st.d&&x.c===op.st.c&&x.s===op.st.s&&x.e===op.st.e);if(f)op.st=f}})}
@@ -2344,7 +2379,7 @@ function unmountPad(){if(PAD){PAD.destroy();PAD=null}}
 window.addEventListener("resize",()=>{if(PAD&&document.body.contains(PAD.cv)){clearTimeout(unmountPad._r);unmountPad._r=setTimeout(()=>PAD&&PAD.resize(),120)}});
 /* 그리는 중엔 핀치 확대·스크롤 막기 (iOS Safari) */
 ["gesturestart","gesturechange"].forEach(t=>document.addEventListener(t,e=>{const v=S.view;if((v==="note"||v==="notes")&&document.getElementById("noteCv"))e.preventDefault()},{passive:false}));
-function openNote(id){S.noteId=id;NP.delArm=null;S.view=isWide()?"notes":"note";render()}
+function openNote(id){S.noteId=id;NP.delArm=null;if(layoutMode()==="mid")NP.drawer=false;S.view=layoutMode()!=="phone"?"notes":"note";render()}
 function openWordNote(wid){const w=words().find(x=>x.id===wid)||Object.values(S.words).flat().find(x=>x&&x.id===wid);if(!w)return;
   let n=noteOfWord(wid);if(!n){let lang=S.cur;for(const k in S.words)if((S.words[k]||[]).includes(w))lang=k;n=newNote({wordId:wid,lang})}
   closeSheet();openNote(n.id)}
@@ -2352,6 +2387,12 @@ function noteClick(e){const T=e.target;
   if(T.closest("#noteNew")){const n=newNote();openNote(n.id);return true}
   const o=T.closest("[data-nopen]");if(o){openNote(o.dataset.nopen);return true}
   const wn=T.closest("[data-wnote]");if(wn){openWordNote(wn.dataset.wnote);return true}
+  if(T.closest("#nDrawer")){NP.drawer=!studioDrawerOpen();const st=document.getElementById("nstudio");if(st)st.classList.toggle("dopen",NP.drawer);T.closest("#nDrawer").setAttribute("aria-pressed",String(NP.drawer));if(PAD&&layoutMode()==="wide")PAD.resize();return true}
+  if(T.closest("#nDrawerX")){NP.drawer=false;const st=document.getElementById("nstudio");if(st)st.classList.remove("dopen");return true}
+  if(T.closest("#nFocus")){NP.focus=!NP.focus;render();return true}
+  if(T.closest("#nZoomIn")){PAD&&PAD.zoomBy(1.25);return true}
+  if(T.closest("#nZoomOut")){PAD&&PAD.zoomBy(0.8);return true}
+  if(T.closest("#nZoomReset")){PAD&&PAD.resetView();return true}
   if(!T.closest("#ntools")&&!T.closest("#nDel"))return false;
   const n=noteById(S.noteId);if(!n||!PAD)return true;
   const tl=T.closest("[data-ntool]");if(tl){NP.tool=PAD.tool=tl.dataset.ntool;refreshTools();return true}
@@ -2463,6 +2504,35 @@ function lswClick(e){const T=e.target;
   const to=T.closest("[data-lswto]");if(to){const id=to.dataset.lswto;if(id===S.cur){closeSheet();return true}if(lswBusy())lswAsk(id);else switchLang(id);return true}
   const go=T.closest("[data-lswgo]");if(go){switchLang(go.dataset.lswgo);return true}
   return false}
+
+/* ---- v20: 아이패드 필기 작업대 (가로·세로 공통) ----
+   목록은 접는 서랍(가로: 왼쪽 좁은 칸 / 세로: 위에 덮는 서랍), 도구는 한 줄 막대, 나머지는 전부 캔버스.
+   두 손가락으로 확대(50%~500%)·이동, 한 손가락/펜은 그리기. 집중 모드는 옆 레일·하단 탭·제목줄 숨김. */
+function studioDrawerOpen(){return NP.drawer==null?layoutMode()==="wide":!!NP.drawer}
+function viewNotesStudio(){let n=noteById(S.noteId);if(!n){n=notesAll().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];S.noteId=n?n.id:null}
+  const dr=studioDrawerOpen()&&!NP.focus;
+  return `<div class="nstudio ${dr?"dopen":""}" id="nstudio">
+    <aside class="ndrawer" id="ndrawer" aria-label="필기 목록">${layoutMode()==="mid"?`<button type="button" class="x ndx" id="nDrawerX" aria-label="목록 닫기">✕</button>`:""}${notesHead()}<div style="height:10px"></div>${noteListHTML(S.noteId)}</aside>
+    <section class="nmain">${n?studioEditorHTML(n):`<div class="nbar"><button type="button" class="nt" id="nDrawer" aria-pressed="${dr}" aria-label="필기 목록"><span class="ic">\ue003</span>목록</button></div><div class="empty-pane"><p class="hint">아직 필기가 없어.</p><button type="button" class="btn primary" id="noteNew">\ue010 새 필기</button></div>`}</section></div>`}
+function studioEditorHTML(n){const w=noteWord(n);const dr=studioDrawerOpen()&&!NP.focus;const z=NP.views[n.id]?NP.views[n.id].z:1;
+  return `<div class="nedit nedit-s" data-note="${esc(n.id)}">
+    <div class="nbar" id="nbar">
+      <button type="button" class="nt" id="nDrawer" aria-pressed="${dr}" aria-label="필기 목록 열고 닫기"><span class="ic">\ue003</span></button>
+      <input class="ntitle" id="noteTitle" maxlength="60" placeholder="${esc(w?w.word:"제목")}" value="${esc(n.title||"")}" aria-label="필기 제목">
+      ${ntoolsHTML()}
+      <div class="ngrp nzg" role="group" aria-label="확대"><button type="button" class="nt" id="nZoomOut" aria-label="축소">−</button><button type="button" class="nt nzpct" id="nZoomReset" aria-label="확대 초기화 (지금 ${Math.round(z*100)}%)">${Math.round(z*100)}%</button><button type="button" class="nt" id="nZoomIn" aria-label="확대">+</button></div>
+      <button type="button" class="nt ${NP.focus?"on":""}" id="nFocus" aria-pressed="${NP.focus}" aria-label="집중 모드">${NP.focus?"집중 끄기":"집중"}</button>
+      <button type="button" class="nt ndel" id="nDel">${NP.delArm===n.id?"정말 지울까?":"삭제"}</button>
+    </div>
+    ${w?`<div class="nword hint">단어 · <b lang="${esc(wikiLangId(S.langs.find(l=>l.id===n.lang))||"")}">${esc(w.word)}</b> — ${esc(w.meaning||"")}</div>`:""}
+    <div class="nstage" id="nstage"><div class="npage" id="npage" aria-hidden="true"></div><canvas id="noteCv" class="ncv" aria-label="필기 공간 (그리기, 두 손가락으로 확대·이동)"></canvas>
+      <div class="nzhud" id="nzhud" aria-hidden="true">${Math.round(z*100)}%</div>
+      <p class="nstat" id="nstat">${NP.penSeen?(NP.fingerOk?"펜 감지 · 손가락도 그려져":"펜 감지 · 손 터치는 무시하는 중"):"손가락이나 펜으로 그려"} · 두 손가락: 확대/이동</p></div></div>`}
+function studioPlace(){const st=document.getElementById("nstudio");if(!st)return;const nav=document.getElementById("nav");
+  const nh=layoutMode()==="mid"&&!NP.focus&&nav&&getComputedStyle(nav).display!=="none"?nav.getBoundingClientRect().height:0;st.style.bottom=nh+"px";window.scrollTo(0,0)}
+function studioView(id,v){NP.views[id]={z:v.z,px:v.px,py:v.py};const pg=document.getElementById("npage");
+  if(pg){pg.style.transform=`translate(${v.tx}px,${v.ty}px)`;pg.style.width=(NOTES.PAGE_W*v.s)+"px";pg.style.height=(NOTES.PAGE_H*v.s)+"px";pg.style.backgroundSize=`${20*v.s}px ${20*v.s}px`}
+  const pct=Math.round(v.z*100)+"%";const b=document.getElementById("nZoomReset");if(b){b.textContent=pct;b.setAttribute("aria-label","확대 초기화 (지금 "+pct+")")}const h=document.getElementById("nzhud");if(h)h.textContent=pct}
 
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;window._canInstall=true;if((S.view||"home")==="home")render()});

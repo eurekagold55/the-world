@@ -1,4 +1,4 @@
-const CACHE = "vocab-cloud-v19";
+const CACHE = "vocab-cloud-v20";
 const ASSETS = [
   "./",
   "./index.html",
