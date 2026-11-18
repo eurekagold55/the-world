@@ -1437,10 +1437,10 @@ function ansLang(l){return wikiLangId(l)}
 function foldAns(s,lid){if(lid===undefined)lid=ansLang();if(lid!=="fr"&&lid!=="tr"){let x=fold(s);if(lid==="ru")x=x.replace(/ё/g,"е").replace(/е\u0308/g,"е");return x}
   let x=String(s??"").normalize("NFC").replace(/[\u00B4\u02CA\u02CB\u02B9\u02C8]/g,"").replace(/['\u2018\u2019\u201B\u2032ʻʼˈˊ`]/g,"");
   x=lid==="tr"?x.toLocaleLowerCase("tr"):x.toLowerCase();return x.replace(/\s+/g," ").trim()}
-function sameAns(a,b,lid){if(lid===undefined)lid=ansLang();if(/\(/.test(String(b??"")))return ansVariants(b).some(v=>sameAns1(a,v,lid))||sameAns1(a,b,lid);return sameAns1(a,b,lid)}
-function sameAns1(a,b,lid){const x=foldAns(a,lid),y=foldAns(b,lid);if(x===y)return true;
-  const strip=s=>s.replace(/^(que\s+|qu(?=(il|elle|on|ils|elles)\s))/i,"").replace(/^(je|tu|il|elle|on|nous|vous|ils|elles|ben|sen|o|biz|siz|onlar|я|ты|он|она|мы|вы|они)\s+/i,"").replace(/^j(?=[aeiouyhàâäéèêëïîôöùûü])/i,"");
-  return strip(x)===strip(y)}
+function sameAns(a,b,lid){if(lid===undefined)lid=ansLang();const D=window.ANSDIFF;
+  if(D&&D.accept)return D.accept(a,b,lid,x=>foldAns(x,lid));
+  return ansVariants(b).some(v=>foldAns(a,lid)===foldAns(v,lid))}
+/* v16: 채점 로직은 rules.js ANSDIFF.accept 로 (주어 생략·il/elle 대안·재귀 대명사 유지) */
 
 /* ---- v15: 어디가 틀렸는지 (글자 단위 비교 + 규칙 설명) ---- */
 function diffLines(input,answers,opt){const D=window.ANSDIFF;if(!D||!nfc(input).trim())return null;const r=D.best(input,answers,opt);if(!r)return null;
@@ -1455,7 +1455,7 @@ function diffLines(input,answers,opt){const D=window.ANSDIFF;if(!D||!nfc(input).
   while(ai<A.length){top+=esc(A[ai].raw);ai++}
   r.B.slice(r.pb).forEach(u=>{const o=opOf.get(u);bot+=o&&(o.t==="~"||o.t==="-")?`<u class="dfix">${ch(u)}</u>`:esc(u.raw)});
   return{r,top,bot}}
-function ansList(val,kind){val=String(val??"");if(kind==="decl")return val.split(/\s*[,\/]\s*/).filter(Boolean);return /\(/.test(val)?ansVariants(val):[val]}
+function ansList(val,kind){val=String(val??"");if(kind==="decl")return val.split(/\s*[,\/]\s*/).filter(Boolean);return window.ANSDIFF&&window.ANSDIFF.forms?window.ANSDIFF.forms(val):/\(/.test(val)?ansVariants(val):[val]}
 /* 피드백 블록. ctx={lang,key,label,rule,others,kind,concept} */
 function mistakeHTML(input,answer,ok,ctx){ctx=ctx||{};const D=window.ANSDIFF;if(!D)return"";const lang=ctx.lang||wikiLangId();const opt={yo:lang==="ru",strict:lang==="fr"||lang==="tr",lang};
   const rulesOn=prefOn("rules");let html="";
@@ -1466,10 +1466,14 @@ function mistakeHTML(input,answer,ok,ctx){ctx=ctx||{};const D=window.ANSDIFF;if(
         <div class="dl"><span class="dlab">정답</span><span class="dtx" lang="${lang}">${dl.bot}</span></div>
         <p class="dsum">${parts.join(" · ")}</p>
         <p class="dleg"><b class="dx">a</b> 틀린 글자 <i class="dmiss"></i> 빠진 자리 <s class="dex">a</s> 남는 글자 <u class="dfix">a</u> 고칠 글자</p></div>`}
-    const hs=hints.filter(h=>h.t!=="soft"&&(rulesOn||h.t==="accent"));
+    const hs=hints.filter(h=>h.t!=="soft"&&(rulesOn||h.t==="accent"||h.t==="refl"));
     hs.forEach(h=>{html+=`<p class="dhint">${esc(h.msg)}</p>`});
     if(rulesOn&&ctx.rule)html+=`<div class="drule"><span class="drl">규칙</span> ${esc(ctx.rule)}${ctx.concept?` <button type="button" class="clink" data-concept="${esc(ctx.concept)}">개념 보기 →</button>`:""}</div>`;
     else if(rulesOn&&ctx.concept)html+=`<div class="drule"><button type="button" class="clink" data-concept="${esc(ctx.concept)}">개념 보기 →</button></div>`}
+  /* v16: 주어 생략으로 맞은 경우 — 뭘 적었는지 보여 주기 */
+  if(ok&&nfc(input).trim()&&D.forms&&D.subjStrip){const X=foldAns(input,lang);const fs=D.forms(answer);
+    if(!fs.some(f=>foldAns(f,lang)===X)&&fs.some(f=>{const t=D.subjStrip(f,lang);return t.had&&foldAns(t.rest,lang)===X}))
+      html+=`<p class="dsoft">네 답 「<span lang="${lang}">${esc(nfc(input).trim())}</span>」도 정답 · 주어 대명사는 빼도 돼${fs.some(f=>/^(me|te|se|nous|vous)\s|^(m|t|s)'/i.test(D.subjStrip(f,lang).rest))?" (재귀 대명사는 꼭 써야 해)":""}</p>`}
   const soft=hints.find(h=>h.t==="soft");if(soft&&nfc(input).trim())html+=`<p class="dsoft">${esc(soft.msg)}</p>`;
   return html}
 function conjCtx(w,it){const sc=schema();const others={};sc.tenses.forEach(t=>t.persons.forEach(p=>{const k=ck(t.id,p.id);if(w.conj&&w.conj[k])others[k]={val:w.conj[k],label:t.name+" "+p.name}}));

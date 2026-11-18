@@ -554,8 +554,13 @@ function align(A,B){/* A=입력, B=정답 · 무시할 글자(key "") 빼고 편
   return{dist:Math.round(D[n][m]),raw:D[n][m],ops:ops.reverse()}}
 function ansDiff(input,answer,opt){opt=opt||{};const A=dUnits(input,opt),B=dUnits(answer,opt);
   let best={...align(A,B),pa:0,pb:0};
-  const pa=pronLen(A),pb=pronLen(B);
-  if(pb||pa){const r=align(A.slice(pa),B.slice(pb));if(r.raw<best.raw)best={...r,pa,pb}}
+  const pa=pronLen(A),pb=pronLen(B);const key=(U,n)=>U.slice(0,n).map(u=>u.key).join("");
+  /* v16: 주어 대명사는 생략해도 됨(정답 쪽만 떼기). 둘 다 있으면 같은 대명사일 때만 같이 떼기 — 다른 인칭은 틀린 걸로 보여 줌 */
+  const tryCut=(x,y)=>{const r=align(A.slice(x),B.slice(y));if(r.raw<best.raw)best={...r,pa:x,pb:y}};
+  if(pb)tryCut(0,pb);
+  const noQ=k=>k.replace(/^que /,"").replace(/^qu(?=(il|elle|on|ils|elles) )/,"");
+  if(pa&&pb&&noQ(key(A,pa))===noQ(key(B,pb)))tryCut(pa,pb);
+  if(pa&&!pb)tryCut(pa,0);
   const ops=best.ops;const cnt={sub:0,miss:0,extra:0};const soft=[];
   ops.forEach(o=>{if(o.t==="~")cnt.sub++;else if(o.t==="-")cnt.miss++;else if(o.t==="+")cnt.extra++;else if(o.a.marks!==o.b.marks)soft.push({got:o.a.raw,want:o.b.raw,stress:o.b.marks&&!o.a.marks})});
   return{dist:best.dist,ops,cnt,soft,preA:A.slice(0,best.pa).map(u=>u.raw).join(""),preB:B.slice(0,best.pb).map(u=>u.raw).join(""),A,B,pa:best.pa,pb:best.pb}}
@@ -566,7 +571,28 @@ const AUX_A=/^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurai|aur
 const deacc=s=>nfc(s).normalize("NFD").replace(/\p{M}/gu,"").replace(/ı/g,"i").replace(/œ/g,"oe").toLowerCase();
 function auxOf(form){const t=nfc(form||"").toLowerCase().replace(/[’']/g," ").replace(/^(que|qu)\s+/,"").split(/\s+/).filter(Boolean);
   for(const w of t.slice(0,4)){if(AUX_E.test(w))return"être";if(AUX_A.test(w))return"avoir"}return""}
-function variants(b){b=String(b==null?"":b);const alts=b.split(/\s*[,\/]\s*/).filter(Boolean);const out=[];
+/* v16: 주어 슬래시 대안 (il/elle/on, ils/elles, qu'il/elle …) 펼치기 */
+const SUBJ_ALL=new Set(["je","j","tu","il","elle","on","nous","vous","ils","elles","ben","sen","o","biz","siz","onlar","я","ты","он","она","оно","мы","вы","они"]);
+function subjSlash(b){b=String(b==null?"":b);const m=b.match(/(^|[\s'’])([^\s\/'’]+(?:\/[^\s\/'’]+)+)(?=[\s'’]|$)/);
+  if(!m)return[b];const parts=m[2].split("/");if(!parts.every(x=>SUBJ_ALL.has(nfc(x).toLowerCase())))return[b];
+  const at=m.index+m[1].length;return parts.flatMap(x=>subjSlash(b.slice(0,at)+x+b.slice(at+m[2].length)))}
+function parenVar(a){const parts=a.split(/(\([^)]*\))/);let o=[""];parts.forEach(pt=>{if(/^\(.*\)$/.test(pt)){const inner=pt.slice(1,-1);o=o.flatMap(x=>[x,x+inner])}else o=o.map(x=>x+pt)});return o}
+/* 앞의 que/qu' 와 주어 대명사 떼기 → {que,rest,had} (재귀 대명사 me/te/se/nous/vous 는 그대로) */
+const SUBJ_RX={fr:/^(je|tu|il|elle|on|nous|vous|ils|elles)\s+|^j'(?=[aeiouyhàâäéèêëïîôöùûü])/i,tr:/^(ben|sen|o|biz|siz|onlar)\s+/i,ru:/^(я|ты|он|она|оно|мы|вы|они)\s+/i};
+function subjStrip(s,lang){let x=nfc(String(s==null?"":s)).replace(/[\u2018\u2019\u201B\u2032\u02BC`´]/g,"'").replace(/\s+/g," ").trim();
+  const rx=SUBJ_RX[lang]||new RegExp(SUBJ_RX.fr.source+"|"+SUBJ_RX.tr.source+"|"+SUBJ_RX.ru.source,"i");
+  const q=lang==="fr"||!SUBJ_RX[lang]?x.match(/^(que\s+|qu'(?=(il|elle|on|ils|elles)\b))/i):null;const noQue=q?x.slice(q[0].length):x;
+  const m=noQue.match(rx);return{noQue,rest:m?noQue.slice(m[0].length):noQue,had:!!m,que:!!q}}
+/* 채점: a(입력)가 b(정답)와 같은가. fold 는 정규화 함수(없으면 optFor(lang) 기준) */
+function accept(a,b,lang,fold){fold=fold||(s=>dUnits(s,optFor(lang)).map(u=>u.key).join(""));const X=fold(a);if(!X)return false;
+  const forms=[...new Set(subjSlash(b).flatMap(parenVar).concat([String(b==null?"":b)]))].slice(0,48);const ia=subjStrip(a,lang);
+  return forms.some(f=>{if(fold(f)===X)return true;const s=subjStrip(f,lang);
+    if(s.que&&fold(s.noQue)===X)return true;          /* que 생략 */
+    if(s.had&&fold(s.rest)===X)return true;           /* 주어 생략 (재귀 대명사는 남겨야 함) */
+    if(!s.had&&ia.had&&fold(ia.rest)===fold(s.rest))return true; /* 정답엔 주어 없는데 입력에 붙인 경우 */
+    if(s.had&&ia.had&&fold(ia.rest)===fold(s.rest)&&fold(ia.noQue.slice(0,ia.noQue.length-ia.rest.length))===fold(s.noQue.slice(0,s.noQue.length-s.rest.length)))return true; /* que 생략 + 같은 주어 */
+    return false})}
+function variants(b){b=String(b==null?"":b);const alts=b.split(/\s*,\s*/).filter(Boolean).flatMap(subjSlash).flatMap(x=>x.split(/\s*\/\s*/)).filter(Boolean);const out=[];
   (alts.length?alts:[b]).forEach(a=>{const parts=a.split(/(\([^)]*\))/);let o=[""];parts.forEach(pt=>{if(/^\(.*\)$/.test(pt)){const inner=pt.slice(1,-1);o=o.flatMap(x=>[x,x+inner])}else o=o.map(x=>x+pt)});out.push(...o)});
   return out.slice(0,24)}
 function trLbl(c,lang){if(lang!=="tr")return c;return c==="i"?"점 있는 i":c==="ı"?"점 없는 ı":c==="I"?"점 없는 I":c==="İ"?"점 있는 İ":c}
@@ -582,6 +608,11 @@ function ansHints(input,answer,ctx){ctx=ctx||{};const out=[];const O=optFor(ctx.
     /* 성·수 일치 */
     if(!out.some(h=>h.t==="aux")&&auxOf(answer)==="être"&&r.dist>0&&["e","s","es"].some(x=>variants(answer).some(v=>ansDiff(input.trim()+x,v,O).dist===0)))
       out.push({t:"agr",msg:"과거분사 성·수 일치: être 복합시제라 주어(여성 -e, 복수 -s)에 맞춰 붙여."})}
+  /* v16: 재귀 대명사 빠짐 (se laver → vous vous laverez) */
+  if(ctx.lang==="fr"&&r.dist>0){const ex=forms(answer).map(f=>subjStrip(f,"fr").rest);const ia=subjStrip(input,"fr").rest;
+    const rf=ex.map(x=>x.match(/^(me|te|se|nous|vous)\s+|^(m|t|s)'/i)).find(Boolean);
+    if(rf&&!/^(me|te|se|nous|vous)\s+|^(m|t|s)'/i.test(ia)&&ex.some(x=>dUnits(x.slice(x.match(/^(me|te|se|nous|vous)\s+|^(m|t|s)'/i)?.[0].length||0),O).map(u=>u.key).join("")===dUnits(ia,O).map(u=>u.key).join("")))
+      out.push({t:"refl",msg:`재귀 대명사 「${rf[0].trim()}」가 빠졌어. 주어는 빼도 되지만 재귀 대명사(me/te/se/nous/vous)는 꼭 써야 해.`})}
   /* -ger: a/o 앞 e 빠짐 */
   if(ctx.lang==="fr"){const i=r.ops.findIndex((o,k)=>o.t==="-"&&o.b.key==="e"&&k>0&&r.ops[k-1].b&&r.ops[k-1].b.key==="g"&&r.ops[k+1]&&r.ops[k+1].b&&/[ao]/.test(r.ops[k+1].b.key));
     if(i>0)out.push({t:"spell",msg:"g 뒤에 e가 빠졌어: a/o 앞에서 [ʒ] 소리를 지키려고 ge로 써 (mangeais, mangeons)."})}
@@ -606,7 +637,8 @@ function frGenderHint(word,gender){const w=deacc(String(word||"").replace(/^(le|
   if(FR_G_EXC[raw]){return `${raw}는 어미 규칙의 예외야 — ${FR_G_EXC[raw]==="f"?"여성(la)":"남성(le)"}로 외워.`}
   const e=FR_G_END.find(([x])=>w.endsWith(deacc(x)));if(!e)return"";
   return e[1]===gender?`-${e[0]}로 끝나는 명사는 대부분 ${e[1]==="f"?"여성(la)":"남성(le)"}이야.`:`-${e[0]}는 보통 ${e[1]==="f"?"여성":"남성"}인데, 이 단어는 예외라 ${gender==="f"?"여성(la)":"남성(le)"}.`}
-const ANSDIFF={optFor,units:dUnits,diff:ansDiff,best:ansDiffBest,variants,pronLen,hints:ansHints,auxOf,frGenderHint};
+function forms(b){return[...new Set(subjSlash(b).flatMap(parenVar))].slice(0,48)}
+const ANSDIFF={accept,forms,subjStrip,subjSlash,optFor,units:dUnits,diff:ansDiff,best:ansDiffBest,variants,pronLen,hints:ansHints,auxOf,frGenderHint};
 
 /* 진입점 */
 function explain(w,lang){if(!w)return null;if(lang==="ru"){if(w.pos==="v")return ruVerb(w);if(w.pos==="n")return ruNoun(w);if(w.pos==="adj")return ruAdj(w)}
