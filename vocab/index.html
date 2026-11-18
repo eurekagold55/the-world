@@ -398,6 +398,63 @@ input.sug{border:2px dashed #fff!important;background:linear-gradient(#000,#000)
 .dconf{border:2px solid #fff;padding:10px;line-height:1.6}
 .dconf b{background:#fff;color:#000;padding:0 3px;font-weight:400}
 .langs .chip{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+/* ---- v17: 기기 동기화 ---- */
+.syncbox{margin-top:16px;padding-top:12px;border-top:2px dashed #fff}
+.synch{margin:0 0 8px;font-size:1rem;font-weight:400;display:flex;align-items:center;gap:8px}
+.syncst{margin-left:auto;font-size:.72rem;border:1px solid #fff;padding:1px 6px}
+.synchelp{border:1px dashed #888;padding:6px 10px;margin:8px 0 10px}
+.synchelp summary{cursor:pointer;min-height:32px;display:flex;align-items:center}
+.synchelp ol{margin:6px 0;padding-left:1.3em;line-height:1.7;font-size:.86rem}
+.synchelp b,.syncbox b{font-weight:400;background:#fff;color:#000;padding:0 3px}
+.syncinfo{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:.86rem}
+.syncinfo dt{color:#999}.syncinfo dd{margin:0}
+.syncinfo code{font-family:inherit;letter-spacing:.04em}
+.syncmsg{min-height:1.4em;margin:8px 0 0;font-size:.82rem}
+.syncmsg:not(:empty){border-left:4px solid #fff;padding-left:8px}
+/* ---- v17: 아이패드 · 큰 화면 ---- */
+html.mid,html.wide{font-size:17px}
+html.mid .app{max-width:760px;padding-left:calc(24px + env(safe-area-inset-left));padding-right:calc(24px + env(safe-area-inset-right))}
+html.mid .nav .bar{max-width:760px}
+html.mid .nav button{min-height:58px;font-size:.78rem}
+html.wide .nav{top:0;bottom:0;right:auto;width:calc(104px + env(safe-area-inset-left));flex-direction:column;justify-content:flex-start;align-items:stretch;
+  padding:calc(20px + env(safe-area-inset-top)) 10px calc(20px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));border-top:0;border-right:2px solid #fff;
+  background:#000}
+html.wide .nav .bar{flex-direction:column;gap:8px;max-width:none}
+html.wide .nav button{flex:0 0 auto;min-height:76px;font-size:.8rem;gap:6px}
+html.wide .nav .ic{font-size:1.5rem}
+html.wide .app{max-width:1320px;margin:0 0 0 calc(104px + env(safe-area-inset-left));padding:24px calc(32px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) 32px}
+html.wide.nonav .app{margin:0 auto;max-width:860px;padding-left:calc(32px + env(safe-area-inset-left))}
+html.wide .split{display:grid;grid-template-columns:minmax(340px,420px) minmax(0,1fr);gap:28px;align-items:start}
+html.wide .pane-l{position:sticky;top:16px;max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding-right:8px;scrollbar-width:thin}
+html.wide .pane-r{min-width:0;border-left:2px dashed #fff;padding-left:28px;min-height:calc(100dvh - 64px)}
+html.wide.nonav .split{grid-template-columns:minmax(300px,380px) minmax(0,1fr)}
+html.wide[data-view="conj"] .app,html.wide[data-view="decl"] .app,html.wide[data-view="conjrev"] .app,html.wide[data-view="declrev"] .app{max-width:1320px;margin:0 auto}
+html.wide .item.sel{outline:3px solid #fff;outline-offset:-3px;background:#111}
+html.wide .item.sel .meta .w::before{content:"▶ ";}
+html.wide .wd{border:2px solid #fff;padding:24px 28px;position:sticky;top:16px}
+html.wide .wd-h{display:flex;align-items:center;gap:14px}
+html.wide .wd-w{font-size:2.4rem;margin:0;font-weight:400;line-height:1.2;word-break:break-word}
+html.wide .wd-m{font-size:1.3rem;margin:14px 0 8px}
+html.wide .wd-ex{color:#bbb;margin:0 0 12px;font-style:normal;border-left:4px solid #fff;padding-left:10px}
+html.wide .wd-srs{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:16px 0;font-size:.9rem}
+html.wide .wd-srs dt{color:#999}html.wide .wd-srs dd{margin:0}
+html.wide .wd-act{margin-top:16px;gap:10px}
+html.wide .wd-act .btn{min-height:52px}
+html.wide .gidx{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+html.wide .gix{text-align:left;min-height:46px;padding:8px 12px;border:1px solid #555;background:#000;color:#fff}
+html.wide .gix.on{background:#fff;color:#000;border-color:#fff}
+html.wide .gart{border:2px solid #fff;padding:20px 24px}
+html.wide .gat{margin:0 0 12px;font-size:1.4rem;font-weight:400}
+html.wide[data-view="quizrun"] .app,html.wide[data-view="cards"] .app,html.wide[data-view="conjprac"] .app,html.wide[data-view="declprac"] .app{max-width:760px}
+html.wide[data-view="home"] .app{max-width:1180px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:28px;align-items:start}
+html.wide[data-view="home"] .app>*{grid-column:1/-1}
+html.wide[data-view="home"] .app>.hero{grid-column:1;position:sticky;top:16px}
+html.wide[data-view="home"] .app>.panel{grid-column:2;grid-row:span 3}
+html.wide[data-view="home"] .app>.more{grid-column:1}
+html.wide .wd-spk{position:static;margin-left:auto;font-size:1.3rem;min-width:52px;min-height:52px}
+html.wide .btn,html.mid .btn{min-height:50px}
+html.wide .chip,html.mid .chip{min-height:44px}
+html.wide .sheet{max-width:620px}
 </style>
 </head>
 <body>
@@ -407,6 +464,7 @@ input.sug{border:2px dashed #fff!important;background:linear-gradient(#000,#000)
 <script src="packs.js"></script>
 <script src="rules.js"></script>
 <script src="grammar.js"></script>
+<script src="sync.js"></script>
 <script>
 const KEY="vocab-cloud-v1";
 const PRESETS=[{id:"fr",name:"프랑스어",flag:"🇫🇷",tts:"fr-FR"},{id:"ru",name:"러시아어",flag:"🇷🇺",tts:"ru-RU"},{id:"tr",name:"터키어",flag:"🇹🇷",tts:"tr-TR"}];
@@ -465,7 +523,12 @@ function migrate(s){s.customSub=s.customSub||{n:[],adj:[],v:[],adv:[],other:[]};
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&Array.isArray(s.langs)&&s.words)return migrate(s)}catch(e){}
   return migrate({cur:"fr",langs:PRESETS.map(l=>({...l})),words:{}})}
 let S=load();
-const save=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||"",prefs:S.prefs||{}}));
+/* v17: 동기화용 시간표 — 저장할 때마다 바뀐 곳만 시각 찍기 (단어 updatedAt/srsAt, 지운 건 묘비) */
+if(window.SYNC)SYNC.migrateStamps(S);
+let SYNC_SNAP=window.SYNC?SYNC.snapshot(S):null;
+const saveRaw=()=>localStorage.setItem(KEY,JSON.stringify({cur:S.cur,langs:S.langs,words:S.words,customSub:S.customSub,seeded:S.seeded||{},lastPos:S.lastPos||"",lastSub:S.lastSub||"",prefs:S.prefs||{},stamps:S.stamps||{}}));
+const save=()=>{let ch=false;if(window.SYNC){try{const r=SYNC.stamp(S,SYNC_SNAP);SYNC_SNAP=r.snap;ch=r.changed}catch(e){console.warn("stamp",e&&e.message)}}
+  saveRaw();if(ch&&typeof syncDirty==="function")syncDirty()};
 save();
 const NOLANG={id:"",name:"",flag:"",tts:""};
 const L=()=>S.langs.find(l=>l.id===S.cur)||S.langs[0]||NOLANG;
@@ -542,7 +605,88 @@ function openSettings(){openSheet(`<div class="grab"></div><h3>설정 <button cl
   <div class="setrow"><input type="checkbox" id="setPhon" ${prefOn("phon")?"checked":""}><label for="setPhon">러시아어 발음 표기 <span class="hint">단어 옆에 [малако́]처럼 실제 소리 (강세 없는 о→а, е/я→и 등)</span></label></div>
   <div class="setrow"><input type="checkbox" id="setRules" ${prefOn("rules")?"checked":""}><label for="setRules"> 규칙 설명 <span class="hint">변화표 위 규칙 요약 + 칸마다 ? 설명</span></label></div>
   <button type="button" class="btn ghost block" id="langManage" style="margin-top:10px">언어 관리 · 이름 바꾸기 / 삭제</button>
-  <p class="hint">언어 칩을 길게 눌러도 바로 열려.</p>`)}
+  <p class="hint">언어 칩을 길게 눌러도 바로 열려.</p>
+  <section class="syncbox" id="syncBox" aria-labelledby="syncH">${syncBoxHTML()}</section>`)}
+
+/* ---- v17: 기기 동기화 (GitHub 비공개 Gist, 서버 없음) ---- */
+const SYNC_KEY="vocab-cloud-sync-v1";/* 토큰은 이 기기에만. 백업 파일·Gist 에는 절대 안 들어감 */
+function syncCfg(){try{return JSON.parse(localStorage.getItem(SYNC_KEY)||"{}")||{}}catch(e){return{}}}
+function syncSetCfg(o){const c={...syncCfg(),...o};Object.keys(c).forEach(k=>{if(c[k]===undefined||c[k]===null)delete c[k]});localStorage.setItem(SYNC_KEY,JSON.stringify(c));return c}
+const SY={busy:false,again:false,t:null,lastPull:0,status:"",kind:""};
+function syncOn(){const c=syncCfg();return !!(c.token&&c.on)}
+function maskTok(t){t=String(t||"");if(t.length<8)return"••••";return t.slice(0,4)+"••••••••"+t.slice(-4)}
+function agoKo(ms){if(!ms)return"아직 안 했어";const d=Math.round((Date.now()-ms)/1000);const hm=new Date(ms).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+  if(d<45)return"방금 ("+hm+")";if(d<3600)return Math.round(d/60)+"분 전 ("+hm+")";if(d<86400)return Math.round(d/3600)+"시간 전 ("+hm+")";return new Date(ms).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}
+function syncBoxHTML(){const c=syncCfg();
+  const head=`<h4 id="syncH" class="synch">\ue006 기기 동기화 <span class="syncst">${syncOn()?"켜짐":"꺼짐"}</span></h4>`;
+  if(!syncOn())return head+`<p class="hint" style="margin-top:0">아이폰·아이패드처럼 기기가 여러 개면 단어를 같이 쓸 수 있어. 서버 없이 니 GitHub 비공개 Gist 하나에 저장하고, 기기마다 <b>합쳐</b> (덮어쓰기 X).</p>
+    <details class="synchelp"><summary>토큰 만드는 법</summary><ol>
+      <li><a href="https://github.com/settings/tokens" target="_blank" rel="noopener"><b>github.com/settings/tokens</b></a> 열기 (로그인)</li>
+      <li><b>Generate new token</b> → <b>Generate new token (classic)</b></li>
+      <li>Note: 아무거나 (예: 단어 구름 동기화)</li>
+      <li>Expiration: <b>No expiration</b> (아니면 최대한 길게)</li>
+      <li>권한은 <b>gist</b> 하나만 체크. 다른 건 다 비워 둬</li>
+      <li>맨 아래 <b>Generate token</b> → <b>ghp_</b>로 시작하는 토큰 복사</li>
+      <li>여기 붙여 넣고 <b>연결</b>. 다른 기기에도 같은 토큰 넣으면 같은 Gist를 찾아</li></ol>
+      <p class="hint">토큰은 이 기기 안에만 저장돼 (백업 파일에도 안 들어가). 그래도 비밀번호처럼 아무한테도 보여 주지 마.</p></details>
+    <form id="syncForm" autocomplete="off"><div class="field"><label for="syncTok">GitHub 토큰 (gist 권한만)</label>
+      <input id="syncTok" name="tok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_… 붙여 넣기" value=""></div>
+      <button class="btn primary block" type="submit" id="syncConnect">연결</button></form>
+    <p class="syncmsg" id="syncMsg" role="status">${esc(SY.status||(c.err||""))}</p>`;
+  return head+`<dl class="syncinfo"><dt>토큰</dt><dd><code>${esc(maskTok(c.token))}</code></dd>
+    <dt>Gist</dt><dd>${c.gistId?`<code>${esc(String(c.gistId).slice(0,8))}…</code> (비공개)`:"찾는 중…"}</dd>
+    <dt>마지막 동기화</dt><dd id="syncLast">${esc(agoKo(c.last))}</dd></dl>
+    <p class="syncmsg" id="syncMsg" role="status">${esc(SY.status||c.err||"")}</p>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn primary" id="syncNowBtn" ${SY.busy?"disabled":""}>${SY.busy?"동기화 중…":"지금 동기화"}</button>
+    <button type="button" class="btn ghost" id="syncOffBtn">동기화 끄기</button></div>
+    <p class="hint">열 때·돌아올 때 받아 오고, 바꾸면 3초 뒤·앱 닫을 때 올려. 지운 단어는 다른 기기에서도 지워져.</p>`}
+function syncPaint(){const b=document.getElementById("syncBox");if(b){const f=document.activeElement&&document.activeElement.id==="syncTok";if(!f)b.innerHTML=syncBoxHTML();else{const m=document.getElementById("syncMsg");if(m)m.textContent=SY.status||""}}}
+function syncMsg(m,kind){SY.status=m;SY.kind=kind||"";syncPaint()}
+/* 합친 결과를 지금 상태에 넣기 — 단어 객체는 그대로 두고 내용만 바꿔서(진행 중 퀴즈가 안 깨지게) */
+function syncApply(m){const byId=new Map();Object.values(S.words||{}).forEach(a=>(a||[]).forEach(w=>{if(w&&w.id)byId.set(w.id,w)}));
+  const words={};Object.keys(m.words||{}).forEach(lid=>{words[lid]=(m.words[lid]||[]).map(w=>{const o=byId.get(w.id);if(o){if(o!==w){Object.keys(o).forEach(k=>{if(!(k in w))delete o[k]});Object.assign(o,JSON.parse(JSON.stringify(w)))}return o}return JSON.parse(JSON.stringify(w))})});
+  S.langs=JSON.parse(JSON.stringify(m.langs||[]));S.words=words;S.customSub=JSON.parse(JSON.stringify(m.customSub||{}));["n","adj","v","adv","other"].forEach(k=>{S.customSub[k]=S.customSub[k]||[]});
+  S.seeded=JSON.parse(JSON.stringify(m.seeded||{}));S.prefs=JSON.parse(JSON.stringify(m.prefs||{}));S.stamps=JSON.parse(JSON.stringify(m.stamps||{}));
+  if(!S.langs.some(l=>l.id===S.cur))S.cur=S.langs[0]?S.langs[0].id:"";
+  migrate(S);SYNC_SNAP=SYNC.snapshot(S);saveRaw()}
+const SYNC_BUSY_VIEWS=["quizrun","prac","dprac","cards"];
+async function syncNow(reason){if(!window.SYNC||!syncOn())return;if(SY.busy){SY.again=true;return}
+  const c=syncCfg();if(c.blockUntil&&Date.now()<c.blockUntil&&reason!=="manual"){return}
+  if(navigator.onLine===false){syncMsg("오프라인이야. 인터넷 되면 알아서 할게","offline");SY.pending=true;return}
+  clearTimeout(SY.t);SY.t=null;SY.busy=true;SY.pending=false;if(reason==="manual"||reason==="setup")syncMsg("동기화 중…","busy");else syncPaint();
+  try{const before=SYNC.canon(SYNC.payload(S));
+    const r=await SYNC.syncOnce({token:c.token,gistId:c.gistId,local:SYNC.payload(S)});
+    if(!syncOn())return;/* 그 사이 껐으면 무시 */
+    const changed=r.changedLocal&&SYNC.canon(r.merged)!==before;
+    if(changed){/* 동기화 중에 또 바뀐 게 있으면 그것까지 다시 합침 */
+      const now=SYNC.canon(SYNC.payload(S));if(now!==before){SY.again=true}else syncApply(r.merged)}
+    syncSetCfg({gistId:r.gistId,last:Date.now(),err:undefined,blockUntil:undefined});
+    syncMsg(r.created?"새 비공개 Gist 만들었어. 다른 기기에도 같은 토큰 넣어 줘":changed?"다른 기기 변경 합쳤어":"맞춰졌어","ok");
+    if(changed){const busyView=SYNC_BUSY_VIEWS.includes(S.view)||(document.getElementById("ov")&&!document.getElementById("syncBox"));if(!busyView)render();else SY.needRender=true}
+  }catch(e){const k=e&&e.kind;
+    if(k==="offline"){syncMsg("인터넷이 안 돼서 못 했어. 다시 연결되면 할게","offline");SY.pending=true}
+    else if(k==="auth"){syncSetCfg({err:"토큰이 안 먹혀 (만료됐거나 gist 권한이 없어). 끄고 다시 넣어 줘",on:false});syncMsg("토큰이 안 먹혀 (만료됐거나 gist 권한이 없어). 끄고 다시 넣어 줘","err")}
+    else if(k==="rate"){const until=Math.max(e.reset||0,Date.now()+(e.retryAfter||60)*1000);syncSetCfg({blockUntil:until});
+      syncMsg("GitHub가 잠깐 쉬래. "+new Date(until).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})+" 이후에 다시 할게","rate");setTimeout(()=>syncNow("retry"),Math.min(until-Date.now()+1500,36e5))}
+    else if(k==="corrupt"){syncMsg("Gist 파일을 못 읽겠어. 니 데이터는 그대로야","err")}
+    else{syncMsg("동기화 실패 ("+((e&&e.message)||"?")+"). 데이터는 그대로야","err");SY.pending=true}
+  }finally{SY.busy=false;syncPaint();if(SY.again){SY.again=false;SY.t=setTimeout(()=>{SY.t=null;syncNow("again")},400)}}}
+function syncDirty(){if(!syncOn())return;SY.pending=true;clearTimeout(SY.t);SY.t=setTimeout(()=>{SY.t=null;syncNow("push")},SYNC_DEBOUNCE)}
+let SYNC_DEBOUNCE=3000;
+async function syncConnect(tok){tok=String(tok||"").trim();if(!tok){syncMsg("토큰을 붙여 넣어 줘","err");return}
+  if(/\s/.test(tok)||tok.length<20){syncMsg("토큰 모양이 이상해. ghp_ 로 시작하는 거 통째로 복사해 줘","err");return}
+  syncSetCfg({token:tok,on:true,gistId:undefined,err:undefined,blockUntil:undefined,last:undefined});SY.status="";
+  const el=document.getElementById("syncTok");if(el){el.value="";el.blur()}
+  syncPaint();await syncNow("setup");
+  if(syncOn()&&syncCfg().gistId)toast("동기화 켰어");}
+function syncOff(){if(!confirm("이 기기 동기화를 끌까? 단어는 이 기기에 그대로 남고, Gist도 안 지워. 토큰만 이 기기에서 지워."))return;
+  clearTimeout(SY.t);SY.t=null;SY.pending=false;localStorage.removeItem(SYNC_KEY);SY.status="";syncPaint();toast("동기화 껐어")}
+document.addEventListener("visibilitychange",()=>{if(!syncOn())return;
+  if(document.hidden){if(SY.pending||SY.t){clearTimeout(SY.t);syncNow("hide")}}
+  else if(Date.now()-SY.lastPull>15000){SY.lastPull=Date.now();syncNow("focus")}});
+window.addEventListener("pagehide",()=>{if(syncOn()&&SY.pending){clearTimeout(SY.t);syncNow("hide")}});
+window.addEventListener("online",()=>{if(syncOn())syncNow("online")});
+setInterval(()=>{const l=document.getElementById("syncLast");if(l)l.textContent=agoKo(syncCfg().last)},30000);
 function schema(l){l=l||L();
   if(isFr(l))return{tenses:FR_TENSES.map(t=>({...t,persons:t.persons||FR_P})),groups:[{id:"er",name:"-er"},{id:"ir",name:"-ir"},{id:"re",name:"-re"},{id:"irr",name:"불규칙"}]};
   if(isRu(l))return{tenses:[{id:"pres",name:"현재 / 미래",persons:RU_P},{id:"past",name:"과거",persons:RU_PAST}],groups:[],aspect:true};
@@ -1247,7 +1391,7 @@ async function bulkAutoFill(){const ta=document.querySelector("#bulkForm textare
   toast(BR.ok?BR.ok+"개 뜻 채웠어!"+(miss?" "+miss+"개는 못 찾았어. 직접 적어 줘":" 확인하고 넣어 줘"):(net?"인터넷 연결이 안 되는 것 같아 ㅠ":"하나도 못 찾았어 ㅠ 철자 한 번 봐 줘"))}
 
 function navHTML(){const v=S.view||"home";const hide=["cards","quizrun","conj","conjrev","conjprac","decl","declrev","declprac"].includes(v);
-  const nav=document.getElementById("nav");nav.style.display=hide?"none":"";
+  const nav=document.getElementById("nav");nav.style.display=hide?"none":"";document.documentElement.classList.toggle("nonav",hide);
   nav.innerHTML=`<div class="bar">
     <button data-go="home" class="${v==="home"?"on":""}"><span class="ic"></span>홈</button>
     <button data-go="cards" class="${v==="cards"?"on":""}"><span class="ic"></span>카드</button>
@@ -1260,7 +1404,43 @@ function installChip(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);c
   if(stand)return"";if(!(ios||window._canInstall))return"";
   return `<button class="install show" id="installBtn"> 홈 화면에 두면 앱처럼 열려요</button>`}
 
-function render(){const a=document.getElementById("app");if(!S.langs.length){document.getElementById("nav").style.display="none";a.innerHTML=viewNoLang();return}
+/* ---- v17: 아이패드 / 큰 화면 레이아웃 ----
+   wide: 가로 900px 이상 + 세로 600px 이상 (아이패드 가로, 큰 창) → 왼쪽 레일 + 두 칸
+   mid : 가로 700px 이상 + 세로 600px 이상 (아이패드 세로) → 넓은 한 칸
+   아이폰(가로로 눕혀도 높이 < 600)은 그대로 */
+const MQ_WIDE=window.matchMedia?matchMedia("(min-width:900px) and (min-height:600px)"):{matches:false};
+const MQ_MID=window.matchMedia?matchMedia("(min-width:700px) and (min-height:600px)"):{matches:false};
+function isWide(){return !!MQ_WIDE.matches}
+function layoutMode(){return MQ_WIDE.matches?"wide":MQ_MID.matches?"mid":"phone"}
+function applyLayout(){const m=layoutMode(),h=document.documentElement;h.classList.toggle("wide",m==="wide");h.classList.toggle("mid",m==="mid");h.dataset.layout=m}
+[MQ_WIDE,MQ_MID].forEach(q=>{const f=()=>{const was=document.documentElement.dataset.layout;applyLayout();if(was!==document.documentElement.dataset.layout)render()};
+  if(q.addEventListener)q.addEventListener("change",f);else if(q.addListener)q.addListener(f)});
+window.addEventListener("orientationchange",()=>setTimeout(()=>{const was=document.documentElement.dataset.layout;applyLayout();if(was!==document.documentElement.dataset.layout)render()},250));
+function wideSel(){const ws=words();let w=ws.find(x=>x.id===S.selWord);if(!w){w=ws.slice().sort((a,b)=>(b.created||"").localeCompare(a.created||""))[0];S.selWord=w?w.id:null}return w}
+function wordDetail(w){if(!w)return `<div class="wd empty-pane"><p class="hint">왼쪽에서 단어를 골라 줘.</p></div>`;const m=mastery(w);
+  return `<article class="wd" aria-label="단어 자세히"><div class="wd-h"><h2 class="wd-w" lang="${esc(wikiLangId()||"")}">${esc(w.word)}${genderBadge(w)}</h2>
+    <button class="spk wd-spk" data-speak="${esc(w.word)}" aria-label="발음 듣기">\ue004</button></div>${phonHTML(w.word)}
+    <p class="wd-m">${esc(w.meaning||"(뜻 없음)")}</p>${w.ex?`<p class="wd-ex" lang="${esc(wikiLangId()||"")}">${esc(w.ex)}</p>`:""}
+    <div class="tag">${posName(w.pos)}${w.sub?" · "+esc(w.sub):""}${w.src==="topic"?` <span class="ab">자동 추가</span>`:""}</div>
+    <div class="lvl" aria-label="익힘 ${m}/5"><span class="lbar ${m>=5?"ok":""}"><i style="width:${m*20}%"></i></span><span class="lt">익힘 ${m}/5</span></div>
+    <dl class="wd-srs"><dt>다음 복습</dt><dd>${esc(w.due||"-")}</dd><dt>맞힌 횟수</dt><dd>${w.reps||0}</dd><dt>틀린 횟수</dt><dd>${w.lapses||0}</dd></dl>
+    <div class="row wd-act"><button type="button" class="btn primary" data-wedit="${w.id}">\ue002 편집</button>
+    ${w.pos==="v"?`<button type="button" class="btn ghost" data-conj="${w.id}">동사 변화표</button>`:declOn(w)?`<button type="button" class="btn ghost" data-decl="${w.id}">격변화표</button>`:""}</div></article>`}
+function splitHTML(left,right,cls){return `<div class="split ${cls||""}"><aside class="pane-l" aria-label="목록">${left}</aside><section class="pane-r">${right}</section></div>`}
+function viewGrammarWide(){if(!window.GRAMMAR)return viewGrammar();
+  const lg=gLang();const L0=GRAMMAR.LANGS[lg];const ws=langWordsFor(lg);const q=fold(S.gq||"");
+  const secs=L0.list.filter(x=>!q||fold(x.title+" "+(x.tags||"")+" "+x.body.replace(/<[^>]+>/g," ")).includes(q));
+  let sel=secs.find(x=>x.id===S.gOpen)||secs[0];
+  const left=`<div class="head"><button class="back" data-go="home" aria-label="홈">←</button><h2>문법</h2></div>
+    <div class="picks hscroll">${Object.entries(GRAMMAR.LANGS).map(([k,v])=>`<button type="button" class="chip ${k===lg?"on":""}" data-glang="${k}">${flagOf(PRESETS.find(p=>p.id===k)||{})} ${esc(v.name)}</button>`).join("")}</div>
+    <input class="search" id="gSearch" type="search" placeholder="개념 찾기 (예: 반과거, 조격, 모음조화)" value="${esc(S.gq||"")}">
+    <nav class="gidx">${secs.map(x=>`<button type="button" class="gix ${sel&&x.id===sel.id?"on":""}" data-gsel="${esc(x.id)}" aria-current="${sel&&x.id===sel.id?"true":"false"}">${esc(x.title)}</button>`).join("")||`<p class="hint">찾는 개념이 없어.</p>`}</nav>`;
+  let right=`<p class="hint">왼쪽에서 개념을 골라 줘.</p>`;
+  if(sel){let mine=[];try{mine=sel.mine?sel.mine(ws).slice(0,40):[]}catch(e){}
+    right=`<article class="gsec gart" id="g-${sel.id}"><h3 class="gat">${esc(sel.title)}</h3><div class="gbody" lang="${lg}">${sel.body}</div>
+      ${sel.mine?`<div class="gmine"><div class="gml">내 단어 (${mine.length})</div>${mine.length?`<div class="gwl">${mine.map(m=>`<button type="button" class="gw" data-gw="${esc(m.w.id)}" data-glid="${lg}">${esc(m.w.word)}${m.note?` <span class="gn">${esc(m.note)}</span>`:""}</button>`).join("")}</div>`:`<p class="hint" style="margin:0">아직 해당하는 단어가 없어.</p>`}</div>`:""}</article>`}
+  return splitHTML(left,right,"g-split")}
+function render(){applyLayout();const a=document.getElementById("app");if(!S.langs.length){document.getElementById("nav").style.display="none";a.innerHTML=viewNoLang();return}
   maybeSeedOpen();navHTML();const v=S.view||"home";
   if(v==="home")a.innerHTML=viewHome();
   else if(v==="cards")a.innerHTML=viewCards();
@@ -1274,7 +1454,16 @@ function render(){const a=document.getElementById("app");if(!S.langs.length){doc
   else if(v==="declrev")a.innerHTML=viewDeclReveal();
   else if(v==="declprac")a.innerHTML=viewDeclPrac();
   else if(v==="grammar")a.innerHTML=viewGrammar();
+  /* v17: 넓은 화면이면 두 칸 */
+  if(isWide()){
+    if(v==="list"){wideSel();const left=a.innerHTML;a.innerHTML=splitHTML(left,wordDetail(wideSel()));markSel()}
+    else if(["conj","conjrev","decl","declrev"].includes(v)){const right=a.innerHTML;const id=(v.startsWith("conj")?S.conjId:S.declId);if(id)S.selWord=id;a.innerHTML=splitHTML(viewList(),right);markSel()}
+    else if(v==="grammar")a.innerHTML=viewGrammarWide();
+  }
+  document.documentElement.dataset.view=v;
 }
+function markSel(){document.querySelectorAll(".pane-l [data-edit]").forEach(b=>{const on=b.dataset.edit===S.selWord;b.closest(".item")?.classList.toggle("sel",on);b.setAttribute("aria-current",on?"true":"false")});
+  const el=document.querySelector(".pane-l .item.sel");if(el&&el.scrollIntoView&&!markSel._busy){const pl=el.closest(".pane-l");if(pl){const r=el.getBoundingClientRect(),pr=pl.getBoundingClientRect();if(r.top<pr.top||r.bottom>pr.bottom)el.scrollIntoView({block:"nearest"})}}}
 /* ---- v15: 문법 탭 ---- */
 function gLang(){const g=S.gLang;if(g&&window.GRAMMAR&&GRAMMAR.LANGS[g])return g;const c=wikiLangId();return c&&window.GRAMMAR&&GRAMMAR.LANGS[c]?c:"fr"}
 function langWordsFor(lid){const l=S.langs.find(x=>wikiLangId(x)===lid);return l?(S.words[l.id]||[]):[]}
@@ -1627,6 +1816,8 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("[data-go]");if(t){go(t.dataset.go);return}
   const lg=e.target.closest("[data-lang]");if(lg){if(_lpFired){_lpFired=false;return}S.cur=lg.dataset.lang;S._af=null;save();render();return}
   if(e.target.closest("#langManage")){openLangList();return}
+  if(e.target.closest("#syncNowBtn")){syncNow("manual");return}
+  if(e.target.closest("#syncOffBtn")){syncOff();return}
   if(e.target.closest("#addLang2")){openAddLang();return}
   const lman=e.target.closest("[data-lman]");if(lman){openLangManage(lman.dataset.lman);return}
   const ldel=e.target.closest("[data-ldel]");if(ldel){openLangDelete(ldel.dataset.ldel);return}
@@ -1697,7 +1888,9 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#flash")){if(S.sess){S.sess.flipped=!S.sess.flipped;document.getElementById("flash")?.classList.toggle("flip",S.sess.flipped)}return}
   const rt=e.target.closest("[data-rate]");if(rt){rateCard(+rt.dataset.rate);return}
   const pr=e.target.closest("[data-prate]");if(pr){ratePrac(+pr.dataset.prate);return}
-  const ed=e.target.closest("[data-edit]");if(ed){openEdit(ed.dataset.edit);return}
+  const ed=e.target.closest("[data-edit]");if(ed){if(isWide()&&ed.closest(".pane-l")){S.selWord=ed.dataset.edit;if(S.view!=="list"){S.view="list"}render();return}openEdit(ed.dataset.edit);return}
+  const we=e.target.closest("[data-wedit]");if(we){openEdit(we.dataset.wedit);return}
+  const gs=e.target.closest("[data-gsel]");if(gs){S.gOpen=gs.dataset.gsel;render();document.querySelector(".pane-r")?.scrollTo?.(0,0);if(isWide())window.scrollTo(0,0);return}
   const pk=e.target.closest("[data-pick]");if(pk){pickMC(pk.dataset.pick);return}
   if(e.target.closest("#qNext")){quizNext();return}
   const st=e.target.closest("[data-stress]");if(st){const id=st.dataset.stress;const el=(id&&document.getElementById(id))||(document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)?document.activeElement:S._stressEl);if(el)insertStress(el);else toast("넣을 칸을 먼저 눌러 줘");return}
@@ -1725,6 +1918,7 @@ document.addEventListener("submit",e=>{
     toast("「"+word.word+"」 넣었어."+note);
     render();document.getElementById("addWord")?.focus();return}
   if(e.target.id==="typeForm"){e.preventDefault();checkType();return}
+  if(e.target.id==="syncForm"){e.preventDefault();syncConnect(document.getElementById("syncTok").value);return}
   if(e.target.id==="langEditForm"){e.preventDefault();saveLangEdit();return}
   if(e.target.id==="pracForm"){e.preventDefault();checkPrac();return}
   if(e.target.id==="declForm"){e.preventDefault();checkDecl();return}
@@ -1976,6 +2170,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 S.view="home";
 render();
 scheduleWikiIdle(2500);
+if(syncOn()){SY.lastPull=Date.now();setTimeout(()=>syncNow("open"),700)}
 </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE = "vocab-cloud-v16";
+const CACHE = "vocab-cloud-v17";
 const ASSETS = [
   "./",
   "./index.html",
@@ -13,6 +13,7 @@ const ASSETS = [
   "./packs.js",
   "./rules.js",
   "./grammar.js",
+  "./sync.js",
   "./vocabpx.woff2"
 ];
 self.addEventListener("install", (e) => {
@@ -24,10 +25,12 @@ self.addEventListener("activate", (e) => {
   );
 });
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
+  // v17 sync: GitHub API / gist raw files are never cached or intercepted (always live network, token stays in the request only)
+  if (url.hostname === "api.github.com" || url.hostname.endsWith(".githubusercontent.com")) return;
+  if (e.request.method !== "GET") return;
   if (url.origin !== self.location.origin) return; // Wiktionary etc. go straight to network (never cached here)
-  const isHTML = e.request.mode === "navigate" || e.request.destination === "document" || url.pathname.endsWith(".html") || url.pathname.endsWith("packs.js") || /\/$/.test(url.pathname);
+  const isHTML = e.request.mode === "navigate" || e.request.destination === "document" || url.pathname.endsWith(".html") || url.pathname.endsWith("packs.js") || url.pathname.endsWith("sync.js") || /\/$/.test(url.pathname);
   if (isHTML) {
     e.respondWith(
       fetch(e.request)
